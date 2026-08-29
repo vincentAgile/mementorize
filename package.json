@@ -1,0 +1,22 @@
+{
+  "name": "mementorize",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Application de mémorisation à long terme basée sur la répétition espacée (citations, vocabulaire, cartes mentales).",
+  "packageManager": "pnpm@11.24.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.4.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  }
+}
