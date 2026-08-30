@@ -6,7 +6,7 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 
 ## Statut
 
-🚧 **Phase 0 — Fondations du dépôt.** Aucune application n'est encore branchée : ce commit ne pose que la structure du monorepo.
+🚧 **Phase 1 — API minimale.** `apps/api` expose un CRUD sur les citations (NestJS + Prisma + PostgreSQL). `apps/web` n'est pas encore branché (phase 2).
 
 ## Stack cible
 
@@ -37,9 +37,13 @@ Le monorepo est géré avec **pnpm workspaces** + **Turborepo** pour orchestrer 
 ## Démarrage
 
 ```bash
-pnpm install   # une fois les premiers packages ajoutés (à partir de la phase 1)
-pnpm dev
+docker compose up -d              # PostgreSQL
+pnpm install                      # installe + génère le client Prisma (postinstall)
+pnpm --filter api prisma:migrate  # crée le schéma en base
+pnpm dev                          # lance apps/* en mode watch (turbo)
 ```
+
+Détails spécifiques à l'API : voir [apps/api/README.md](./apps/api/README.md).
 
 ## Conventions
 
