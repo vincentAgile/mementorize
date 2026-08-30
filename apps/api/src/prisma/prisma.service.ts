@@ -3,12 +3,12 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 /**
- * Enveloppe le PrismaClient généré pour brancher son cycle de vie sur celui
- * de l'application Nest : connexion à l'initialisation du module, fermeture
- * propre à l'arrêt (évite de laisser des connexions Postgres ouvertes).
+ * Wraps the generated PrismaClient to hook its lifecycle onto the Nest
+ * application's: connect on module init, disconnect cleanly on shutdown
+ * (avoids leaving open Postgres connections behind).
  *
- * Depuis Prisma 7, la connexion passe par un "driver adapter" (ici
- * @prisma/adapter-pg) plutôt que par une URL déclarée dans schema.prisma.
+ * Since Prisma 7, the connection goes through a "driver adapter" (here
+ * @prisma/adapter-pg) instead of a URL declared in schema.prisma.
  */
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -20,7 +20,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleInit(): Promise<void> {
     await this.$connect();
-    this.logger.log('Connexion à la base de données établie');
+    this.logger.log('Database connection established');
   }
 
   async onModuleDestroy(): Promise<void> {

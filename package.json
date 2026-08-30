@@ -2,7 +2,7 @@
   "name": "mementorize",
   "private": true,
   "version": "0.0.0",
-  "description": "Application de mémorisation à long terme basée sur la répétition espacée (citations, vocabulaire, cartes mentales).",
+  "description": "Application de mémorisation à long terme basée sur la répétition espacée (quotes, vocabulaire, cartes mentales).",
   "packageManager": "pnpm@11.24.0",
   "engines": {
     "node": ">=22"

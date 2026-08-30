@@ -2,8 +2,8 @@ import { Global, Module } from '@nestjs/common';
 import { PrismaService } from './prisma.service.js';
 
 /**
- * Module global : PrismaService est injectable dans n'importe quel autre
- * module sans avoir à réimporter PrismaModule partout.
+ * Global module: PrismaService is injectable in any other module without
+ * having to re-import PrismaModule everywhere.
  */
 @Global()
 @Module({

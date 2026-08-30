@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import { defineConfig, env } from 'prisma/config';
 
-// Prisma 7 : l'URL de connexion ne vit plus dans schema.prisma, elle est
-// centralisée ici et lue par la CLI (generate, migrate, studio).
+// Prisma 7: the connection URL no longer lives in schema.prisma, it's
+// centralized here and read by the CLI (generate, migrate, studio).
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {

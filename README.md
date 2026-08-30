@@ -1,12 +1,12 @@
 # Mementorize
 
-Application de mémorisation à long terme (citations, vocabulaire anglais, cartes mentales), basée sur la courbe de l'oubli. Un système d'autoévaluation détermine, pour chaque élément, le bon moment pour le réviser.
+Application de mémorisation à long terme (quotes, vocabulaire anglais, cartes mentales), basée sur la courbe de l'oubli. Un système d'autoévaluation détermine, pour chaque élément, le bon moment pour le réviser.
 
 Projet personnel de veille technique : chaque phase de développement est aussi l'occasion d'explorer une brique de l'écosystème JS/TS moderne et d'une chaîne de déploiement complète (Docker, Traefik, GitHub Actions).
 
 ## Statut
 
-🚧 **Phase 1 — API minimale.** `apps/api` expose un CRUD sur les citations (NestJS + Prisma + PostgreSQL). `apps/web` n'est pas encore branché (phase 2).
+🚧 **Phase 1 — API minimale.** `apps/api` expose un CRUD sur les quotes (NestJS + Prisma + PostgreSQL). `apps/web` n'est pas encore branché (phase 2).
 
 ## Stack cible
 

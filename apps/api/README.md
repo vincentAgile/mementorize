@@ -1,6 +1,6 @@
 # apps/api
 
-API NestJS de Mementorize. Phase 1 de la feuille de route : CRUD sur les citations, en attendant que le modèle se généralise (phase 5) aux autres types de contenu.
+API NestJS de Mementorize. Phase 1 de la feuille de route : CRUD sur les quotes, en attendant que le modèle se généralise (phase 5) aux autres types de contenu.
 
 ## Démarrer en local
 
@@ -25,13 +25,13 @@ L'API écoute sur `http://localhost:3000` par défaut (configurable via `PORT` d
 ## Tester les routes
 
 ```bash
-# Créer une citation
-curl -X POST http://localhost:3000/citations \
+# Créer une quote
+curl -X POST http://localhost:3000/quotes \
   -H "Content-Type: application/json" \
-  -d '{"text":"La vie ne vaut rien, mais rien ne vaut la vie.","author":"André Malraux"}'
+  -d '{"text":"The only true wisdom is in knowing you know nothing.","author":"Socrates"}'
 
-# Lister les citations
-curl http://localhost:3000/citations
+# Lister les quotes
+curl http://localhost:3000/quotes
 ```
 
 ## Tests
@@ -40,7 +40,7 @@ curl http://localhost:3000/citations
 pnpm --filter api test
 ```
 
-Le `CitationsService` est testé avec un `PrismaService` mocké (pas besoin d'une vraie base pour les tests unitaires).
+Le `QuotesService` est testé avec un `PrismaService` mocké (pas besoin d'une vraie base pour les tests unitaires).
 
 ## Prisma Studio
 

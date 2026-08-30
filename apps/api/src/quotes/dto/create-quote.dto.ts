@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
-export class CreateCitationDto {
+export class CreateQuoteDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(2000)

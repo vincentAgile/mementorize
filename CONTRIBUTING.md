@@ -26,7 +26,7 @@ Types utilisés : `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`.
 Exemples :
 
 ```
-feat(api): ajoute le CRUD citations
+feat(api): ajoute le CRUD quotes
 chore(repo): initialise le monorepo pnpm + turborepo
 ci: ajoute le workflow de lint et de tests
 ```
