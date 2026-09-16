@@ -27,3 +27,4 @@ coverage/
 
 # Prisma
 apps/api/prisma/*.db
+*.tsbuildinfo
