@@ -6,7 +6,7 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 
 ## Statut
 
-🚧 **Phase 1 — API minimale.** `apps/api` expose un CRUD sur les quotes (NestJS + Prisma + PostgreSQL). `apps/web` n'est pas encore branché (phase 2).
+🚧 **Phase 2 — Interface minimale.** `apps/web` (Next.js) liste et ajoute des quotes en consommant l'API `apps/api` (phase 1, terminée). Pas encore d'authentification (phase 3).
 
 ## Stack cible
 

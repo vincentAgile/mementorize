@@ -28,3 +28,6 @@ coverage/
 # Prisma
 apps/api/prisma/*.db
 *.tsbuildinfo
+
+# Next.js
+next-env.d.ts
