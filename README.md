@@ -6,7 +6,8 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 
 ## Statut
 
-🚧 **Phase 2 — Interface minimale.** `apps/web` (Next.js) liste et ajoute des quotes en consommant l'API `apps/api` (phase 1, terminée). Pas encore d'authentification (phase 3).
+✅ **Phase 2 terminée.** `apps/web` (Next.js) liste et ajoute des quotes en consommant l'API `apps/api`.
+🚧 **Phase 3 — Authentification.** Pas encore commencée.
 
 ## Stack cible
 
