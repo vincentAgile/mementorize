@@ -1,0 +1,8 @@
+# Normalize line endings for everyone (Windows checkout, Linux bridge, CI)
+# regardless of local core.autocrlf settings.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
