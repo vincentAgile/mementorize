@@ -73,3 +73,93 @@ body {
   color: #666;
   font-style: normal;
 }
+
+/* --- Phase 3: auth pages & header --- */
+
+.page--narrow {
+  max-width: 380px;
+}
+
+.page__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.page__user {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #147d80;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 1.5rem;
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.auth-form input {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.auth-form button {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background: #147d80;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-form__switch {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.auth-form__switch a {
+  color: #147d80;
+}
+
+.form-error {
+  margin: 0;
+  color: #c1543a;
+  font-size: 0.9rem;
+}
+
+.notice {
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: rgba(20, 125, 128, 0.1);
+  font-size: 0.9rem;
+}
