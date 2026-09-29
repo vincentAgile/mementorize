@@ -6,13 +6,27 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  quotes       Quote[]
+
+  @@map("users")
+}
+
 model Quote {
   id        String   @id @default(uuid())
   text      String
   author    String?
   source    String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([userId])
   @@map("quotes")
 }

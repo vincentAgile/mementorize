@@ -7,7 +7,7 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 ## Statut
 
 ✅ **Phase 2 terminée.** `apps/web` (Next.js) liste et ajoute des quotes en consommant l'API `apps/api`.
-🚧 **Phase 3 — Authentification.** Pas encore commencée.
+🚧 **Phase 3 — Authentification.** Inscription / connexion (JWT + Passport côté API, cookie de session httpOnly côté Next.js) ; chaque utilisateur ne voit que ses quotes.
 
 ## Stack cible
 
@@ -32,7 +32,7 @@ Le monorepo est géré avec **pnpm workspaces** + **Turborepo** pour orchestrer 
 
 ## Prérequis
 
-- Node.js 22 (voir `.nvmrc`)
+- Node.js 24 (voir `.nvmrc`)
 - pnpm, activé via Corepack : `corepack enable`
 
 ## Démarrage
@@ -40,6 +40,7 @@ Le monorepo est géré avec **pnpm workspaces** + **Turborepo** pour orchestrer 
 ```bash
 docker compose up -d              # PostgreSQL
 pnpm install                      # installe + génère le client Prisma (postinstall)
+# (une seule fois) créer apps/api/.env et apps/web/.env.local depuis leurs .env.example
 pnpm --filter api prisma:migrate  # crée le schéma en base
 pnpm dev                          # lance apps/* en mode watch (turbo)
 ```

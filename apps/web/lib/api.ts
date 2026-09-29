@@ -1,23 +1,96 @@
-import type { CreateQuoteInput, Quote } from './types';
+import 'server-only';
+import { redirect } from 'next/navigation';
+import { getSessionToken } from './session';
+import type { AuthUser, CreateQuoteInput, Credentials, Quote } from './types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+// Server-side only: this module runs in Server Components and Server
+// Actions, never in the browser ('server-only' makes the build fail if a
+// client component imports it by mistake).
+const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
-export async function getQuotes(): Promise<Quote[]> {
-  const res = await fetch(`${API_URL}/quotes`, { cache: 'no-store' });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch quotes (${res.status})`);
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
   }
-  return res.json();
 }
 
-export async function createQuote(input: CreateQuoteInput): Promise<Quote> {
-  const res = await fetch(`${API_URL}/quotes`, {
+// ---------------------------------------------------------------------------
+// Public endpoints: register / login
+// ---------------------------------------------------------------------------
+
+export type AuthResult = { ok: true; accessToken: string } | { ok: false; message: string };
+
+export async function authenticate(kind: 'login' | 'register', credentials: Credentials): Promise<AuthResult> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}/auth/${kind}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(credentials),
+      cache: 'no-store',
+    });
+  } catch {
+    return { ok: false, message: "L'API est injoignable. Est-elle démarrée ?" };
+  }
+
+  if (res.ok) {
+    const { accessToken } = (await res.json()) as { accessToken: string };
+    return { ok: true, accessToken };
+  }
+
+  switch (res.status) {
+    case 401:
+      return { ok: false, message: 'Email ou mot de passe incorrect.' };
+    case 409:
+      return { ok: false, message: 'Un compte existe déjà avec cet email.' };
+    case 400:
+      return { ok: false, message: 'Email invalide ou mot de passe trop court (8 caractères minimum).' };
+    default:
+      return { ok: false, message: `Erreur inattendue de l'API (${res.status}).` };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Protected endpoints: the JWT from the session cookie is sent as a Bearer token
+// ---------------------------------------------------------------------------
+
+async function authedFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = await getSessionToken();
+  if (!token) {
+    redirect('/login');
+  }
+
+  const res = await fetch(`${API_URL}${path}`, {
+    ...init,
+    headers: { ...init.headers, Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  if (res.status === 401) {
+    // Token expired or invalid: clear the cookie and go back to the login page.
+    redirect('/session-expired');
+  }
+  if (!res.ok) {
+    throw new ApiError(res.status, `API error ${res.status} on ${path}`);
+  }
+  return (res.status === 204 ? undefined : await res.json()) as T;
+}
+
+export function getCurrentUser(): Promise<AuthUser> {
+  return authedFetch<AuthUser>('/auth/me');
+}
+
+export function getQuotes(): Promise<Quote[]> {
+  return authedFetch<Quote[]>('/quotes');
+}
+
+export function createQuote(input: CreateQuoteInput): Promise<Quote> {
+  return authedFetch<Quote>('/quotes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  if (!res.ok) {
-    throw new Error(`Failed to create quote (${res.status})`);
-  }
-  return res.json();
 }
