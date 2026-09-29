@@ -12,24 +12,41 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  quotes       Quote[]
+  items        Item[]
 
   @@map("users")
 }
 
-model Quote {
+enum ItemType {
+  Quote
+  Vocabulary
+}
+
+/// Something to memorize. Every type shares this table; what differs from
+/// one type to another lives in `content` (a jsonb column), whose shape is
+/// checked by the API (see src/items/item-content.ts):
+///   Quote      -> { text, author, source }
+///   Vocabulary -> { word, translation, example }
+model Item {
   id        String   @id @default(uuid())
-  text      String
-  author    String?
-  source    String?
+  type      ItemType
+  content   Json
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  card      Card?
+  cards     Card[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
-  @@map("quotes")
+  @@map("items")
+}
+
+/// Which "side" of an item a card asks about. A quote has one card, a
+/// vocabulary word has two (one per direction), each with its own schedule.
+enum CardKind {
+  QuoteRecall
+  EnglishToFrench
+  FrenchToEnglish
 }
 
 // Same names as ts-fsrs's State enum, so mapping is a simple lookup.
@@ -48,12 +65,13 @@ enum ReviewRating {
   Easy
 }
 
-/// Spaced-repetition state (FSRS) of a quote: when to review it next, and
-/// how well it is known. One card per quote.
+/// Spaced-repetition state (FSRS) of one side of an item: when to review it
+/// next, and how well it is known.
 model Card {
   id            String      @id @default(uuid())
-  quoteId       String      @unique
-  quote         Quote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  itemId        String
+  item          Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  kind          CardKind
   due           DateTime
   stability     Float
   difficulty    Float
@@ -67,6 +85,7 @@ model Card {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
+  @@unique([itemId, kind])
   @@index([due])
   @@map("cards")
 }

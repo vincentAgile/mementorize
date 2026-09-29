@@ -4,11 +4,11 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
-import { QuotesModule } from './quotes/quotes.module.js';
+import { ItemsModule } from './items/items.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, AuthModule, QuotesModule, ReviewsModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, AuthModule, ItemsModule, ReviewsModule],
   controllers: [AppController],
   providers: [AppService],
 })

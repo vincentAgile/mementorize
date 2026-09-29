@@ -20,22 +20,22 @@ body {
   margin-top: -0.5rem;
 }
 
-.quotes__form {
+.items__form {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   margin: 1.5rem 0;
 }
 
-.quotes__form textarea,
-.quotes__form input {
+.items__form textarea,
+.items__form input {
   font: inherit;
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
 }
 
-.quotes__form button {
+.items__form button {
   align-self: flex-start;
   padding: 0.5rem 1rem;
   border: none;
@@ -45,12 +45,12 @@ body {
   cursor: pointer;
 }
 
-.quotes__form button:disabled {
+.items__form button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.quotes__list {
+.items__list {
   list-style: none;
   padding: 0;
   display: flex;
@@ -58,16 +58,16 @@ body {
   gap: 1rem;
 }
 
-.quotes__list li {
+.items__list li {
   border-left: 3px solid #147d80;
   padding-left: 1rem;
 }
 
-.quotes__list blockquote {
+.items__list blockquote {
   margin: 0;
 }
 
-.quotes__list cite {
+.items__list cite {
   display: block;
   margin-top: 0.25rem;
   color: #666;
@@ -200,7 +200,7 @@ body {
   text-align: center;
 }
 
-.quotes__schedule {
+.items__schedule {
   margin: 0.25rem 0 0;
   color: #888;
   font-size: 0.8rem;
@@ -328,4 +328,95 @@ kbd {
 
 .review-empty a {
   color: #147d80;
+}
+
+/* --- Phase 5: item types --- */
+
+.segmented {
+  display: inline-flex;
+  align-self: flex-start;
+  border: 1px solid #147d80;
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 0.9rem;
+}
+
+.segmented label {
+  padding: 0.35rem 0.9rem;
+  color: #147d80;
+  cursor: pointer;
+}
+
+.segmented label.is-active {
+  background: #147d80;
+  color: white;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented label:has(input:focus-visible) {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
+}
+
+.items__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .items__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin: 0.5rem 0 1rem;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.filters a {
+  padding: 0.35rem 0;
+  color: #666;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.filters a.is-active {
+  color: #147d80;
+  border-bottom-color: #147d80;
+}
+
+.vocab {
+  margin: 0;
+}
+
+.vocab__arrow {
+  color: #888;
+}
+
+.vocab__example {
+  margin: 0.25rem 0 0;
+  color: #666;
+  font-style: italic;
+}
+
+.review-card__recall {
+  margin: 0 0 0.5rem;
+  color: #666;
+}
+
+.review-card__note {
+  margin: 0.75rem 0 0;
+  color: #666;
+  font-style: italic;
 }
