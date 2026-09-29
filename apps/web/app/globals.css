@@ -163,3 +163,169 @@ body {
   background: rgba(20, 125, 128, 0.1);
   font-size: 0.9rem;
 }
+
+/* --- Phase 4: navigation & review --- */
+
+.page__brand {
+  display: flex;
+  align-items: baseline;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.page__nav {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.95rem;
+}
+
+.page__nav a {
+  color: #147d80;
+  text-decoration: none;
+}
+
+.page__nav a:hover {
+  text-decoration: underline;
+}
+
+.badge {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 0.4em;
+  border-radius: 99px;
+  background: #147d80;
+  color: white;
+  font-size: 0.75rem;
+  line-height: 1.4em;
+  text-align: center;
+}
+
+.quotes__schedule {
+  margin: 0.25rem 0 0;
+  color: #888;
+  font-size: 0.8rem;
+}
+
+kbd {
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.6;
+}
+
+.review-progress {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.review-card {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.review-card__author {
+  margin: 0 0 1rem;
+  font-weight: 600;
+}
+
+.review-card__source {
+  font-weight: 400;
+  color: #666;
+}
+
+.review-card__text {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+.review-card__text--cue {
+  color: #666;
+}
+
+.review-card__question {
+  margin: 1.25rem 0 0.75rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.review-card__reveal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background: #147d80;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.review-card__ratings {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+@media (max-width: 480px) {
+  .review-card__ratings {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.rating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.6rem 0.25rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rating:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.rating__label {
+  font-weight: 600;
+}
+
+.rating__delay {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.rating--again .rating__label {
+  color: #c1543a;
+}
+
+.rating--hard .rating__label {
+  color: #b7791f;
+}
+
+.rating--good .rating__label {
+  color: #147d80;
+}
+
+.rating--easy .rating__label {
+  color: #2f6fb5;
+}
+
+.review-empty {
+  margin-top: 2rem;
+}
+
+.review-empty a {
+  color: #147d80;
+}

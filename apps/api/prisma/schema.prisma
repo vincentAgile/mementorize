@@ -24,9 +24,67 @@ model Quote {
   source    String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card      Card?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@map("quotes")
+}
+
+// Same names as ts-fsrs's State enum, so mapping is a simple lookup.
+enum CardState {
+  New
+  Learning
+  Review
+  Relearning
+}
+
+// ts-fsrs's Rating enum, minus "Manual" (not used by the app).
+enum ReviewRating {
+  Again
+  Hard
+  Good
+  Easy
+}
+
+/// Spaced-repetition state (FSRS) of a quote: when to review it next, and
+/// how well it is known. One card per quote.
+model Card {
+  id            String      @id @default(uuid())
+  quoteId       String      @unique
+  quote         Quote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  due           DateTime
+  stability     Float
+  difficulty    Float
+  scheduledDays Int
+  learningSteps Int
+  reps          Int
+  lapses        Int
+  state         CardState
+  lastReview    DateTime?
+  reviewLogs    ReviewLog[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([due])
+  @@map("cards")
+}
+
+/// One row per self-assessment: the review history of a card.
+model ReviewLog {
+  id            String       @id @default(uuid())
+  cardId        String
+  card          Card         @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  rating        ReviewRating
+  state         CardState
+  due           DateTime
+  stability     Float
+  difficulty    Float
+  scheduledDays Int
+  learningSteps Int
+  reviewedAt    DateTime
+
+  @@index([cardId])
+  @@map("review_logs")
 }

@@ -1,7 +1,7 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { getSessionToken } from './session';
-import type { AuthUser, CreateQuoteInput, Credentials, Quote } from './types';
+import type { AuthUser, CreateQuoteInput, Credentials, DueReviews, Quote, ReviewRating } from './types';
 
 // Server-side only: this module runs in Server Components and Server
 // Actions, never in the browser ('server-only' makes the build fail if a
@@ -92,5 +92,17 @@ export function createQuote(input: CreateQuoteInput): Promise<Quote> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
+  });
+}
+
+export function getDueReviews(limit = 20): Promise<DueReviews> {
+  return authedFetch<DueReviews>(`/reviews/due?limit=${limit}`);
+}
+
+export function submitReview(quoteId: string, rating: ReviewRating): Promise<void> {
+  return authedFetch<void>(`/reviews/${encodeURIComponent(quoteId)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating }),
   });
 }
