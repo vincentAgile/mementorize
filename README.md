@@ -8,7 +8,8 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 
 ✅ **Phase 2 terminée.** `apps/web` (Next.js) liste et ajoute des quotes en consommant l'API `apps/api`.
 ✅ **Phase 3 terminée.** Inscription / connexion (JWT + Passport côté API, cookie de session httpOnly côté Next.js) ; chaque utilisateur ne voit que ses quotes.
-🚧 **Phase 4 — Répétition espacée.** Algorithme FSRS (ts-fsrs), historique des révisions, écran « À réviser » avec auto-évaluation.
+✅ **Phase 4 terminée.** Répétition espacée : algorithme FSRS (ts-fsrs), historique des révisions, écran « À réviser » avec auto-évaluation.
+🚧 **Phase 5 — Généraliser le modèle de contenu.** Pas encore commencée (vocabulaire anglais à côté des quotes).
 
 ## Stack cible
 
