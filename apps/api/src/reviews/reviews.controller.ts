@@ -16,9 +16,12 @@ export class ReviewsController {
     return this.reviewsService.findDue(user.id, Math.min(Math.max(limit, 1), 100));
   }
 
-  /** POST /reviews/:quoteId { rating } — self-assessment of one quote. */
-  @Post(':quoteId')
-  review(@CurrentUser() user: AuthUser, @Param('quoteId') quoteId: string, @Body() dto: ReviewDto) {
-    return this.reviewsService.review(user.id, quoteId, dto.rating);
+  /**
+   * POST /reviews/:cardId { rating } — self-assessment of one card. Keyed by
+   * card (not by item) since phase 5: a vocabulary word has two cards.
+   */
+  @Post(':cardId')
+  review(@CurrentUser() user: AuthUser, @Param('cardId') cardId: string, @Body() dto: ReviewDto) {
+    return this.reviewsService.review(user.id, cardId, dto.rating);
   }
 }

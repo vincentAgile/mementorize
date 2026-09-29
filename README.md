@@ -1,6 +1,6 @@
 # Mementorize
 
-Application de mémorisation à long terme (quotes, vocabulaire anglais, cartes mentales), basée sur la courbe de l'oubli. Un système d'autoévaluation détermine, pour chaque élément, le bon moment pour le réviser.
+Application de mémorisation à long terme (citations, vocabulaire anglais, cartes mentales), basée sur la courbe de l'oubli. Un système d'autoévaluation détermine, pour chaque élément, le bon moment pour le réviser.
 
 Projet personnel de veille technique : chaque phase de développement est aussi l'occasion d'explorer une brique de l'écosystème JS/TS moderne et d'une chaîne de déploiement complète (Docker, Traefik, GitHub Actions).
 
@@ -9,7 +9,7 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 ✅ **Phase 2 terminée.** `apps/web` (Next.js) liste et ajoute des quotes en consommant l'API `apps/api`.
 ✅ **Phase 3 terminée.** Inscription / connexion (JWT + Passport côté API, cookie de session httpOnly côté Next.js) ; chaque utilisateur ne voit que ses quotes.
 ✅ **Phase 4 terminée.** Répétition espacée : algorithme FSRS (ts-fsrs), historique des révisions, écran « À réviser » avec auto-évaluation.
-🚧 **Phase 5 — Généraliser le modèle de contenu.** Pas encore commencée (vocabulaire anglais à côté des quotes).
+🚧 **Phase 5 — Généraliser le modèle de contenu.** Table `items` polymorphe (jsonb), vocabulaire anglais révisé dans les deux sens, migration qui conserve les citations et leur historique.
 
 ## Stack cible
 

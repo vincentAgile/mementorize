@@ -1,6 +1,6 @@
 # Mementorize — Web (Next.js)
 
-Interface de Mementorize : connexion / inscription (phase 3), liste et ajout de ses propres quotes, et écran de révision (phase 4).
+Interface de Mementorize : connexion / inscription (phase 3), liste et ajout de ses fiches (citations et vocabulaire anglais), et écran de révision (phases 4 et 5).
 
 ## Prérequis
 
@@ -17,12 +17,13 @@ pnpm --filter web dev        # http://localhost:3001 (le 3000 est déjà pris pa
 
 - `proxy.ts` — s'exécute avant chaque requête : sans cookie de session, redirige vers `/login` (vérification « optimiste », la vraie vérification du token est faite par l'API).
 - `app/(auth)/` — groupe de routes (les parenthèses n'apparaissent pas dans l'URL) : `/login`, `/register`, les Server Actions d'authentification et `/session-expired` (Route Handler qui efface un cookie périmé).
-- `app/page.tsx` — Server Component : récupère l'utilisateur et ses quotes côté serveur, avec le token de la session.
-- `app/quotes/` — formulaire d'ajout (client component + Server Action).
-- `app/review/` — écran « À réviser » : une carte à la fois (auteur + premiers mots), « Afficher la réponse », puis 4 boutons d'auto-évaluation qui indiquent quand la citation reviendra. Raccourcis : `Espace` pour révéler, `1` à `4` pour répondre.
+- `app/page.tsx` — Server Component : récupère l'utilisateur et ses fiches côté serveur, avec le token de la session ; filtre par type via `?type=`.
+- `app/items/` — formulaire d'ajout, citation ou mot de vocabulaire (client component + Server Action).
+- `app/review/` — écran « À réviser » : une carte à la fois, « Afficher la réponse », puis 4 boutons d'auto-évaluation qui indiquent quand la carte reviendra. Raccourcis : `Espace` pour révéler, `1` à `4` pour répondre. `facesOf()` (dans `page.tsx`) décide du recto et du verso selon le type de carte : auteur + premiers mots pour une citation, mot anglais ou traduction pour le vocabulaire.
 - `app/app-header.tsx` — en-tête commun (navigation, nombre de révisions en attente, déconnexion).
 - `lib/session.ts` — le cookie de session (httpOnly) qui contient le JWT renvoyé par l'API.
 - `lib/api.ts` — client HTTP vers l'API, **côté serveur uniquement** (`import 'server-only'`).
+- `lib/types.ts` — `Item` est une *union discriminée* : tester `item.type` suffit pour que TypeScript connaisse la forme de `item.content`.
 
 ## Pourquoi le navigateur n'appelle plus l'API directement
 

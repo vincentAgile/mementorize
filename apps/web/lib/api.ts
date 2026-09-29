@@ -1,7 +1,16 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { getSessionToken } from './session';
-import type { AuthUser, CreateQuoteInput, Credentials, DueReviews, Quote, ReviewRating } from './types';
+import type {
+  AuthUser,
+  CreateQuoteInput,
+  CreateVocabularyInput,
+  Credentials,
+  DueReviews,
+  Item,
+  ItemType,
+  ReviewRating,
+} from './types';
 
 // Server-side only: this module runs in Server Components and Server
 // Actions, never in the browser ('server-only' makes the build fail if a
@@ -83,12 +92,20 @@ export function getCurrentUser(): Promise<AuthUser> {
   return authedFetch<AuthUser>('/auth/me');
 }
 
-export function getQuotes(): Promise<Quote[]> {
-  return authedFetch<Quote[]>('/quotes');
+export function getItems(type?: ItemType): Promise<Item[]> {
+  return authedFetch<Item[]>(type ? `/items?type=${type}` : '/items');
 }
 
-export function createQuote(input: CreateQuoteInput): Promise<Quote> {
-  return authedFetch<Quote>('/quotes', {
+export function createQuote(input: CreateQuoteInput): Promise<unknown> {
+  return authedFetch('/quotes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+export function createVocabulary(input: CreateVocabularyInput): Promise<unknown> {
+  return authedFetch('/vocabulary', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
@@ -99,8 +116,8 @@ export function getDueReviews(limit = 20): Promise<DueReviews> {
   return authedFetch<DueReviews>(`/reviews/due?limit=${limit}`);
 }
 
-export function submitReview(quoteId: string, rating: ReviewRating): Promise<void> {
-  return authedFetch<void>(`/reviews/${encodeURIComponent(quoteId)}`, {
+export function submitReview(cardId: string, rating: ReviewRating): Promise<void> {
+  return authedFetch<void>(`/reviews/${encodeURIComponent(cardId)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rating }),

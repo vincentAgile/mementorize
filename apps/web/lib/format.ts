@@ -6,8 +6,9 @@ const DAY = 24 * HOUR;
 export function formatDelay(from: Date, to: Date): string {
   const ms = Math.max(0, to.getTime() - from.getTime());
   if (ms < HOUR) return `${Math.max(1, Math.round(ms / MINUTE))} min`;
-  if (ms < DAY) return `${Math.round(ms / HOUR)} h`;
-  if (ms < 30 * DAY) return `${Math.round(ms / DAY)} j`;
+  const hours = Math.round(ms / HOUR);
+  if (hours < 24) return `${hours} h`;
+  if (ms < 30 * DAY) return `${Math.max(1, Math.round(ms / DAY))} j`;
   if (ms < 365 * DAY) return `${Math.round(ms / (30 * DAY))} mois`;
   const years = Math.round(ms / (365 * DAY));
   return `${years} an${years > 1 ? 's' : ''}`;

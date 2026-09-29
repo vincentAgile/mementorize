@@ -12,7 +12,7 @@ export function AppHeader({ email, dueCount }: AppHeaderProps) {
       <div className="page__brand">
         <h1>Mementorize</h1>
         <nav className="page__nav">
-          <Link href="/">Mes citations</Link>
+          <Link href="/">Mes fiches</Link>
           <Link href="/review">
             Réviser {dueCount > 0 && <span className="badge">{dueCount}</span>}
           </Link>

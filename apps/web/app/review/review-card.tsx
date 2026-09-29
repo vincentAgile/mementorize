@@ -11,16 +11,26 @@ export interface RatingOption {
   delay: string; // "10 min": when the card comes back with this answer
 }
 
+/** One side of a card: built by the page, depending on the card's kind. */
+export interface CardFace {
+  heading: string; // "Socrates", "Anglais → français"
+  subheading?: string | null; // source of a quote
+  main: string; // the cue (front) or the answer (back)
+  lang?: string; // lang attribute of `main`, for screen readers and hyphenation
+  note?: string | null; // back only: example sentence
+  prompt?: string; // front only: what to do
+}
+
 interface ReviewCardProps {
-  quoteId: string;
-  author: string | null;
-  source: string | null;
-  cue: string; // first words of the quote
-  text: string;
+  cardId: string;
+  front: CardFace;
+  back: CardFace;
+  /** Keep the question visible above the answer (vocabulary: word -> translation). */
+  repeatFront?: boolean;
   options: RatingOption[];
 }
 
-export function ReviewCard({ quoteId, author, source, cue, text, options }: ReviewCardProps) {
+export function ReviewCard({ cardId, front, back, repeatFront = false, options }: ReviewCardProps) {
   const [revealed, setRevealed] = useState(false);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -38,17 +48,31 @@ export function ReviewCard({ quoteId, author, source, cue, text, options }: Revi
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [revealed]);
 
+  const face = revealed ? back : front;
+
   return (
     <article className="review-card">
       <p className="review-card__author">
-        {author ?? 'Auteur inconnu'}
-        {source && <span className="review-card__source"> · {source}</span>}
+        {face.heading}
+        {face.subheading && <span className="review-card__source"> · {face.subheading}</span>}
       </p>
 
       {revealed ? (
         <>
-          <blockquote className="review-card__text">{text}</blockquote>
-          <p className="review-card__question">Tu la connaissais bien ?</p>
+          {repeatFront && (
+            <p className="review-card__recall" lang={front.lang}>
+              {front.main}
+            </p>
+          )}
+          <blockquote className="review-card__text" lang={back.lang}>
+            {back.main}
+          </blockquote>
+          {back.note && (
+            <p className="review-card__note" lang="en">
+              {back.note}
+            </p>
+          )}
+          <p className="review-card__question">Tu t&apos;en souvenais bien ?</p>
           <form className="review-card__ratings">
             {options.map((option, index) => (
               <RatingButton
@@ -58,15 +82,17 @@ export function ReviewCard({ quoteId, author, source, cue, text, options }: Revi
                 }}
                 option={option}
                 shortcut={index + 1}
-                action={reviewAction.bind(null, quoteId, option.rating)}
+                action={reviewAction.bind(null, cardId, option.rating)}
               />
             ))}
           </form>
         </>
       ) : (
         <>
-          <blockquote className="review-card__text review-card__text--cue">{cue}</blockquote>
-          <p className="review-card__question">Récite la suite de tête, puis vérifie.</p>
+          <blockquote className="review-card__text review-card__text--cue" lang={front.lang}>
+            {front.main}
+          </blockquote>
+          <p className="review-card__question">{front.prompt}</p>
           <button type="button" className="review-card__reveal" onClick={() => setRevealed(true)}>
             Afficher la réponse <kbd>Espace</kbd>
           </button>
