@@ -2,11 +2,13 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SchedulerService } from '../scheduling/scheduler.service.js';
 import { QuotesService } from './quotes.service.js';
 
 describe('QuotesService', () => {
   let service: QuotesService;
   const userId = 'user-1';
+  const scheduler = new SchedulerService({ enable_fuzz: false });
 
   // Fake PrismaService: only the methods the service actually calls are
   // mocked, no real database needed here.
@@ -35,20 +37,28 @@ describe('QuotesService', () => {
     vi.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [QuotesService, { provide: PrismaService, useValue: prismaMock }],
+      providers: [
+        QuotesService,
+        { provide: PrismaService, useValue: prismaMock },
+        { provide: SchedulerService, useValue: scheduler },
+      ],
     }).compile();
 
     service = module.get(QuotesService);
   });
 
-  it('creates a quote owned by the current user', async () => {
+  it('creates a quote owned by the current user, with a new review card due now', async () => {
     const dto = { text: 'The only true wisdom is in knowing you know nothing.', author: 'Socrates' };
+    const now = new Date('2026-09-29T08:00:00Z');
     const created = aQuote(dto);
     prismaMock.quote.create.mockResolvedValue(created);
 
-    const result = await service.create(userId, dto);
+    const result = await service.create(userId, dto, now);
 
-    expect(prismaMock.quote.create).toHaveBeenCalledWith({ data: { ...dto, userId } });
+    expect(prismaMock.quote.create).toHaveBeenCalledWith({
+      data: { ...dto, userId, card: { create: scheduler.newCard(now) } },
+      include: { card: true },
+    });
     expect(result).toEqual(created);
   });
 

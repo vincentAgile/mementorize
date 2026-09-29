@@ -1,3 +1,6 @@
+export type CardState = 'New' | 'Learning' | 'Review' | 'Relearning';
+export type ReviewRating = 'Again' | 'Hard' | 'Good' | 'Easy';
+
 export interface Quote {
   id: string;
   text: string;
@@ -6,6 +9,20 @@ export interface Quote {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  card?: { due: string; state: CardState } | null; // included by GET /quotes
+}
+
+/** A quote waiting to be reviewed, as returned by GET /reviews/due. */
+export interface DueItem {
+  quote: Quote;
+  card: { id: string; due: string; state: CardState; reps: number; lapses: number };
+  nextDue: Record<ReviewRating, string>; // ISO dates
+}
+
+export interface DueReviews {
+  total: number;
+  items: DueItem[];
+  nextDueAt: string | null;
 }
 
 export interface CreateQuoteInput {

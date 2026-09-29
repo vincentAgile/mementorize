@@ -1,6 +1,6 @@
 # apps/api
 
-API NestJS de Mementorize : CRUD sur les quotes (phase 1), protégé par une authentification JWT (phase 3) — chaque utilisateur ne voit que ses propres quotes.
+API NestJS de Mementorize : CRUD sur les quotes (phase 1), protégé par une authentification JWT (phase 3) — chaque utilisateur ne voit que ses propres quotes — et planification des révisions par répétition espacée (phase 4, algorithme FSRS).
 
 ## Démarrer en local
 
@@ -62,13 +62,31 @@ Sans token (ou avec un token expiré) : `401 Unauthorized`.
 - Les routes protégées utilisent `JwtAuthGuard` → `JwtStrategy` vérifie la signature et l'expiration du token, puis place `{ id, email }` dans `request.user` (lu via le décorateur `@CurrentUser()`).
 - `QuotesService` filtre toujours par `userId` : la quote d'un autre utilisateur renvoie un 404, comme si elle n'existait pas.
 
+## Répétition espacée (phase 4)
+
+Chaque quote a une **carte** (`cards`) qui mémorise où en est son apprentissage : prochaine date de révision (`due`), stabilité, difficulté, nombre de révisions et d'oublis, état (`New`, `Learning`, `Review`, `Relearning`). Chaque auto-évaluation ajoute une ligne dans `review_logs` : c'est l'historique des révisions.
+
+Le calcul est confié à [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs), une implémentation de FSRS (l'algorithme utilisé par Anki). Tout passe par `SchedulerService` (`src/scheduling/`), seul endroit du code qui connaît la librairie.
+
+```bash
+# Ce qu'il y a à réviser maintenant (+ prochaine date pour chaque réponse possible)
+curl http://localhost:3000/reviews/due -H "Authorization: Bearer $TOKEN"
+
+# S'auto-évaluer sur une quote : Again | Hard | Good | Easy
+curl -X POST http://localhost:3000/reviews/<quoteId> \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"rating":"Good"}'
+```
+
+Une nouvelle quote est à réviser tout de suite. Avec « Good », elle revient 10 minutes plus tard (phase d'apprentissage), puis après quelques jours, puis de plus en plus loin tant que la réponse reste bonne. « Again » la fait revenir quelques minutes plus tard et compte un oubli (`lapses`).
+
 ## Tests
 
 ```bash
 pnpm --filter api test
 ```
 
-`QuotesService` et `AuthService` sont testés avec leurs dépendances mockées (Prisma, JWT) : pas besoin d'une vraie base pour les tests unitaires.
+`QuotesService`, `AuthService` et `ReviewsService` sont testés avec leurs dépendances mockées (Prisma, JWT) : pas besoin d'une vraie base. `SchedulerService` est testé avec une horloge fixe et sans aléa (*fuzz*), ce qui permet de vérifier précisément les intervalles calculés.
 
 ## Prisma Studio
 

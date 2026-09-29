@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Quote } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { SchedulerService } from '../scheduling/scheduler.service.js';
 import { CreateQuoteDto } from './dto/create-quote.dto.js';
 import { UpdateQuoteDto } from './dto/update-quote.dto.js';
 
@@ -11,14 +12,25 @@ import { UpdateQuoteDto } from './dto/update-quote.dto.js';
  */
 @Injectable()
 export class QuotesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly scheduler: SchedulerService,
+  ) {}
 
-  create(userId: string, dto: CreateQuoteDto): Promise<Quote> {
-    return this.prisma.quote.create({ data: { ...dto, userId } });
+  /** A new quote comes with its review card, due right away. */
+  create(userId: string, dto: CreateQuoteDto, now = new Date()): Promise<Quote> {
+    return this.prisma.quote.create({
+      data: { ...dto, userId, card: { create: this.scheduler.newCard(now) } },
+      include: { card: true },
+    });
   }
 
   findAll(userId: string): Promise<Quote[]> {
-    return this.prisma.quote.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+    return this.prisma.quote.findMany({
+      where: { userId },
+      include: { card: { select: { due: true, state: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOne(userId: string, id: string): Promise<Quote> {
