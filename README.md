@@ -10,7 +10,7 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 ✅ **Phase 3 terminée.** Inscription / connexion (JWT + Passport côté API, cookie de session httpOnly côté Next.js) ; chaque utilisateur ne voit que ses quotes.
 ✅ **Phase 4 terminée.** Répétition espacée : algorithme FSRS (ts-fsrs), historique des révisions, écran « À réviser » avec auto-évaluation.
 ✅ **Phase 5 terminée.** Table `items` polymorphe (jsonb), vocabulaire anglais révisé dans les deux sens, migration qui conserve les citations et leur historique.
-🚧 **Phase 6 — Cartes mentales interactives.** Pas encore commencée (@xyflow/react, graphe stocké en jsonb).
+✅ **Phase 6 terminée.** Cartes mentales interactives : éditeur @xyflow/react, arbre stocké en jsonb, une carte de révision par branche (branche masquée à retrouver).
 
 ## Stack cible
 
