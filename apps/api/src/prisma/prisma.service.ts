@@ -15,7 +15,19 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
-    super({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
+    super({
+      adapter: new PrismaPg({
+        connectionString: process.env.DATABASE_URL,
+        // By default `pg` waits forever: for a free connection, and for the
+        // answer to a query. If the database stops responding (typically a
+        // half-open TCP connection to Docker after the computer went to
+        // sleep), every request then hangs instead of failing. These limits
+        // turn a hang into an error, which the API reports as a 500.
+        connectionTimeoutMillis: 5_000,
+        query_timeout: 10_000,
+        keepAlive: true, // lets the OS detect dead connections
+      }),
+    });
   }
 
   async onModuleInit(): Promise<void> {

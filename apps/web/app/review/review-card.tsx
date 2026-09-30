@@ -33,10 +33,26 @@ interface ReviewCardProps {
 export function ReviewCard({ cardId, front, back, repeatFront = false, options }: ReviewCardProps) {
   const [revealed, setRevealed] = useState(false);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  // Set as soon as an answer is sent. `disabled={pending}` isn't enough on
+  // its own: two clicks or key presses within the same frame both get
+  // through before React re-renders, and the card would be rated twice.
+  // The component is remounted for the next card (see `key` in page.tsx),
+  // which resets it.
+  const answered = useRef(false);
+
+  function answer(rating: ReviewRating) {
+    return async () => {
+      if (answered.current) return;
+      answered.current = true;
+      await reviewAction(cardId, rating);
+    };
+  }
 
   // Keyboard shortcuts: space reveals the answer, 1-4 pick a rating.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      // Held key (auto-repeat) or browser shortcut such as Ctrl+1: ignored.
+      if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
       if (!revealed && (event.key === ' ' || event.key === 'Enter')) {
         event.preventDefault();
         setRevealed(true);
@@ -82,7 +98,7 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options }
                 }}
                 option={option}
                 shortcut={index + 1}
-                action={reviewAction.bind(null, cardId, option.rating)}
+                action={answer(option.rating)}
               />
             ))}
           </form>
