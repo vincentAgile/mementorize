@@ -9,6 +9,8 @@ import type {
   DueReviews,
   Item,
   ItemType,
+  MindMap,
+  MindMapNode,
   ReviewRating,
 } from './types';
 
@@ -118,6 +120,31 @@ export function createVocabulary(input: CreateVocabularyInput): Promise<unknown>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
+}
+
+export function getMindMap(id: string): Promise<MindMap> {
+  return authedFetch<MindMap>(`/mind-maps/${encodeURIComponent(id)}`);
+}
+
+export function createMindMap(nodes: MindMapNode[]): Promise<MindMap> {
+  return authedFetch<MindMap>('/mind-maps', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nodes }),
+  });
+}
+
+/** Replaces the whole tree; the API adds or removes the branch cards accordingly. */
+export function saveMindMap(id: string, nodes: MindMapNode[]): Promise<MindMap> {
+  return authedFetch<MindMap>(`/mind-maps/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nodes }),
+  });
+}
+
+export function deleteMindMap(id: string): Promise<void> {
+  return authedFetch<void>(`/mind-maps/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 export function getDueReviews(limit = 20): Promise<DueReviews> {

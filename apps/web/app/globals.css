@@ -420,3 +420,231 @@ kbd {
   color: #666;
   font-style: italic;
 }
+
+/* --- Phase 6: mind maps --- */
+
+.mind-map {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* React Flow is left in its light mode: its colorMode="system" is resolved
+   in the browser only, so the server-rendered HTML wouldn't match (hydration
+   error). Dark mode goes through its CSS variables instead, like the rest of
+   the page. */
+.mind-map .react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke: #9aa9aa;
+  --xy-attribution-background-color: transparent;
+}
+
+.mind-map--viewer {
+  height: 360px;
+  margin: 0.5rem 0 0;
+}
+
+.mind-map--editor {
+  height: min(70vh, 640px);
+  outline: none;
+}
+
+/* The page is 640px wide; the editor breaks out of it to use the screen. */
+.mind-map-editor {
+  width: min(1100px, 100vw - 2rem);
+  margin-inline: calc(50% - min(550px, 50vw - 1rem));
+}
+
+.mind-map-editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.mind-map-editor__toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.mind-map-editor__toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mind-map-editor__toolbar .mind-map-editor__save {
+  border-color: #147d80;
+  background: #147d80;
+  color: white;
+}
+
+.mind-map-editor__spacer {
+  flex: 1;
+}
+
+.mind-map-editor__status {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.mind-map-editor__help {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.mind-map-page__back {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+}
+
+.mind-map-page__back a {
+  color: #147d80;
+}
+
+.mind-map-page__title {
+  margin: 0.25rem 0 1rem;
+}
+
+.mind-map-page__delete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  font-size: 0.9rem;
+}
+
+.danger-button {
+  padding: 0.35rem 0.8rem;
+  border: none;
+  border-radius: 4px;
+  background: #b3261e;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mind-map-summary {
+  margin: 0;
+  font-weight: 600;
+}
+
+.mind-map-summary a {
+  color: #147d80;
+}
+
+.mind-map-summary__meta {
+  color: #888;
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+/* Nodes: root > branches > details */
+
+.topic {
+  max-width: 220px;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #b9c7c8;
+  border-radius: 6px;
+  background: #fff;
+  color: #1c2526;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.topic--depth-0 {
+  padding: 0.6rem 1rem;
+  border: 2px solid #147d80;
+  background: #147d80;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.topic--depth-1 {
+  border: 2px solid #147d80;
+  font-weight: 600;
+}
+
+.topic.is-selected {
+  box-shadow: 0 0 0 3px rgba(20, 125, 128, 0.35);
+}
+
+.topic--masked {
+  min-width: 90px;
+  border-style: dashed;
+  background: #eef3f3;
+  color: #147d80;
+  text-align: center;
+}
+
+.topic--highlighted {
+  border-color: #c77700;
+  background: #fff4e0;
+}
+
+.topic__input {
+  width: 180px;
+  padding: 0.1rem 0.25rem;
+  border: 1px solid #147d80;
+  border-radius: 3px;
+  font: inherit;
+  color: #1c2526;
+  background: #fff;
+}
+
+.topic .react-flow__handle {
+  opacity: 0; /* anchors for the edges, not meant to be dragged */
+}
+
+@media (prefers-color-scheme: dark) {
+  .mind-map {
+    border-color: #444;
+  }
+
+  .mind-map .react-flow {
+    --xy-edge-stroke: #5d7071;
+  }
+
+  .mind-map .react-flow__attribution a {
+    color: #777;
+  }
+
+  .topic {
+    border-color: #4d6365;
+    background: #1f2a2b;
+    color: #e6eeee;
+  }
+
+  .topic--depth-0 {
+    border-color: #1b9ea2;
+    background: #147d80;
+    color: #fff;
+  }
+
+  .topic--depth-1 {
+    border-color: #1b9ea2;
+  }
+
+  .topic--masked {
+    background: #203334;
+    color: #7fd3d6;
+  }
+
+  .topic--highlighted {
+    border-color: #e19a2b;
+    background: #3a2c14;
+  }
+}

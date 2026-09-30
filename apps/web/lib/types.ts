@@ -1,5 +1,5 @@
-export type ItemType = 'Quote' | 'Vocabulary';
-export type CardKind = 'QuoteRecall' | 'EnglishToFrench' | 'FrenchToEnglish';
+export type ItemType = 'Quote' | 'Vocabulary' | 'MindMap';
+export type CardKind = 'QuoteRecall' | 'EnglishToFrench' | 'FrenchToEnglish' | 'BranchRecall';
 export type CardState = 'New' | 'Learning' | 'Review' | 'Relearning';
 export type ReviewRating = 'Again' | 'Hard' | 'Good' | 'Easy';
 
@@ -15,9 +15,22 @@ export interface VocabularyContent {
   example: string | null;
 }
 
+/** A node of a mind map, as stored by the API (each node knows its parent). */
+export interface MindMapNode {
+  id: string;
+  parentId: string | null; // null for the root only
+  label: string;
+  position: { x: number; y: number };
+}
+
+export interface MindMapContent {
+  nodes: MindMapNode[];
+}
+
 export interface CardSummary {
   id: string;
   kind: CardKind;
+  nodeId: string | null; // mind maps: the branch this card asks about
   due: string;
   state: CardState;
 }
@@ -36,7 +49,8 @@ interface ItemBase {
  */
 export type Item =
   | (ItemBase & { type: 'Quote'; content: QuoteContent })
-  | (ItemBase & { type: 'Vocabulary'; content: VocabularyContent });
+  | (ItemBase & { type: 'Vocabulary'; content: VocabularyContent })
+  | (ItemBase & { type: 'MindMap'; content: MindMapContent });
 
 export interface CreateQuoteInput {
   text: string;
@@ -50,10 +64,26 @@ export interface CreateVocabularyInput {
   example?: string;
 }
 
+/** A mind map as returned by /mind-maps (title = label of the root). */
+export interface MindMap {
+  id: string;
+  title: string;
+  nodes: MindMapNode[];
+  cards: { id: string; nodeId: string; due: string; state: CardState }[];
+}
+
 /** A card waiting to be reviewed, as returned by GET /reviews/due. */
 export interface DueItem {
   item: Item;
-  card: { id: string; kind: CardKind; due: string; state: CardState; reps: number; lapses: number };
+  card: {
+    id: string;
+    kind: CardKind;
+    nodeId: string | null;
+    due: string;
+    state: CardState;
+    reps: number;
+    lapses: number;
+  };
   nextDue: Record<ReviewRating, string>; // ISO dates
 }
 

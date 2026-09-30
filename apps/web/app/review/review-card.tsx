@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { ReviewRating } from '../../lib/types';
 import { reviewAction } from './actions';
@@ -16,6 +16,7 @@ export interface CardFace {
   heading: string; // "Socrates", "Anglais → français"
   subheading?: string | null; // source of a quote
   main: string; // the cue (front) or the answer (back)
+  figure?: ReactNode; // shown instead of `main` (mind maps), rendered by the page
   lang?: string; // lang attribute of `main`, for screen readers and hyphenation
   note?: string | null; // back only: example sentence
   prompt?: string; // front only: what to do
@@ -80,9 +81,11 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options }
               {front.main}
             </p>
           )}
-          <blockquote className="review-card__text" lang={back.lang}>
-            {back.main}
-          </blockquote>
+          {back.figure ?? (
+            <blockquote className="review-card__text" lang={back.lang}>
+              {back.main}
+            </blockquote>
+          )}
           {back.note && (
             <p className="review-card__note" lang="en">
               {back.note}
@@ -105,9 +108,11 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options }
         </>
       ) : (
         <>
-          <blockquote className="review-card__text review-card__text--cue" lang={front.lang}>
-            {front.main}
-          </blockquote>
+          {front.figure ?? (
+            <blockquote className="review-card__text review-card__text--cue" lang={front.lang}>
+              {front.main}
+            </blockquote>
+          )}
           <p className="review-card__question">{front.prompt}</p>
           <button type="button" className="review-card__reveal" onClick={() => setRevealed(true)}>
             Afficher la réponse <kbd>Espace</kbd>
