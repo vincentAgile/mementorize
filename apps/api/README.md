@@ -1,6 +1,6 @@
 # apps/api
 
-API NestJS de Mementorize : CRUD sur les quotes (phase 1), protégé par une authentification JWT (phase 3) — chaque utilisateur ne voit que ses propres quotes — planification des révisions par répétition espacée (phase 4, algorithme FSRS), et plusieurs types de contenu : citations et vocabulaire anglais (phase 5).
+API NestJS de Mementorize : CRUD sur les quotes (phase 1), protégé par une authentification JWT (phase 3) — chaque utilisateur ne voit que ses propres quotes — planification des révisions par répétition espacée (phase 4, algorithme FSRS), plusieurs types de contenu : citations et vocabulaire anglais (phase 5), et cartes mentales révisées branche par branche (phase 6).
 
 ## Démarrer en local
 
@@ -107,13 +107,69 @@ Une fiche a une carte par « face » à réviser (`cards.kind`) :
 
 La migration `generic_items` est écrite à la main : à partir du seul schéma, Prisma aurait supprimé la table `quotes` pour en créer une nouvelle, en perdant les cartes et l'historique. Elle renomme la table, transforme les colonnes `text` / `author` / `source` en `content` jsonb, et conserve les identifiants, les cartes et les `review_logs`.
 
+## Cartes mentales (phase 6)
+
+Une carte mentale est une fiche comme les autres (`items.type = 'MindMap'`) : tout l'arbre tient dans la colonne jsonb `content`.
+
+```json
+{
+  "nodes": [
+    { "id": "root", "parentId": null,   "label": "La Révolution française", "position": { "x": 0,   "y": 0 } },
+    { "id": "a",    "parentId": "root", "label": "Causes",                  "position": { "x": 260, "y": -30 } },
+    { "id": "a1",   "parentId": "a",    "label": "Crise financière",        "position": { "x": 520, "y": -30 } },
+    { "id": "b",    "parentId": "root", "label": "Acteurs",                 "position": { "x": 260, "y": 30 } }
+  ]
+}
+```
+
+- **Un parent par nœud, pas une liste d'arêtes.** Avec `parentId`, un nœud ne peut pas avoir deux parents : c'est garanti par la forme même des données. Les arêtes ne sont pas stockées, l'interface les recalcule.
+- **Validation en deux temps.** `SaveMindMapDto` vérifie chaque nœud (DTO imbriqués : sans `@Type()`, class-transformer laisserait les objets imbriqués tels quels, sans les valider ni retirer les champs inconnus). `validateMindMap()` vérifie ensuite l'arbre entier : identifiants uniques, une seule racine, parents connus, pas de cycle. Sinon : `400`.
+- **Les ids des nœuds sont générés par le client** (`crypto.randomUUID()`) et restent stables d'un enregistrement à l'autre : c'est ce qui permet de reconnaître une branche renommée ou déplacée.
+
+### Une carte de révision par branche
+
+Chaque enfant direct de la racine (une « branche ») a sa propre carte FSRS, de type `BranchRecall`. La colonne `cards.nodeId` indique de quelle branche il s'agit. Comme en phase 5 pour les deux sens d'un mot, les cartes d'une nouvelle carte mentale sont décalées d'un jour chacune pour ne pas toutes tomber le même jour.
+
+Contrairement aux citations et au vocabulaire, les cartes dépendent du contenu : `CARD_TEMPLATES` devient `cardSlots(type, content)`. À chaque modification, `ItemsService.update` compare les cartes existantes à celles attendues :
+
+| changement dans la carte mentale | effet sur les cartes de révision |
+|----------------------------------|----------------------------------|
+| nouvelle branche                 | nouvelle carte (les nouvelles sont décalées d'un jour chacune) |
+| branche supprimée, ou déplacée plus bas dans l'arbre | carte supprimée, avec son historique |
+| branche renommée, déplacée à l'écran, sous-idées modifiées | carte conservée, calendrier inchangé |
+
+Le contenu et les cartes sont modifiés dans une seule requête Prisma (écritures imbriquées) : tout réussit, ou rien.
+
+**Contrainte d'unicité.** Elle devient `(itemId, kind, nodeId)`. Mais PostgreSQL considère deux `NULL` comme différents dans un index unique : pour les citations et le vocabulaire (`nodeId` à `NULL`), la base n'empêche donc plus d'avoir deux cartes du même type pour une fiche. On aurait pu écrire `NULLS NOT DISTINCT` (PostgreSQL 15+) dans la migration, mais Prisma ne sait pas le décrire dans `schema.prisma`, et le schéma et la migration auraient divergé. Comme seul `ItemsService` crée des cartes, et une seule fois chacune, ce compromis est acceptable.
+
+La migration `mind_maps` est écrite à la main, dans le même style que ce que Prisma génère : ajout des valeurs d'enum, de la colonne `nodeId`, remplacement de l'index unique.
+
+```bash
+# Créer une carte mentale (l'arbre complet)
+curl -X POST http://localhost:3000/mind-maps \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"nodes":[{"id":"root","parentId":null,"label":"Photosynthèse","position":{"x":0,"y":0}},{"id":"in","parentId":"root","label":"Entrées","position":{"x":260,"y":0}}]}'
+
+curl http://localhost:3000/mind-maps -H "Authorization: Bearer $TOKEN"
+curl http://localhost:3000/mind-maps/<id> -H "Authorization: Bearer $TOKEN"
+
+# Remplacer l'arbre (PUT : l'éditeur envoie toujours tous les nœuds)
+curl -X PUT http://localhost:3000/mind-maps/<id> \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"nodes":[...]}'
+
+curl -X DELETE http://localhost:3000/mind-maps/<id> -H "Authorization: Bearer $TOKEN"
+```
+
+`GET /reviews/due` n'a pas changé : pour une carte `BranchRecall`, `card.nodeId` indique la branche à masquer.
+
 ## Tests
 
 ```bash
 pnpm --filter api test
 ```
 
-`ItemsService`, `AuthService` et `ReviewsService` sont testés avec leurs dépendances mockées (Prisma, JWT) : pas besoin d'une vraie base. `SchedulerService` est testé avec une horloge fixe et sans aléa (*fuzz*), ce qui permet de vérifier précisément les intervalles calculés.
+`ItemsService`, `AuthService` et `ReviewsService` sont testés avec leurs dépendances mockées (Prisma, JWT) : pas besoin d'une vraie base. `validateMindMap()` et `cardSlots()` sont des fonctions pures, testées directement. `SchedulerService` est testé avec une horloge fixe et sans aléa (*fuzz*), ce qui permet de vérifier précisément les intervalles calculés.
 
 ## Prisma Studio
 
