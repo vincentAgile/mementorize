@@ -17,6 +17,12 @@ import type {
 // client component imports it by mistake).
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
+// Upper bound on any call to the API. Without it, a request the API never
+// answers leaves the Server Action pending forever: the review buttons stay
+// disabled (useFormStatus) and only a reload unblocks the page. With it, the
+// call fails and the error page (app/error.tsx) offers to retry.
+const API_TIMEOUT_MS = 15_000;
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -40,6 +46,7 @@ export async function authenticate(kind: 'login' | 'register', credentials: Cred
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials),
       cache: 'no-store',
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
   } catch {
     return { ok: false, message: "L'API est injoignable. Est-elle démarrée ?" };
@@ -76,6 +83,7 @@ async function authedFetch<T>(path: string, init: RequestInit = {}): Promise<T> 
     ...init,
     headers: { ...init.headers, Authorization: `Bearer ${token}` },
     cache: 'no-store',
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
   });
 
   if (res.status === 401) {
