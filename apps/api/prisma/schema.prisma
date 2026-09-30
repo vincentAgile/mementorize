@@ -20,6 +20,7 @@ model User {
 enum ItemType {
   Quote
   Vocabulary
+  MindMap
 }
 
 /// Something to memorize. Every type shares this table; what differs from
@@ -27,6 +28,7 @@ enum ItemType {
 /// checked by the API (see src/items/item-content.ts):
 ///   Quote      -> { text, author, source }
 ///   Vocabulary -> { word, translation, example }
+///   MindMap    -> { nodes: [{ id, parentId, label, position: { x, y } }] }
 model Item {
   id        String   @id @default(uuid())
   type      ItemType
@@ -42,11 +44,13 @@ model Item {
 }
 
 /// Which "side" of an item a card asks about. A quote has one card, a
-/// vocabulary word has two (one per direction), each with its own schedule.
+/// vocabulary word has two (one per direction), a mind map one per branch
+/// (child of the root), each with its own schedule.
 enum CardKind {
   QuoteRecall
   EnglishToFrench
   FrenchToEnglish
+  BranchRecall
 }
 
 // Same names as ts-fsrs's State enum, so mapping is a simple lookup.
@@ -72,6 +76,9 @@ model Card {
   itemId        String
   item          Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
   kind          CardKind
+  /// Mind maps only: id of the branch node (in items.content) this card asks
+  /// about. Null for the other kinds.
+  nodeId        String?
   due           DateTime
   stability     Float
   difficulty    Float
@@ -85,7 +92,11 @@ model Card {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  @@unique([itemId, kind])
+  // PostgreSQL treats NULLs as distinct in a unique index: for the cards
+  // without nodeId (quotes, vocabulary) this no longer prevents two cards of
+  // the same kind on one item. Only ItemsService creates cards, and it
+  // creates each one once.
+  @@unique([itemId, kind, nodeId])
   @@index([due])
   @@map("cards")
 }

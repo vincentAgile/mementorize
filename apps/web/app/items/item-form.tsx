@@ -7,6 +7,7 @@ import { createItemAction } from './actions';
 const TYPES: { value: ItemType; label: string }[] = [
   { value: 'Quote', label: 'Citation' },
   { value: 'Vocabulary', label: 'Vocabulaire' },
+  { value: 'MindMap', label: 'Carte mentale' },
 ];
 
 export function ItemForm({ defaultType = 'Quote' }: { defaultType?: ItemType }) {
@@ -38,6 +39,14 @@ export function ItemForm({ defaultType = 'Quote' }: { defaultType?: ItemType }) 
           <textarea name="text" placeholder="Texte de la citation" rows={3} defaultValue={values.text} required />
           <input name="author" placeholder="Auteur (optionnel)" defaultValue={values.author} />
         </>
+      ) : type === 'MindMap' ? (
+        <input
+          name="topic"
+          placeholder="Sujet central (ex. La Révolution française)"
+          maxLength={200}
+          defaultValue={values.topic}
+          required
+        />
       ) : (
         <>
           <div className="items__row">
@@ -54,7 +63,7 @@ export function ItemForm({ defaultType = 'Quote' }: { defaultType?: ItemType }) 
         </p>
       )}
       <button type="submit" disabled={pending}>
-        {pending ? 'Enregistrement…' : 'Ajouter'}
+        {pending ? 'Enregistrement…' : type === 'MindMap' ? 'Créer et ouvrir l’éditeur' : 'Ajouter'}
       </button>
     </form>
   );
