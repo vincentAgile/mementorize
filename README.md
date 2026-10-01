@@ -36,20 +36,65 @@ Le monorepo est géré avec **pnpm workspaces** + **Turborepo** pour orchestrer 
 
 ## Prérequis
 
-- Node.js 24 (voir `.nvmrc`)
-- pnpm, activé via Corepack : `corepack enable`
+- Docker (avec Docker Compose) : pour la base de données, ou pour toute l'application
+- Pour développer : Node.js 24 (voir `.nvmrc`) et pnpm, activé via Corepack : `corepack enable`
 
 ## Démarrage
 
+Deux façons de lancer l'application.
+
+### Tout en conteneurs
+
+Rien d'autre à installer que Docker :
+
 ```bash
-docker compose up -d              # PostgreSQL
+cp .env.example .env              # une seule fois, puis remplacer JWT_SECRET
+docker compose up --build         # web + api + base de données → http://localhost:3001
+```
+
+`docker compose down` arrête tout en gardant les données ; `docker compose down -v` efface aussi la base.
+
+### En développement (rechargement à chaud)
+
+```bash
+docker compose up -d postgres     # PostgreSQL seulement
 pnpm install                      # installe + génère le client Prisma (postinstall)
 # (une seule fois) créer apps/api/.env et apps/web/.env.local depuis leurs .env.example
 pnpm --filter api prisma:migrate  # crée le schéma en base
 pnpm dev                          # lance apps/* en mode watch (turbo)
 ```
 
-Détails spécifiques à l'API : voir [apps/api/README.md](./apps/api/README.md).
+Les deux modes partagent la même base (même volume Docker) : on peut passer de l'un à l'autre. Ils utilisent en revanche les mêmes ports (3000 et 3001 pour `pnpm dev`, 3001 pour les conteneurs) : arrêter l'un avant de lancer l'autre.
+
+Détails spécifiques à chaque app : [apps/api/README.md](./apps/api/README.md), [apps/web/README.md](./apps/web/README.md).
+
+## Conteneurisation (phase 7)
+
+```
+navigateur ──3001──▶ web ──(frontend)──▶ api ──(backend)──▶ postgres
+                                                  migrate ──┘
+```
+
+| service    | image | rôle |
+|------------|-------|------|
+| `postgres` | `postgres:16-alpine` | la base ; publiée sur `127.0.0.1:5432` seulement, pour `pnpm dev` |
+| `migrate`  | `apps/api/Dockerfile`, cible `migrate` | applique les migrations (`prisma migrate deploy`) puis s'arrête |
+| `api`      | `apps/api/Dockerfile`, cible `runtime` | l'API NestJS ; démarre une fois `migrate` terminé avec succès |
+| `web`      | `apps/web/Dockerfile` | le serveur Next.js ; démarre une fois l'API déclarée en bonne santé |
+
+**Ordre de démarrage.** `depends_on` avec conditions : `postgres` *healthy* (`pg_isready`) → `migrate` *completed successfully* → `api` *healthy* (`GET /health`, qui interroge aussi la base) → `web`. Sans ces conditions, les services démarreraient en même temps et l'API tenterait de se connecter à une base pas encore prête.
+
+**Isolation.** Seul `web` est publié sur la machine hôte. L'API n'est joignable que par `web`, sur le réseau `frontend` (le navigateur ne l'appelle jamais directement, voir [apps/web/README.md](./apps/web/README.md)) ; la base n'est que sur le réseau `backend`, que `web` ne voit pas. Les conteneurs s'adressent les uns aux autres par nom de service (`http://api:3000`, `postgres:5432`), résolu par le DNS de Docker.
+
+**Configuration.** Tout passe par des variables d'environnement, lues dans un fichier `.env` à la racine (modèle : `.env.example`, ignoré par git). Les images ne contiennent aucun secret : le même build peut tourner en local et, plus tard, en production avec d'autres valeurs.
+
+**Dockerfiles multi-stage.** Chaque image est construite en plusieurs étapes ; seule la dernière est livrée :
+
+1. `prune` — `turbo prune <app> --docker` extrait du monorepo ce dont l'app a besoin, en séparant les `package.json` + lockfile (`out/json`) des sources (`out/full`) ;
+2. `build` — installe les dépendances (couche mise en cache tant que le lockfile ne change pas, même si le code change), compile ;
+3. image finale — Node seul, le code compilé et les dépendances de production, sous l'utilisateur non privilégié `node`. Ni sources, ni outils de build, ni dépendances de développement.
+
+Le build se lance depuis la racine (le contexte Docker est tout le monorepo, filtré par `.dockerignore`) : chaque Dockerfile vit à côté de son app mais a besoin du lockfile et de la config pnpm de la racine.
 
 ## Conventions
 
