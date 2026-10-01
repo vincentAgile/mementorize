@@ -1,0 +1,89 @@
+# Traefik: the server's reverse proxy (phase 8).
+#
+# Receives all the traffic on ports 80 and 443, gets the HTTPS certificates
+# from Let's Encrypt, and forwards each request to the right container,
+# according to the labels of that container (see docker-compose.prod.yml).
+# It lives in its own stack, apart from the app: other services (e.g.
+# Uptime Kuma in phase 11) can be routed the same way.
+#
+# On the server, once:   docker network create proxy
+# Then, from this folder: docker compose up -d
+#
+# Settings: .env next to this file (copy .env.example).
+
+name: traefik
+
+services:
+  traefik:
+    # Minor version pinned, patches (security fixes) follow. Docker 29 needs
+    # Traefik >= 3.6.1 (Docker API version negotiation).
+    image: traefik:v3.7
+    restart: unless-stopped
+    command:
+      # Routes come from the labels of the containers. Only the containers
+      # with traefik.enable=true are exposed, the others stay private.
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+
+      # HTTP (80) only redirects to HTTPS (443)... except for Let's
+      # Encrypt's challenge (/.well-known/acme-challenge/), which Traefik
+      # answers itself, before the redirection.
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      # Every route on 443 gets a certificate from the resolver below.
+      - --entrypoints.websecure.http.tls.certresolver=letsencrypt
+
+      # Hardening of what reaches the apps:
+      # - headers whose name only differs by "_" or "." from a header Traefik
+      #   manages (X_Forwarded_For vs X-Forwarded-For) are dropped, so that a
+      #   client can't spoof them for a backend that would read them alike;
+      # - encoded characters that can make Traefik and the app see two
+      #   different paths ("split view": %2F, %5C, %00...) are refused (400).
+      #   Traefik 3.7 still logs one warning about it at startup: it's shown
+      #   whatever the settings, it doesn't mean they're missing.
+      - --entrypoints.web.http.aliasheadersstrategy=delete
+      - --entrypoints.websecure.http.aliasheadersstrategy=delete
+      - --entrypoints.websecure.http.encodedcharacters.allowencodedslash=false
+      - --entrypoints.websecure.http.encodedcharacters.allowencodedbackslash=false
+      - --entrypoints.websecure.http.encodedcharacters.allowencodednullcharacter=false
+      - --entrypoints.websecure.http.encodedcharacters.allowencodedsemicolon=false
+      - --entrypoints.websecure.http.encodedcharacters.allowencodedpercent=false
+      - --entrypoints.websecure.http.encodedcharacters.allowencodedquestionmark=false
+      - --entrypoints.websecure.http.encodedcharacters.allowencodedhash=false
+
+      # Let's Encrypt (ACME protocol, HTTP-01 challenge): proves that we
+      # control the domain by answering on port 80.
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:?ACME_EMAIL is missing - copy .env.example to .env}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      # Staging server while testing (see .env.example): its certificates
+      # aren't trusted by browsers, but its rate limits are much higher.
+      - --certificatesresolvers.letsencrypt.acme.caserver=${ACME_CA_SERVER:-https://acme-v02.api.letsencrypt.org/directory}
+
+      - --log.level=INFO
+      - --accesslog=true
+      - --global.sendanonymoususage=false
+      - --global.checknewversion=false
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Read-only access to the Docker API, to discover the containers and
+      # their labels. It still gives a lot of information about the server:
+      # Traefik itself must never be exposed without care (no dashboard here).
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # The certificates survive restarts (otherwise Let's Encrypt would be
+      # asked again every time, and its rate limits would be hit).
+      - letsencrypt:/letsencrypt
+    networks: [proxy]
+
+networks:
+  # Shared with the apps, created once with `docker network create proxy`.
+  proxy:
+    external: true
+
+volumes:
+  letsencrypt:
