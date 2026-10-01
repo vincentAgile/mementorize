@@ -65,6 +65,15 @@ En phase 2, le navigateur appelait l'API en `fetch`. Avec l'authentification, il
 
 Conséquence : l'URL de l'API n'est plus exposée au navigateur, d'où `API_URL` au lieu de `NEXT_PUBLIC_API_URL`.
 
+## Image Docker (phase 7)
+
+`apps/web/Dockerfile` construit l'app avec `output: 'standalone'` (`next.config.ts`) : en plus du build habituel, `next build` produit `.next/standalone`, un `server.js` autonome accompagné des seuls fichiers de `node_modules` réellement utilisés (environ 40 Mo). L'image finale ne contient que ce dossier et les fichiers statiques (`.next/static`, que Next.js laisse de côté, car un CDN les servirait normalement).
+
+- **`outputFileTracingRoot`** : dans un monorepo pnpm, les dépendances sont dans le `node_modules` de la racine. Next.js trace donc les fichiers depuis la racine du dépôt, et le serveur se retrouve dans `.next/standalone/apps/web/server.js`.
+- **`API_URL` est lu à l'exécution, pas au build** : il n'est utilisé que côté serveur (pas de `NEXT_PUBLIC_`), et toutes les pages sont dynamiques. La même image fonctionne quelle que soit l'adresse de l'API ; `docker-compose.yml` la fixe à `http://api:3000`, le nom du service sur le réseau Docker.
+- **`HOSTNAME=0.0.0.0`** : par défaut le serveur n'écoute que dans le conteneur ; il doit écouter sur toutes les interfaces pour que le port publié fonctionne.
+- **Cookie de session en production** : l'image tourne avec `NODE_ENV=production`, donc le cookie est `Secure` (HTTPS seulement). Chrome, Edge et Firefox font une exception pour `http://localhost` (vérifié avec Chromium), ce qui suffit en local ; la phase 8 apportera HTTPS.
+
 ## Note sur les imports
 
 Contrairement à `apps/api` (NodeNext + imports `.js` explicites), Next.js résout les modules TypeScript via `moduleResolution: "bundler"` : pas d'extension sur les imports relatifs (`from './lib/api'`, pas `'./lib/api.js'`). Chaque app garde la convention par défaut de son framework.

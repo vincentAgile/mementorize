@@ -6,6 +6,11 @@
   "private": true,
   "license": "UNLICENSED",
   "type": "module",
+  "files": [
+    "dist",
+    "prisma",
+    "prisma.config.ts"
+  ],
   "scripts": {
     "postinstall": "prisma generate",
     "build": "nest build",

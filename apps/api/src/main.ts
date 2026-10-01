@@ -6,6 +6,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors();
+  // In a container, \`docker stop\` sends SIGTERM. Without this, Nest ignores
+  // it: the onModuleDestroy hooks (closing the database pool) never run, and
+  // Docker kills the process after 10 s.
+  app.enableShutdownHooks();
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // rejette les propriétés non déclarées dans les DTO

@@ -1,20 +1,108 @@
+# Mementorize: the whole application in containers (phase 7).
+#
+#   docker compose up --build        web + api + database: http://localhost:3001
+#   docker compose up -d postgres    database only, for `pnpm dev` (as before)
+#
+# Settings and secrets: .env file next to this one (copy .env.example).
+#
+# Who talks to whom:
+#
+#   browser --3001--> web --(frontend)--> api --(backend)--> postgres
+#                                                 migrate --^
+#
+# Only web is published on the host (plus postgres, on 127.0.0.1 only, for
+# `pnpm dev`). The API is reachable from the web container only: the browser
+# never calls it directly (see apps/web/README.md), and web, which isn't on
+# the backend network, can't reach the database.
+
+name: mementorize
+
+x-database-url: &database-url postgresql://${POSTGRES_USER:-mementorize}:${POSTGRES_PASSWORD:-mementorize}@postgres:5432/${POSTGRES_DB:-mementorize}?schema=public
+
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: mementorize
-      POSTGRES_PASSWORD: mementorize
-      POSTGRES_DB: mementorize
+      POSTGRES_USER: ${POSTGRES_USER:-mementorize}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mementorize}
+      POSTGRES_DB: ${POSTGRES_DB:-mementorize}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432" # for `pnpm dev` on the host; not reachable from the network
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mementorize"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks: [backend]
+
+  # One-shot: applies the pending migrations, then exits. The API only
+  # starts once it has succeeded.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: migrate
+    environment:
+      DATABASE_URL: *database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks: [backend]
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: runtime
+    # A minimal init (tini) runs as PID 1 and forwards signals to Node. As
+    # PID 1 itself, Node would ignore the SIGTERM sent by `docker stop`
+    # after Nest re-raises it, and Docker would kill it after 10 s.
+    init: true
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: *database-url
+      # Required, checked by the API at startup (src/config/env.validation.ts).
+      # Not with ${JWT_SECRET:?...}: compose would then refuse to run anything
+      # without a .env, even `docker compose up -d postgres`.
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3600}
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # Busybox wget (Alpine). /health also checks the database.
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks: [backend, frontend]
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    init: true
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:3000 # the service name, resolved by Docker's DNS
+    ports:
+      - "${WEB_PORT:-3001}:3001"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [frontend]
+
+networks:
+  backend:
+  frontend:
 
 volumes:
   pgdata:
