@@ -1,0 +1,14 @@
+# What `docker build` sends to the daemon (the build context is the
+# repository root). Less to send, and no local state in the images:
+# dependencies and builds are redone inside the image, secrets stay out.
+.git
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/*.tsbuildinfo
+**/*.log
+**/.env
+**/.env.*
+!**/.env.example
