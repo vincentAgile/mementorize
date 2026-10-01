@@ -11,6 +11,7 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 ✅ **Phase 4 terminée.** Répétition espacée : algorithme FSRS (ts-fsrs), historique des révisions, écran « À réviser » avec auto-évaluation.
 ✅ **Phase 5 terminée.** Table `items` polymorphe (jsonb), vocabulaire anglais révisé dans les deux sens, migration qui conserve les citations et leur historique.
 ✅ **Phase 6 terminée.** Cartes mentales interactives : éditeur @xyflow/react, arbre stocké en jsonb, une carte de révision par branche (branche masquée à retrouver).
+🚧 **Phase 7 — Conteneurisation complète.** Pas encore commencée (Dockerfiles multi-stage, `docker compose up` qui lance web + api + base de données).
 
 ## Stack cible
 
