@@ -21,7 +21,7 @@ Dans tout le guide :
 | `UTILISATEUR` | l'utilisateur créé par OVH (`ubuntu` ou `debian`, selon l'image), ou le tien |
 | `mementorize.mondomaine.fr` | le nom choisi pour l'application |
 
-Les commandes ont été écrites pour Ubuntu 24.04 et Debian 12 ou 13, les images proposées par OVH.
+Les commandes ont été écrites pour Ubuntu 26.04 ou 24.04 et Debian 12 ou 13, les images proposées par OVH. Sur Ubuntu 26.04, `sudo` et les commandes de base (`cp`, `chmod`…) sont des réécritures en Rust (sudo-rs, uutils), compatibles avec l’usage qu’en fait ce guide.
 
 ---
 
