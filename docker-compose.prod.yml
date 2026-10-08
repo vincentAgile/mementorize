@@ -1,0 +1,32 @@
+# Production on the VPS (phase 8): adjustments on top of docker-compose.yml.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Compose merges the two files: everything in docker-compose.yml applies,
+# except what is changed here. Requires the Traefik stack (deploy/traefik)
+# and its "proxy" network. Guide: deploy/README.md.
+
+services:
+  postgres:
+    # Not published at all on the server: only migrate and api, on the
+    # backend network, reach the database. (Published ports bypass the
+    # server's firewall: what isn't published can't be reached.)
+    ports: !reset []
+
+  web:
+    # Not published either: the only way in is Traefik, on ports 80/443.
+    ports: !reset []
+    networks: [frontend, proxy]
+    labels:
+      - traefik.enable=true
+      # Requests for this domain go to this container...
+      - traefik.http.routers.mementorize.rule=Host(`${APP_DOMAIN:?APP_DOMAIN is missing in .env (see .env.example)}`)
+      # ...over HTTPS only (HTTP is redirected by Traefik)...
+      - traefik.http.routers.mementorize.entrypoints=websecure
+      - traefik.http.routers.mementorize.tls.certresolver=letsencrypt
+      # ...on the port the Next.js server listens on in the container.
+      - traefik.http.services.mementorize.loadbalancer.server.port=3001
+
+networks:
+  proxy:
+    external: true # created once on the server, shared with Traefik

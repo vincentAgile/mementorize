@@ -31,6 +31,7 @@ apps/
   api/       # API NestJS (à partir de la phase 1)
   web/       # Interface Next.js (à partir de la phase 2)
 packages/    # Code partagé entre apps/* (config, types) — à partir de la phase 5
+deploy/      # Mise en production sur le VPS : Traefik et guide pas à pas (phase 8)
 ```
 
 Le monorepo est géré avec **pnpm workspaces** + **Turborepo** pour orchestrer les tâches (`build`, `dev`, `lint`, `test`) et mettre en cache ce qui n'a pas changé.
@@ -54,6 +55,10 @@ docker compose up --build         # web + api + base de données → http://loca
 ```
 
 `docker compose down` arrête tout en gardant les données ; `docker compose down -v` efface aussi la base.
+
+### En production
+
+Sur le VPS, derrière Traefik et en HTTPS : voir le guide [deploy/README.md](./deploy/README.md).
 
 ### En développement (rechargement à chaud)
 
