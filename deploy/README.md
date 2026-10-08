@@ -219,7 +219,7 @@ docker compose ps          # migrate : Exited (0) ; postgres, api, web : healthy
 Vérifier depuis ton PC :
 
 ```powershell
-curl.exe -I http://mementorize.mondomaine.fr     # 301 vers https://
+curl.exe -I http://mementorize.mondomaine.fr     # 308 (ou 301) vers https://
 curl.exe -kI https://mementorize.mondomaine.fr   # 307 vers /login (-k : certificat de staging)
 ```
 
