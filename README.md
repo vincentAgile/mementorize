@@ -12,7 +12,8 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 ✅ **Phase 5 terminée.** Table `items` polymorphe (jsonb), vocabulaire anglais révisé dans les deux sens, migration qui conserve les citations et leur historique.
 ✅ **Phase 6 terminée.** Cartes mentales interactives : éditeur @xyflow/react, arbre stocké en jsonb, une carte de révision par branche (branche masquée à retrouver).
 ✅ **Phase 7 terminée.** Conteneurisation complète : Dockerfiles multi-stage (API, web), `docker compose up` lance base, migrations, API et web, réseaux isolés et healthchecks.
-🚧 **Phase 8 — Serveur et reverse proxy.** Pas encore commencée (VPS OVH, Traefik, HTTPS via Let's Encrypt, vrai nom de domaine).
+✅ **Phase 8 terminée.** En ligne sur un VPS OVH, derrière Traefik, en HTTPS (Let's Encrypt) : https://mementorize.delaneuville.fr — guide dans [deploy/README.md](./deploy/README.md).
+🚧 **Phase 9 — Intégration continue.** Pas encore commencée (GitHub Actions : lint et tests sur chaque push et pull request).
 
 ## Stack cible
 
