@@ -16,7 +16,7 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 ✅ **Phase 7 terminée.** Conteneurisation complète : Dockerfiles multi-stage (API, web), `docker compose up` lance base, migrations, API et web, réseaux isolés et healthchecks.
 ✅ **Phase 8 terminée.** En ligne sur un VPS OVH, derrière Traefik, en HTTPS (Let's Encrypt) : https://mementorize.delaneuville.fr — guide dans [deploy/README.md](./deploy/README.md).
 ✅ **Phase 9 terminée.** Intégration continue avec GitHub Actions : formatage, lint, tests unitaires, build, migrations et tests e2e sur PostgreSQL, images Docker, sur chaque pull request.
-🚧 **Phase 10 — Déploiement continu.** Pas encore commencée (images publiées sur GHCR, déploiement automatique par SSH à chaque push sur `main`, migrations en pipeline).
+🚧 **Phase 10 — Déploiement continu.** En cours : images publiées sur GHCR par la CI, déploiement automatique par SSH à chaque push sur `main`, sauvegarde et migrations dans le pipeline, remplacement des conteneurs sans coupure.
 
 ## Stack cible
 
@@ -35,7 +35,7 @@ apps/
   api/       # API NestJS (à partir de la phase 1)
   web/       # Interface Next.js (à partir de la phase 2)
 packages/    # Code partagé entre apps/* (config, types) — à partir de la phase 5
-deploy/      # Mise en production sur le VPS : Traefik et guide pas à pas (phase 8)
+deploy/      # Production sur le VPS : Traefik, scripts de déploiement, guide pas à pas (phases 8 et 10)
 ```
 
 Le monorepo est géré avec **pnpm workspaces** + **Turborepo** pour orchestrer les tâches (`build`, `dev`, `lint`, `test`) et mettre en cache ce qui n'a pas changé.
@@ -117,7 +117,7 @@ Chaque pull request, et chaque push sur `main`, déclenche [`.github/workflows/c
 | Tests unitaires         | `pnpm test` (Vitest)                                                                                                                                                                                                                             |
 | Build                   | `pnpm build` : compile l'API et le web, ce qui vérifie aussi les types                                                                                                                                                                           |
 | Migrations et tests e2e | sur un vrai PostgreSQL (_service container_) : les migrations, rejouées depuis zéro, correspondent exactement à `schema.prisma` (`prisma migrate diff --exit-code`), s'appliquent sur une base vide, puis les tests e2e de l'API tournent dessus |
-| Images Docker           | `docker compose build` : un Dockerfile cassé est repéré ici, pas au déploiement                                                                                                                                                                  |
+| Images Docker           | construit les trois images (`api`, `migrate`, `web`) : un Dockerfile cassé est repéré ici, pas au déploiement. Sur `main`, les publie aussi sur GHCR (voir ci-dessous)                                                                           |
 
 - **Caches** : le store pnpm (les paquets téléchargés) est mis en cache par `actions/setup-node`, indexé sur le lockfile ; le cache de Turborepo (`.turbo/cache`) permet de rejouer sans les relancer les tâches dont les entrées n'ont pas changé.
 - **Mise en place commune** : [`.github/actions/setup`](./.github/actions/setup/action.yml), une action locale (pnpm, Node, caches, `pnpm install --frozen-lockfile`) partagée par les jobs.
@@ -129,6 +129,27 @@ Avant de pousser, les mêmes vérifications en local :
 pnpm format        # corrige le formatage (ou format:check pour vérifier seulement)
 pnpm lint && pnpm test && pnpm build
 ```
+
+## Déploiement continu (phase 10)
+
+Un push sur `main` (en pratique, la fusion d'une pull request) part en production tout seul, sans coupure de service :
+
+```
+push sur main ──▶ CI (ci.yml) ──vert──▶ Deploy (deploy.yml) ──SSH──▶ VPS : deploy/deploy.sh
+                   └─ images publiées sur ghcr.io,                         ├─ git checkout <commit>
+                      étiquetées par commit                                └─ deploy/release.sh
+```
+
+1. **La CI publie les images.** Sur `main`, le job « Images Docker » pousse `ghcr.io/vincentagile/mementorize-{api,migrate,web}`, étiquetées avec le SHA du commit (et `main`). Le serveur ne construit plus rien : il exécute exactement ce que la CI a testé.
+2. **Le workflow Deploy** se lance quand la CI d'un push sur `main` est au vert. Il se connecte au VPS avec une clé SSH dédiée, qui ne peut lancer que `deploy/deploy.sh`, et lui passe le commit (et, sur l'entrée standard, un jeton GitHub temporaire pour télécharger les images).
+3. **Sur le serveur**, `deploy.sh` place le dépôt sur ce commit, puis `release.sh` : télécharge les images, sauvegarde la base, applique les migrations, puis remplace `api` et `web` avec [docker-rollout](https://github.com/wowu/docker-rollout).
+4. **Un test de fumée** vérifie que le site répond, depuis l'extérieur.
+
+**Sans coupure.** docker-rollout démarre un second conteneur à côté de l'ancien, attend son _healthcheck_, puis arrête l'ancien. Pour `web`, l'ancien se déclare d'abord en mauvaise santé (`/tmp/drain`), Traefik cesse de lui envoyer des requêtes, et il n'est arrêté qu'ensuite. Pour `api`, que `web` joint par le DNS de Docker, chaque réponse ferme sa connexion (`Connection: close`) : aucune connexion gardée ouverte ne peut être coupée sous les pieds de `web` quand l'ancien conteneur s'arrête. Si le nouveau conteneur ne devient jamais sain, il est supprimé et l'ancien continue de servir. Vérifié sur un banc local (Traefik, trafic continu, 7 remplacements dont un raté exprès) : 0 requête en échec sur plus de 30 000, contre plusieurs centaines par remplacement sans ces précautions.
+
+**Migrations rétrocompatibles.** Elles s'appliquent _avant_ le remplacement : pendant quelques secondes, l'ancienne version du code tourne sur le nouveau schéma. Une migration doit donc rester compatible avec la version précédente : on ajoute (colonne facultative, table) dans une version, on retire dans une suivante, une fois le code qui s'en servait parti.
+
+Mise en place, retour à une version précédente, dépannage : [deploy/README.md](./deploy/README.md#déploiement-continu-phase-10).
 
 ## Conventions
 
