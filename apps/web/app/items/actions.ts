@@ -31,12 +31,18 @@ export async function createItemAction(_previous: ItemFormState, formData: FormD
       if (!values.word || !values.translation) {
         return { type, values, error: 'Le mot et sa traduction sont requis.' };
       }
-      await createVocabulary({ word: values.word, translation: values.translation, example: values.example || undefined });
+      await createVocabulary({
+        word: values.word,
+        translation: values.translation,
+        example: values.example || undefined,
+      });
     } else if (type === 'MindMap') {
       const values = { topic: field(formData, 'topic') };
       if (!values.topic) return { type, values, error: 'Le sujet central est requis.' };
       // A new map is just its root; branches are added in the editor.
-      const map = await createMindMap([{ id: crypto.randomUUID(), parentId: null, label: values.topic, position: { x: 0, y: 0 } }]);
+      const map = await createMindMap([
+        { id: crypto.randomUUID(), parentId: null, label: values.topic, position: { x: 0, y: 0 } },
+      ]);
       createdMapId = map.id;
     } else {
       return { error: 'Type de fiche inconnu.' };

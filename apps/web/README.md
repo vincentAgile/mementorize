@@ -24,21 +24,21 @@ pnpm --filter web dev        # http://localhost:3001 (le 3000 est déjà pris pa
 - `app/app-header.tsx` — en-tête commun (navigation, nombre de révisions en attente, déconnexion).
 - `lib/session.ts` — le cookie de session (httpOnly) qui contient le JWT renvoyé par l'API.
 - `lib/api.ts` — client HTTP vers l'API, **côté serveur uniquement** (`import 'server-only'`).
-- `lib/types.ts` — `Item` est une *union discriminée* : tester `item.type` suffit pour que TypeScript connaisse la forme de `item.content`.
+- `lib/types.ts` — `Item` est une _union discriminée_ : tester `item.type` suffit pour que TypeScript connaisse la forme de `item.content`.
 - `lib/mind-map.ts` — fonctions sur l'arbre d'une carte mentale (racine, branches, sous-arbre, mise en page), sans React ni React Flow.
 
 ## Cartes mentales (phase 6)
 
 On crée une carte mentale depuis le formulaire d'ajout (type « Carte mentale ») : seul le sujet central est demandé, puis l'éditeur s'ouvre.
 
-| fichier | rôle |
-|---------|------|
-| `mind-maps/[id]/page.tsx` | Server Component : charge la carte, affiche l'éditeur |
-| `mind-maps/[id]/actions.ts` | Server Actions : enregistrer (tout l'arbre), supprimer |
+| fichier                         | rôle                                                                        |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| `mind-maps/[id]/page.tsx`       | Server Component : charge la carte, affiche l'éditeur                       |
+| `mind-maps/[id]/actions.ts`     | Server Actions : enregistrer (tout l'arbre), supprimer                      |
 | `mind-maps/mind-map-editor.tsx` | éditeur (client component), basé sur [@xyflow/react](https://reactflow.dev) |
-| `mind-maps/mind-map-viewer.tsx` | la même carte en lecture seule, pour l'écran de révision |
-| `mind-maps/topic-node.tsx` | le composant d'un nœud (*custom node* React Flow), partagé par les deux |
-| `mind-maps/flow.ts` | conversions entre l'arbre stocké et les nœuds / arêtes de React Flow |
+| `mind-maps/mind-map-viewer.tsx` | la même carte en lecture seule, pour l'écran de révision                    |
+| `mind-maps/topic-node.tsx`      | le composant d'un nœud (_custom node_ React Flow), partagé par les deux     |
+| `mind-maps/flow.ts`             | conversions entre l'arbre stocké et les nœuds / arêtes de React Flow        |
 
 **Édition.** Sélectionner une idée, puis : `Tab` ajoute un enfant, `Entrée` un voisin, `F2` ou un double-clic renomme, `Suppr` supprime l'idée et tout ce qui en part, `Ctrl+S` enregistre. On déplace une idée en la faisant glisser ; « Réorganiser » range tout l'arbre en colonnes. Les liens se créent uniquement par ces commandes, jamais en tirant un trait entre deux nœuds : c'est ce qui garantit que la carte reste un arbre.
 
@@ -46,7 +46,7 @@ On crée une carte mentale depuis le formulaire d'ajout (type « Carte mentale �
 
 **Le format stocké ne dépend pas de React Flow.** L'API garde `{ id, parentId, label, position }` ; React Flow ajoute ses propres champs (`selected`, `measured`, `type`…) qui n'ont rien à faire en base. `flow.ts` fait la conversion dans les deux sens, et les arêtes sont recalculées à partir de `parentId`.
 
-**Révision.** Une carte de révision = une branche. `facesOf()` masque la branche demandée et toutes ses idées *côté serveur* : leurs libellés ne sont pas dans le recto envoyé au navigateur. La forme de la branche (combien de sous-idées) reste visible, comme indice. Le verso montre la carte entière, avec la branche en surbrillance.
+**Révision.** Une carte de révision = une branche. `facesOf()` masque la branche demandée et toutes ses idées _côté serveur_ : leurs libellés ne sont pas dans le recto envoyé au navigateur. La forme de la branche (combien de sous-idées) reste visible, comme indice. Le verso montre la carte entière, avec la branche en surbrillance.
 
 **Deux pièges rencontrés avec React Flow :**
 
@@ -57,7 +57,7 @@ On crée une carte mentale depuis le formulaire d'ajout (type « Carte mentale �
 
 En phase 2, le navigateur appelait l'API en `fetch`. Avec l'authentification, il faudrait lui confier le token, donc le stocker quelque part de lisible en JavaScript (localStorage), ce qui l'expose en cas de faille XSS.
 
-À la place, Next.js joue le rôle d'intermédiaire (on parle de *Backend For Frontend*) :
+À la place, Next.js joue le rôle d'intermédiaire (on parle de _Backend For Frontend_) :
 
 1. Le formulaire de connexion appelle une **Server Action**, qui exécute `POST /auth/login` depuis le serveur Next.js.
 2. Le JWT reçu est rangé dans un cookie **httpOnly** : le navigateur le renvoie automatiquement à Next.js, mais aucun script de la page ne peut le lire.

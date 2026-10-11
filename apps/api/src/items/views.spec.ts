@@ -42,7 +42,7 @@ describe('API views', () => {
     expect(view.cards.map((c) => c.kind)).toEqual(['EnglishToFrench', 'FrenchToEnglish']);
   });
 
-  it("names a mind map after its root and lists one card per branch", () => {
+  it('names a mind map after its root and lists one card per branch', () => {
     const item = {
       ...base,
       type: 'MindMap',

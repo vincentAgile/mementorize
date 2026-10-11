@@ -21,7 +21,9 @@ describe('cardSlots', () => {
   });
 
   it('gives no card to a map that only has its root', () => {
-    expect(cardSlots('MindMap', { nodes: [{ id: 'root', parentId: null, label: 'Racine', position: at }] })).toEqual([]);
+    expect(cardSlots('MindMap', { nodes: [{ id: 'root', parentId: null, label: 'Racine', position: at }] })).toEqual(
+      [],
+    );
   });
 
   it('keeps the fixed cards of quotes and vocabulary', () => {

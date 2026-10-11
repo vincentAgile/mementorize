@@ -54,9 +54,9 @@ describe('AuthService', () => {
     it('refuses an email that is already taken', async () => {
       usersMock.findByEmail.mockResolvedValue({ id: 'existing' });
 
-      await expect(
-        service.register({ email: 'vincent@example.com', password: 'whatever123' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.register({ email: 'vincent@example.com', password: 'whatever123' })).rejects.toThrow(
+        ConflictException,
+      );
       expect(usersMock.create).not.toHaveBeenCalled();
     });
   });

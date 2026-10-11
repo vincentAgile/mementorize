@@ -29,7 +29,12 @@ export class ItemsService {
   ) {}
 
   /** Creates the item together with its review cards. */
-  create<T extends ItemType>(userId: string, type: T, content: ContentByType[T], now = new Date()): Promise<ItemWithCards> {
+  create<T extends ItemType>(
+    userId: string,
+    type: T,
+    content: ContentByType[T],
+    now = new Date(),
+  ): Promise<ItemWithCards> {
     const cards = cardSlots(type, content).map((slot) => this.newCard(slot, now));
 
     return this.prisma.item.create({
@@ -91,7 +96,9 @@ export class ItemsService {
         content: content as Prisma.InputJsonValue,
         cards: {
           ...(obsolete.length > 0 && { deleteMany: { id: { in: obsolete } } }),
-          ...(missing.length > 0 && { create: missing.map((slot, index) => this.newCard({ ...slot, delayDays: index }, now)) }),
+          ...(missing.length > 0 && {
+            create: missing.map((slot, index) => this.newCard({ ...slot, delayDays: index }, now)),
+          }),
         },
       },
       include: WITH_CARDS,

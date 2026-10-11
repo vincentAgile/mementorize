@@ -1,0 +1,12 @@
+# Generated, or rewritten by tools: formatting them would only fight the tool.
+pnpm-lock.yaml
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
+apps/web/next-env.d.ts
+apps/web/tsconfig.json
+
+# Build outputs and caches (node_modules is ignored by default).
+**/dist
+**/.next
+**/.turbo
+**/coverage

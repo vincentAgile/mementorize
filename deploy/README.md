@@ -8,18 +8,18 @@ navigateur ──HTTPS──▶ Traefik (:80, :443) ──(réseau proxy)──�
                          └── certificats Let's Encrypt
 ```
 
-- **Traefik** (`deploy/traefik/`) : le seul service exposé sur Internet. Il obtient et renouvelle les certificats HTTPS, redirige HTTP vers HTTPS, et transmet chaque requête au bon conteneur d'après ses *labels*. Il vit dans sa propre pile, à côté de l'application : d'autres services pourront passer par lui plus tard (Uptime Kuma en phase 11, par exemple).
+- **Traefik** (`deploy/traefik/`) : le seul service exposé sur Internet. Il obtient et renouvelle les certificats HTTPS, redirige HTTP vers HTTPS, et transmet chaque requête au bon conteneur d'après ses _labels_. Il vit dans sa propre pile, à côté de l'application : d'autres services pourront passer par lui plus tard (Uptime Kuma en phase 11, par exemple).
 - **L'application** : le même `docker-compose.yml` qu'en local, plus `docker-compose.prod.yml`, qui ne publie plus aucun port et ajoute à `web` les labels de routage pour Traefik.
 
 **Ce qu'il te faut** : l'adresse IPv4 du VPS et ses identifiants (mail d'OVH), un nom de domaine chez OVH, et un terminal PowerShell sur ton PC (le client `ssh` est inclus dans Windows).
 
 Dans tout le guide :
 
-| à remplacer par | exemple |
-|-----------------|---------|
-| `IP_DU_VPS` | `51.38.x.x` |
-| `UTILISATEUR` | l'utilisateur créé par OVH (`ubuntu` ou `debian`, selon l'image), ou le tien |
-| `mementorize.mondomaine.fr` | le nom choisi pour l'application |
+| à remplacer par             | exemple                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------- |
+| `IP_DU_VPS`                 | `51.38.x.x`                                                                  |
+| `UTILISATEUR`               | l'utilisateur créé par OVH (`ubuntu` ou `debian`, selon l'image), ou le tien |
+| `mementorize.mondomaine.fr` | le nom choisi pour l'application                                             |
 
 Les commandes ont été écrites pour Ubuntu 26.04 ou 24.04 et Debian 12 ou 13, les images proposées par OVH. Sur Ubuntu 26.04, `sudo` et les commandes de base (`cp`, `chmod`…) sont des réécritures en Rust (sudo-rs, uutils), compatibles avec l’usage qu’en fait ce guide.
 
@@ -81,7 +81,7 @@ sudo sshd -t && sudo systemctl reload ssh
 
 Pourquoi `10-` : sur les images cloud, un fichier `50-cloud-init.conf` réactive parfois `PasswordAuthentication`. `sshd` lit ces fichiers par ordre alphabétique et garde la **première** valeur rencontrée : `10-` passe avant.
 
-> **Garde la session actuelle ouverte** et teste une nouvelle connexion avant de la fermer : en cas d'erreur, c'est ta seule porte d'entrée. En dernier recours, OVH propose un mode *rescue* et une console KVM dans l'espace client.
+> **Garde la session actuelle ouverte** et teste une nouvelle connexion avant de la fermer : en cas d'erreur, c'est ta seule porte d'entrée. En dernier recours, OVH propose un mode _rescue_ et une console KVM dans l'espace client.
 
 ## 4. Pare-feu
 
@@ -96,11 +96,11 @@ sudo ufw enable
 sudo ufw status
 ```
 
-> **Piège Docker** : un port *publié* par un conteneur (`ports:` dans un fichier Compose) contourne `ufw`, car Docker écrit ses propres règles `iptables`, prioritaires. C'est pour ça que `docker-compose.prod.yml` retire toutes les publications : en production, seul Traefik publie 80 et 443, et la base n'est pas joignable de l'extérieur, pare-feu ou non.
+> **Piège Docker** : un port _publié_ par un conteneur (`ports:` dans un fichier Compose) contourne `ufw`, car Docker écrit ses propres règles `iptables`, prioritaires. C'est pour ça que `docker-compose.prod.yml` retire toutes les publications : en production, seul Traefik publie 80 et 443, et la base n'est pas joignable de l'extérieur, pare-feu ou non.
 
 ## 5. Mémoire d'échange (si le VPS a moins de 4 Go de RAM)
 
-Le build des images (surtout Next.js) peut demander plus de mémoire qu'un petit VPS n'en a. Vérifier avec `free -h`, et ajouter 2 Go de *swap* si besoin :
+Le build des images (surtout Next.js) peut demander plus de mémoire qu'un petit VPS n'en a. Vérifier avec `free -h`, et ajouter 2 Go de _swap_ si besoin :
 
 ```bash
 sudo fallocate -l 2G /swapfile
@@ -162,7 +162,7 @@ cd ~/mementorize
 docker network create proxy     # réseau partagé entre Traefik et les applications
 ```
 
-**Traefik** : l'adresse de contact pour Let's Encrypt, et le serveur de *staging* pour le premier essai.
+**Traefik** : l'adresse de contact pour Let's Encrypt, et le serveur de _staging_ pour le premier essai.
 
 ```bash
 cd ~/mementorize/deploy/traefik
@@ -172,7 +172,7 @@ nano .env
 #   décommenter la ligne ACME_CA_SERVER (staging)
 ```
 
-Le *staging* délivre des certificats que les navigateurs refusent (avertissement), mais ses limites sont bien plus larges : une erreur de configuration ne bloquera pas le domaine plusieurs heures auprès de Let's Encrypt.
+Le _staging_ délivre des certificats que les navigateurs refusent (avertissement), mais ses limites sont bien plus larges : une erreur de configuration ne bloquera pas le domaine plusieurs heures auprès de Let's Encrypt.
 
 **L'application** : générer de vrais secrets, sur le serveur.
 
@@ -223,11 +223,11 @@ curl.exe -I http://mementorize.mondomaine.fr     # 308 (ou 301) vers https://
 curl.exe -kI https://mementorize.mondomaine.fr   # 307 vers /login (-k : certificat de staging)
 ```
 
-Le navigateur affiche un avertissement de certificat : c'est normal en *staging*. Dans le détail du certificat, l'émetteur commence par `(STAGING)`.
+Le navigateur affiche un avertissement de certificat : c'est normal en _staging_. Dans le détail du certificat, l'émetteur commence par `(STAGING)`.
 
 ## 10. Passer au vrai certificat
 
-Une fois le *staging* validé :
+Une fois le _staging_ validé :
 
 ```bash
 cd ~/mementorize/deploy/traefik
@@ -240,7 +240,7 @@ docker compose logs -f
 
 Après quelques secondes, https://mementorize.mondomaine.fr s'ouvre sans avertissement. Traefik renouvelle le certificat tout seul, avant son expiration.
 
-La base du serveur est neuve : il faut créer un compte. Pour y reprendre les données locales, voir *Sauvegarder et restaurer* plus bas.
+La base du serveur est neuve : il faut créer un compte. Pour y reprendre les données locales, voir _Sauvegarder et restaurer_ plus bas.
 
 ---
 
@@ -280,14 +280,14 @@ Le même `pg_dump`, lancé sur ton PC (`docker compose exec -T postgres pg_dump 
 
 ## Dépannage
 
-| symptôme | piste |
-|----------|-------|
-| Pas de certificat, ou erreur `acme` dans les logs de Traefik | Le DNS ne pointe pas encore vers le VPS (`Resolve-DnsName`), le port 80 est fermé (`sudo ufw status`), une entrée AAAA existe, ou la limite de Let's Encrypt est atteinte (repasser en *staging*). |
-| `404 page not found` (texte brut, servi par Traefik) | Aucune route ne correspond : `APP_DOMAIN` différent du nom tapé, `COMPOSE_FILE` absent de `.env` (labels non appliqués), ou `web` pas démarré. `docker compose config` montre la configuration réellement utilisée. |
-| `Bad Gateway` / `Gateway Timeout` | Traefik voit le conteneur mais ne le joint pas : `web` doit être sur le réseau `proxy` (`docker network inspect proxy`). |
-| `api` redémarre en boucle | `docker compose logs api` : un `JWT_SECRET` absent ou laissé à `change-me` fait refuser le démarrage, avec le message correspondant. |
-| `migrate` en erreur | `docker compose logs migrate` ; l'API ne démarre pas tant que les migrations n'ont pas réussi. |
-| Le build s'arrête sans message clair (`Killed`, code 137) | Mémoire insuffisante : voir l'étape 5 (swap). |
+| symptôme                                                     | piste                                                                                                                                                                                                               |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pas de certificat, ou erreur `acme` dans les logs de Traefik | Le DNS ne pointe pas encore vers le VPS (`Resolve-DnsName`), le port 80 est fermé (`sudo ufw status`), une entrée AAAA existe, ou la limite de Let's Encrypt est atteinte (repasser en _staging_).                  |
+| `404 page not found` (texte brut, servi par Traefik)         | Aucune route ne correspond : `APP_DOMAIN` différent du nom tapé, `COMPOSE_FILE` absent de `.env` (labels non appliqués), ou `web` pas démarré. `docker compose config` montre la configuration réellement utilisée. |
+| `Bad Gateway` / `Gateway Timeout`                            | Traefik voit le conteneur mais ne le joint pas : `web` doit être sur le réseau `proxy` (`docker network inspect proxy`).                                                                                            |
+| `api` redémarre en boucle                                    | `docker compose logs api` : un `JWT_SECRET` absent ou laissé à `change-me` fait refuser le démarrage, avec le message correspondant.                                                                                |
+| `migrate` en erreur                                          | `docker compose logs migrate` ; l'API ne démarre pas tant que les migrations n'ont pas réussi.                                                                                                                      |
+| Le build s'arrête sans message clair (`Killed`, code 137)    | Mémoire insuffisante : voir l'étape 5 (swap).                                                                                                                                                                       |
 
 Commandes utiles :
 

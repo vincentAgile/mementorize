@@ -17,7 +17,14 @@ describe('ReviewsService', () => {
     $transaction: vi.fn((operations: Promise<unknown>[]) => Promise.all(operations)),
   };
 
-  const aCard = () => ({ id: 'card-1', itemId: 'item-1', kind: 'QuoteRecall' as const, ...scheduler.newCard(NOW), createdAt: NOW, updatedAt: NOW });
+  const aCard = () => ({
+    id: 'card-1',
+    itemId: 'item-1',
+    kind: 'QuoteRecall' as const,
+    ...scheduler.newCard(NOW),
+    createdAt: NOW,
+    updatedAt: NOW,
+  });
 
   beforeEach(async () => {
     vi.clearAllMocks();

@@ -82,14 +82,14 @@ navigateur ──3001──▶ web ──(frontend)──▶ api ──(backend)
                                                   migrate ──┘
 ```
 
-| service    | image | rôle |
-|------------|-------|------|
-| `postgres` | `postgres:16-alpine` | la base ; publiée sur `127.0.0.1:5432` seulement, pour `pnpm dev` |
-| `migrate`  | `apps/api/Dockerfile`, cible `migrate` | applique les migrations (`prisma migrate deploy`) puis s'arrête |
-| `api`      | `apps/api/Dockerfile`, cible `runtime` | l'API NestJS ; démarre une fois `migrate` terminé avec succès |
-| `web`      | `apps/web/Dockerfile` | le serveur Next.js ; démarre une fois l'API déclarée en bonne santé |
+| service    | image                                  | rôle                                                                |
+| ---------- | -------------------------------------- | ------------------------------------------------------------------- |
+| `postgres` | `postgres:16-alpine`                   | la base ; publiée sur `127.0.0.1:5432` seulement, pour `pnpm dev`   |
+| `migrate`  | `apps/api/Dockerfile`, cible `migrate` | applique les migrations (`prisma migrate deploy`) puis s'arrête     |
+| `api`      | `apps/api/Dockerfile`, cible `runtime` | l'API NestJS ; démarre une fois `migrate` terminé avec succès       |
+| `web`      | `apps/web/Dockerfile`                  | le serveur Next.js ; démarre une fois l'API déclarée en bonne santé |
 
-**Ordre de démarrage.** `depends_on` avec conditions : `postgres` *healthy* (`pg_isready`) → `migrate` *completed successfully* → `api` *healthy* (`GET /health`, qui interroge aussi la base) → `web`. Sans ces conditions, les services démarreraient en même temps et l'API tenterait de se connecter à une base pas encore prête.
+**Ordre de démarrage.** `depends_on` avec conditions : `postgres` _healthy_ (`pg_isready`) → `migrate` _completed successfully_ → `api` _healthy_ (`GET /health`, qui interroge aussi la base) → `web`. Sans ces conditions, les services démarreraient en même temps et l'API tenterait de se connecter à une base pas encore prête.
 
 **Isolation.** Seul `web` est publié sur la machine hôte. L'API n'est joignable que par `web`, sur le réseau `frontend` (le navigateur ne l'appelle jamais directement, voir [apps/web/README.md](./apps/web/README.md)) ; la base n'est que sur le réseau `backend`, que `web` ne voit pas. Les conteneurs s'adressent les uns aux autres par nom de service (`http://api:3000`, `postgres:5432`), résolu par le DNS de Docker.
 
