@@ -1,6 +1,9 @@
 # Continuous integration (phase 9): every pull request, and every push to
 # main, is checked by independent jobs running in parallel. A pull request
 # can only be trusted when they're all green.
+#
+# On main, the Docker images are also published (phase 10); once the whole
+# run is green, the Deploy workflow (deploy.yml) puts them in production.
 
 name: CI
 
@@ -16,7 +19,8 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-# Read-only token: the CI checks, it never writes to the repository.
+# Read-only token: the CI checks, it never writes to the repository (only
+# the Docker job gets more, see below).
 permissions:
   contents: read
 
@@ -121,8 +125,73 @@ jobs:
     name: Images Docker
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Only this job may write to GitHub's registry (ghcr.io), and it only
+    # does on a push to main: on a pull request, the images are built (a
+    # broken Dockerfile is caught here, not when deploying) but not published.
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PUBLISH: ${{ github.event_name == 'push' }}
+      # Linking the images to the repository (GitHub shows them on its page,
+      # and the Deploy workflow can read them), and to the commit they come from.
+      LABELS: |
+        org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+        org.opencontainers.image.revision=${{ github.sha }}
     steps:
       - uses: actions/checkout@v7
-      # Builds the three images of docker-compose.yml (migrate, api, web):
-      # a broken Dockerfile is caught here, not when deploying.
-      - run: docker compose build
+
+      # BuildKit in a container: needed for the cache below.
+      - uses: docker/setup-buildx-action@v4
+
+      - if: env.PUBLISH == 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Each image is tagged with its commit (what the deployment asks for)
+      # and with "main" (the latest one, for humans). The layers are cached
+      # in GitHub's cache (type=gha): unchanged Dockerfile steps, such as the
+      # dependencies' installation, aren't run again on the next build.
+      - name: API
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: runtime
+          push: ${{ env.PUBLISH == 'true' }}
+          labels: ${{ env.LABELS }}
+          tags: |
+            ghcr.io/vincentagile/mementorize-api:${{ github.sha }}
+            ghcr.io/vincentagile/mementorize-api:main
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+      # Same Dockerfile, other target: its build stage comes from the cache
+      # of the previous step, in this job's builder.
+      - name: Migrations
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          target: migrate
+          push: ${{ env.PUBLISH == 'true' }}
+          labels: ${{ env.LABELS }}
+          tags: |
+            ghcr.io/vincentagile/mementorize-migrate:${{ github.sha }}
+            ghcr.io/vincentagile/mementorize-migrate:main
+
+      - name: Web
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: ${{ env.PUBLISH == 'true' }}
+          labels: ${{ env.LABELS }}
+          tags: |
+            ghcr.io/vincentagile/mementorize-web:${{ github.sha }}
+            ghcr.io/vincentagile/mementorize-web:main
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
