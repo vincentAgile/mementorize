@@ -1,10 +1,14 @@
-# Production on the VPS (phase 8): adjustments on top of docker-compose.yml.
+# Production on the VPS (phases 8 and 10): adjustments on top of
+# docker-compose.yml. Compose merges the two files: everything in
+# docker-compose.yml applies, except what is changed here. On the server,
+# COMPOSE_FILE in .env makes plain `docker compose ...` use both.
 #
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-#
-# Compose merges the two files: everything in docker-compose.yml applies,
-# except what is changed here. Requires the Traefik stack (deploy/traefik)
-# and its "proxy" network. Guide: deploy/README.md.
+# Nothing is built on the server: the images are built by the CI and
+# published on GitHub's registry (ghcr.io), tagged with the commit they come
+# from. IMAGE_TAG, written to .env by each deployment, says which commit
+# runs. Deployments are automatic (deploy/release.sh); the Traefik stack
+# (deploy/traefik) and its "proxy" network are required. Guide:
+# deploy/README.md.
 
 services:
   postgres:
@@ -13,7 +17,17 @@ services:
     # server's firewall: what isn't published can't be reached.)
     ports: !reset []
 
+  migrate:
+    build: !reset null
+    image: ghcr.io/vincentagile/mementorize-migrate:${IMAGE_TAG:?IMAGE_TAG is missing in .env (written by deploy/release.sh)}
+
+  api:
+    build: !reset null
+    image: ghcr.io/vincentagile/mementorize-api:${IMAGE_TAG:?IMAGE_TAG is missing in .env (written by deploy/release.sh)}
+
   web:
+    build: !reset null
+    image: ghcr.io/vincentagile/mementorize-web:${IMAGE_TAG:?IMAGE_TAG is missing in .env (written by deploy/release.sh)}
     # Not published either: the only way in is Traefik, on ports 80/443.
     ports: !reset []
     networks: [frontend, proxy]
@@ -26,6 +40,12 @@ services:
       - traefik.http.routers.mementorize.tls.certresolver=letsencrypt
       # ...on the port the Next.js server listens on in the container.
       - traefik.http.services.mementorize.loadbalancer.server.port=3001
+      # Run by `docker rollout` in the old container, once the new one is
+      # healthy, before stopping it: /tmp/drain makes the old one unhealthy
+      # (see its healthcheck), Traefik takes it out of the load balancer
+      # (2 failed checks, 5 s apart, at most ~12 s), and the 20 s wait leaves
+      # time for that, and for the requests in progress to finish.
+      - docker-rollout.pre-stop-hook=touch /tmp/drain && sleep 20
 
 networks:
   proxy:
