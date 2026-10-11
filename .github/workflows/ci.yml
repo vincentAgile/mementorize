@@ -1,0 +1,128 @@
+# Continuous integration (phase 9): every pull request, and every push to
+# main, is checked by independent jobs running in parallel. A pull request
+# can only be trusted when they're all green.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: # "Run workflow" button, in the Actions tab
+
+# A new push to the same pull request (or branch) cancels the run in progress:
+# only the latest commit matters.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+# Read-only token: the CI checks, it never writes to the repository.
+permissions:
+  contents: read
+
+env:
+  # prisma.config.ts requires DATABASE_URL, even for `prisma generate` (run by
+  # `pnpm install`), which never connects. The e2e job overrides it with a
+  # real database.
+  DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+  TURBO_TELEMETRY_DISABLED: 1
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  format:
+    name: Formatage (Prettier)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: pnpm format:check
+
+  lint:
+    name: Lint (oxlint, ESLint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: lint
+      - run: pnpm lint
+
+  test:
+    name: Tests unitaires
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: test
+      - run: pnpm test
+
+  build:
+    name: Build (API, web)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          turbo-cache-key: build
+      # Also type-checks: nest build (tsc) for the API, next build for the web.
+      - run: pnpm build
+
+  e2e:
+    name: Migrations et tests e2e (PostgreSQL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # A real PostgreSQL next to the job, reachable on localhost:5432, started
+    # (and healthy) before the first step, thrown away after the last one.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else
+      # Scratch database where Prisma replays the migrations to compare them
+      # with schema.prisma (see apps/api/prisma.config.ts).
+      SHADOW_DATABASE_URL: postgresql://ci:ci@localhost:5432/ci_shadow
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+
+      - name: Create the shadow database
+        run: psql "$DATABASE_URL" -c 'CREATE DATABASE ci_shadow'
+
+      # The migrations are written by hand (phases 5 and 6): replayed from
+      # scratch, they must produce exactly the schema described in
+      # schema.prisma. Exit code 2 = they differ, and the diff is printed.
+      - name: Migrations match schema.prisma
+        working-directory: apps/api
+        run: pnpm exec prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --exit-code
+
+      - name: Apply the migrations to an empty database
+        working-directory: apps/api
+        run: pnpm exec prisma migrate deploy
+
+      - name: End-to-end tests
+        run: pnpm --filter api test:e2e
+
+  docker:
+    name: Images Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      # Builds the three images of docker-compose.yml (migrate, api, web):
+      # a broken Dockerfile is caught here, not when deploying.
+      - run: docker compose build
