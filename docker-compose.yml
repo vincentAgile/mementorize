@@ -83,6 +83,10 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+      # Checked every second while starting, so that a new container is
+      # declared healthy (and takes traffic, when deploying) without waiting
+      # for the first 10 s interval.
+      start_interval: 1s
     networks: [backend, frontend]
 
   web:
@@ -98,6 +102,18 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      # /login needs neither a session nor the API: it answers as soon as the
+      # Next.js server is up. The /tmp/drain test is for deployments: a
+      # container about to be replaced creates that file, turns unhealthy,
+      # and Traefik stops sending it requests before it's stopped
+      # (docker-compose.prod.yml, deploy/README.md).
+      test: ["CMD-SHELL", "test ! -f /tmp/drain && wget -qO /dev/null http://127.0.0.1:3001/login"]
+      interval: 5s
+      timeout: 5s
+      retries: 2
+      start_period: 30s
+      start_interval: 1s
     networks: [frontend]
 
 networks:
