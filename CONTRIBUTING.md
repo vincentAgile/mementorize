@@ -34,3 +34,9 @@ ci: ajoute le workflow de lint et de tests
 ## Règle d'or
 
 Une phase = une branche = une pull request. On ne merge que si la phase se termine par quelque chose qui tourne réellement (voir le principe directeur de la feuille de route).
+
+## Intégration continue
+
+Une pull request ne se fusionne que si la CI est au vert (voir la section « Intégration continue » du README). Pour l'imposer, dans les réglages GitHub du dépôt : **Settings → Rules → Rulesets → New branch ruleset**, cible `main`, règle **Require status checks to pass** avec les six jobs du workflow `CI`.
+
+Le formatage est fait par Prettier, avec une configuration unique à la racine (`.prettierrc.json`) ; VS Code l'applique à l'enregistrement (`.vscode/settings.json`). En ligne de commande : `pnpm format`.
