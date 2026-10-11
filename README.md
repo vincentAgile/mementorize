@@ -15,7 +15,8 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 ✅ **Phase 6 terminée.** Cartes mentales interactives : éditeur @xyflow/react, arbre stocké en jsonb, une carte de révision par branche (branche masquée à retrouver).
 ✅ **Phase 7 terminée.** Conteneurisation complète : Dockerfiles multi-stage (API, web), `docker compose up` lance base, migrations, API et web, réseaux isolés et healthchecks.
 ✅ **Phase 8 terminée.** En ligne sur un VPS OVH, derrière Traefik, en HTTPS (Let's Encrypt) : https://mementorize.delaneuville.fr — guide dans [deploy/README.md](./deploy/README.md).
-🚧 **Phase 9 — Intégration continue.** Pas encore commencée (GitHub Actions : lint et tests sur chaque push et pull request).
+✅ **Phase 9 terminée.** Intégration continue avec GitHub Actions : formatage, lint, tests unitaires, build, migrations et tests e2e sur PostgreSQL, images Docker, sur chaque pull request.
+🚧 **Phase 10 — Déploiement continu.** Pas encore commencée (images publiées sur GHCR, déploiement automatique par SSH à chaque push sur `main`, migrations en pipeline).
 
 ## Stack cible
 
