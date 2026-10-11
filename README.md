@@ -16,7 +16,8 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 ✅ **Phase 7 terminée.** Conteneurisation complète : Dockerfiles multi-stage (API, web), `docker compose up` lance base, migrations, API et web, réseaux isolés et healthchecks.
 ✅ **Phase 8 terminée.** En ligne sur un VPS OVH, derrière Traefik, en HTTPS (Let's Encrypt) : https://mementorize.delaneuville.fr — guide dans [deploy/README.md](./deploy/README.md).
 ✅ **Phase 9 terminée.** Intégration continue avec GitHub Actions : formatage, lint, tests unitaires, build, migrations et tests e2e sur PostgreSQL, images Docker, sur chaque pull request.
-🚧 **Phase 10 — Déploiement continu.** En cours : images publiées sur GHCR par la CI, déploiement automatique par SSH à chaque push sur `main`, sauvegarde et migrations dans le pipeline, remplacement des conteneurs sans coupure.
+✅ **Phase 10 terminée.** Déploiement continu : chaque push sur `main` part en production (images publiées sur GHCR par la CI, déploiement par SSH, sauvegarde et migrations dans le pipeline), sans coupure de service.
+🚧 **Phase 11 — Observabilité et rappels.** Pas encore commencée (dont la sauvegarde automatique de la base).
 
 ## Stack cible
 
