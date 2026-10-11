@@ -93,9 +93,9 @@ Une nouvelle quote est à réviser tout de suite. Avec « Good », elle revient 
 
 Toutes les fiches, quel que soit leur type, vivent dans une seule table `items` :
 
-| colonne   | rôle |
-|-----------|------|
-| `type`    | `Quote` ou `Vocabulary` (enum PostgreSQL) |
+| colonne   | rôle                                                                                                                                        |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`    | `Quote` ou `Vocabulary` (enum PostgreSQL)                                                                                                   |
 | `content` | colonne **jsonb** dont la forme dépend du type : `{ text, author, source }` pour une citation, `{ word, translation, example }` pour un mot |
 
 La base ne vérifie pas la forme de `content` : c'est l'API qui le fait, avec un DTO par type (`CreateQuoteDto`, `CreateVocabularyDto`). `ItemsService` stocke et relit les fiches sans jamais regarder ce qu'il y a dedans ; seuls les contrôleurs `/quotes` et `/vocabulary` connaissent leur type.
@@ -114,10 +114,10 @@ Une carte mentale est une fiche comme les autres (`items.type = 'MindMap'`) : to
 ```json
 {
   "nodes": [
-    { "id": "root", "parentId": null,   "label": "La Révolution française", "position": { "x": 0,   "y": 0 } },
-    { "id": "a",    "parentId": "root", "label": "Causes",                  "position": { "x": 260, "y": -30 } },
-    { "id": "a1",   "parentId": "a",    "label": "Crise financière",        "position": { "x": 520, "y": -30 } },
-    { "id": "b",    "parentId": "root", "label": "Acteurs",                 "position": { "x": 260, "y": 30 } }
+    { "id": "root", "parentId": null, "label": "La Révolution française", "position": { "x": 0, "y": 0 } },
+    { "id": "a", "parentId": "root", "label": "Causes", "position": { "x": 260, "y": -30 } },
+    { "id": "a1", "parentId": "a", "label": "Crise financière", "position": { "x": 520, "y": -30 } },
+    { "id": "b", "parentId": "root", "label": "Acteurs", "position": { "x": 260, "y": 30 } }
   ]
 }
 ```
@@ -132,11 +132,11 @@ Chaque enfant direct de la racine (une « branche ») a sa propre carte FSRS, de
 
 Contrairement aux citations et au vocabulaire, les cartes dépendent du contenu : `CARD_TEMPLATES` devient `cardSlots(type, content)`. À chaque modification, `ItemsService.update` compare les cartes existantes à celles attendues :
 
-| changement dans la carte mentale | effet sur les cartes de révision |
-|----------------------------------|----------------------------------|
-| nouvelle branche                 | nouvelle carte (les nouvelles sont décalées d'un jour chacune) |
-| branche supprimée, ou déplacée plus bas dans l'arbre | carte supprimée, avec son historique |
-| branche renommée, déplacée à l'écran, sous-idées modifiées | carte conservée, calendrier inchangé |
+| changement dans la carte mentale                           | effet sur les cartes de révision                               |
+| ---------------------------------------------------------- | -------------------------------------------------------------- |
+| nouvelle branche                                           | nouvelle carte (les nouvelles sont décalées d'un jour chacune) |
+| branche supprimée, ou déplacée plus bas dans l'arbre       | carte supprimée, avec son historique                           |
+| branche renommée, déplacée à l'écran, sous-idées modifiées | carte conservée, calendrier inchangé                           |
 
 Le contenu et les cartes sont modifiés dans une seule requête Prisma (écritures imbriquées) : tout réussit, ou rien.
 
@@ -167,16 +167,16 @@ curl -X DELETE http://localhost:3000/mind-maps/<id> -H "Authorization: Bearer $T
 
 `apps/api/Dockerfile` produit deux images à partir des mêmes étapes de build (voir le [README racine](../../README.md#conteneurisation-phase-7) pour l'ensemble) :
 
-| cible     | contenu | lancée par |
-|-----------|---------|------------|
-| `runtime` | `dist/` + dépendances de production | le service `api` : `node dist/main.js` |
+| cible     | contenu                                                              | lancée par                                                            |
+| --------- | -------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `runtime` | `dist/` + dépendances de production                                  | le service `api` : `node dist/main.js`                                |
 | `migrate` | l'étape de build entière (CLI Prisma et moteur de migration compris) | le service `migrate` : `prisma migrate deploy`, une fois, avant l'API |
 
 La CLI Prisma est une dépendance de développement : la garder hors de l'image `runtime` évite d'y embarquer Prisma Studio et ses dépendances. Les migrations ont leur propre conteneur, qui s'arrête une fois son travail fait.
 
 **Ce qui a changé dans le code pour tourner en conteneur :**
 
-- **`GET /health`** (public) : répond `{"status":"ok"}` si la base répond, `503` sinon. C'est le *healthcheck* du service `api` : `web` n'est démarré qu'une fois l'API réellement prête, pas seulement le processus lancé.
+- **`GET /health`** (public) : répond `{"status":"ok"}` si la base répond, `503` sinon. C'est le _healthcheck_ du service `api` : `web` n'est démarré qu'une fois l'API réellement prête, pas seulement le processus lancé.
 - **Validation de la configuration au démarrage** (`src/config/env.validation.ts`, branchée sur `ConfigModule.forRoot({ validate })`) : sans `DATABASE_URL` ou `JWT_SECRET`, l'API refuse de démarrer et liste ce qui manque, au lieu d'échouer plus tard sur une erreur 500. Une chaîne vide compte comme absente, car `docker-compose.yml` transmet `JWT_SECRET` même quand `.env` ne le définit pas. En production, la valeur d'exemple `change-me` est refusée.
 - **`app.enableShutdownHooks()`** : `docker stop` envoie SIGTERM. Sans ce réglage, Nest ne l'écoute pas, la connexion à la base n'est pas fermée, et Docker tue le processus au bout de 10 s. Le service a aussi `init: true` dans `docker-compose.yml` : un mini-init (tini) tient le rôle de PID 1, car un processus de PID 1 ignore les signaux qu'il ne gère pas lui-même.
 - **`"files"` dans `package.json`** : `pnpm deploy` (qui extrait l'API et ses dépendances de production dans l'image) copie les fichiers à publier. Sans liste explicite, il applique le `.gitignore`… qui exclut `dist/`.
@@ -184,7 +184,7 @@ La CLI Prisma est une dépendance de développement : la garder hors de l'image 
 **Deux pièges Prisma dans le Dockerfile :**
 
 - `prisma.config.ts` lit `DATABASE_URL` même pour `prisma generate`, qui ne se connecte jamais : l'étape de build définit une URL factice, qui n'atteint pas l'image finale.
-- Le client Prisma est du code *généré* à côté de `@prisma/client`, dans `node_modules`. Après `pnpm deploy`, ce `node_modules` est neuf : il faut relancer `prisma generate` dans le dossier déployé, avec la CLI de l'étape de build.
+- Le client Prisma est du code _généré_ à côté de `@prisma/client`, dans `node_modules`. Après `pnpm deploy`, ce `node_modules` est neuf : il faut relancer `prisma generate` dans le dossier déployé, avec la CLI de l'étape de build.
 
 ## Tests
 
@@ -192,7 +192,7 @@ La CLI Prisma est une dépendance de développement : la garder hors de l'image 
 pnpm --filter api test
 ```
 
-`ItemsService`, `AuthService` et `ReviewsService` sont testés avec leurs dépendances mockées (Prisma, JWT) : pas besoin d'une vraie base. `validateMindMap()` et `cardSlots()` sont des fonctions pures, testées directement. `SchedulerService` est testé avec une horloge fixe et sans aléa (*fuzz*), ce qui permet de vérifier précisément les intervalles calculés.
+`ItemsService`, `AuthService` et `ReviewsService` sont testés avec leurs dépendances mockées (Prisma, JWT) : pas besoin d'une vraie base. `validateMindMap()` et `cardSlots()` sont des fonctions pures, testées directement. `SchedulerService` est testé avec une horloge fixe et sans aléa (_fuzz_), ce qui permet de vérifier précisément les intervalles calculés.
 
 ## Prisma Studio
 

@@ -57,7 +57,12 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
     const heading = item.content.author ?? 'Auteur inconnu';
     const subheading = item.content.source;
     return {
-      front: { heading, subheading, main: firstWords(item.content.text), prompt: 'Récite la suite de tête, puis vérifie.' },
+      front: {
+        heading,
+        subheading,
+        main: firstWords(item.content.text),
+        prompt: 'Récite la suite de tête, puis vérifie.',
+      },
       back: { heading, subheading, main: item.content.text },
       repeatFront: false,
     };
@@ -110,13 +115,11 @@ export default async function ReviewPage() {
             key={`${next.card.id}-${next.card.due}`} // fresh (hidden) card after each answer
             cardId={next.card.id}
             {...facesOf(next)}
-            options={(Object.keys(LABELS) as ReviewRating[]).map(
-              (rating): RatingOption => ({
-                rating,
-                label: LABELS[rating],
-                delay: formatDelay(now, new Date(next.nextDue[rating])),
-              }),
-            )}
+            options={(Object.keys(LABELS) as ReviewRating[]).map((rating): RatingOption => ({
+              rating,
+              label: LABELS[rating],
+              delay: formatDelay(now, new Date(next.nextDue[rating])),
+            }))}
           />
         </>
       )}

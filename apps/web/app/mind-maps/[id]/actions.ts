@@ -42,7 +42,9 @@ export async function saveMindMapAction(id: string, nodes: MindMapNode[]): Promi
     // Only API errors are turned into a message: the redirect thrown when
     // the session has expired must keep propagating.
     if (error instanceof ApiError) {
-      return { error: error.status === 400 ? 'La carte a été refusée par le serveur.' : "Impossible d'enregistrer la carte." };
+      return {
+        error: error.status === 400 ? 'La carte a été refusée par le serveur.' : "Impossible d'enregistrer la carte.",
+      };
     }
     throw error;
   }

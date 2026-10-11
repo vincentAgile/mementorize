@@ -10,7 +10,13 @@ import { ItemsModule } from './items/items.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }), PrismaModule, AuthModule, ItemsModule, ReviewsModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    PrismaModule,
+    AuthModule,
+    ItemsModule,
+    ReviewsModule,
+  ],
   controllers: [AppController, HealthController],
   providers: [AppService],
 })

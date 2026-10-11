@@ -10,5 +10,9 @@ export default defineConfig({
   },
   datasource: {
     url: env('DATABASE_URL'),
+    // Optional: only `prisma migrate diff --from-migrations` (drift check in
+    // the CI) needs it. process.env rather than env(), which would make every
+    // command fail when it's missing.
+    shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL,
   },
 });

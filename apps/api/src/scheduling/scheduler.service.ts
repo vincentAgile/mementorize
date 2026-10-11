@@ -13,15 +13,7 @@ import {
 /** The scheduling columns of a card, as stored in the database. */
 export type CardSchedule = Pick<
   Card,
-  | 'due'
-  | 'stability'
-  | 'difficulty'
-  | 'scheduledDays'
-  | 'learningSteps'
-  | 'reps'
-  | 'lapses'
-  | 'state'
-  | 'lastReview'
+  'due' | 'stability' | 'difficulty' | 'scheduledDays' | 'learningSteps' | 'reps' | 'lapses' | 'state' | 'lastReview'
 >;
 
 /** What gets written to review_logs after a self-assessment. */

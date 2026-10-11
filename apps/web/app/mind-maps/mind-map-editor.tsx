@@ -120,10 +120,9 @@ function Editor({ mapId, initialNodes }: MindMapEditorProps) {
     const node = nodes.find((n) => n.id === id);
     if (!node || node.data.parentId === null) return; // the root stays
     const removed = subtreeIds(treeOf(nodes), id);
-    setNodes((current) =>
-      current
-        .filter((n) => !removed.has(n.id))
-        .map((n) => ({ ...n, selected: n.id === node.data.parentId })), // select the parent
+    setNodes(
+      (current) =>
+        current.filter((n) => !removed.has(n.id)).map((n) => ({ ...n, selected: n.id === node.data.parentId })), // select the parent
     );
     wrapper.current?.focus(); // the focused node is gone: keep the shortcuts working
   }
@@ -141,7 +140,8 @@ function Editor({ mapId, initialNodes }: MindMapEditorProps) {
       editingId,
       commitLabel(id: string, label: string) {
         const trimmed = label.trim();
-        if (trimmed) setNodes((current) => current.map((n) => (n.id === id ? { ...n, data: { ...n.data, label: trimmed } } : n)));
+        if (trimmed)
+          setNodes((current) => current.map((n) => (n.id === id ? { ...n, data: { ...n.data, label: trimmed } } : n)));
         setEditingId(null);
         wrapper.current?.focus(); // keyboard shortcuts keep working
       },

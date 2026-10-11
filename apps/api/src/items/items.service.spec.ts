@@ -148,7 +148,13 @@ describe('ItemsService', () => {
         prismaMock.item.findFirst.mockResolvedValue(aMap());
         prismaMock.item.update.mockResolvedValue(aMap());
 
-        await service.update(userId, 'item-1', 'MindMap', { nodes: [root, branch('a'), branch('c'), branch('d')] }, NOW);
+        await service.update(
+          userId,
+          'item-1',
+          'MindMap',
+          { nodes: [root, branch('a'), branch('c'), branch('d')] },
+          NOW,
+        );
 
         const { cards } = prismaMock.item.update.mock.calls[0][0].data;
         expect(cards.deleteMany).toEqual({ id: { in: ['card-b'] } });

@@ -111,11 +111,7 @@ function scheduleLabel(item: Item, card: CardSummary, now: Date): string {
       : KIND_PREFIX[card.kind];
   const due = new Date(card.due);
   const when =
-    due <= now
-      ? card.state === 'New'
-        ? 'nouvelle, à réviser'
-        : 'à réviser'
-      : `dans ${formatDelay(now, due)}`;
+    due <= now ? (card.state === 'New' ? 'nouvelle, à réviser' : 'à réviser') : `dans ${formatDelay(now, due)}`;
   const label = prefix + when;
   return item.type === 'Quote' ? label.charAt(0).toUpperCase() + label.slice(1) : label;
 }

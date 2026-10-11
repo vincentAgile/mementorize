@@ -1,5 +1,7 @@
 # Mementorize
 
+[![CI](https://github.com/vincentAgile/mementorize/actions/workflows/ci.yml/badge.svg)](https://github.com/vincentAgile/mementorize/actions/workflows/ci.yml)
+
 Application de mémorisation à long terme (citations, vocabulaire anglais, cartes mentales), basée sur la courbe de l'oubli. Un système d'autoévaluation détermine, pour chaque élément, le bon moment pour le réviser.
 
 Projet personnel de veille technique : chaque phase de développement est aussi l'occasion d'explorer une brique de l'écosystème JS/TS moderne et d'une chaîne de déploiement complète (Docker, Traefik, GitHub Actions).
@@ -82,14 +84,14 @@ navigateur ──3001──▶ web ──(frontend)──▶ api ──(backend)
                                                   migrate ──┘
 ```
 
-| service    | image | rôle |
-|------------|-------|------|
-| `postgres` | `postgres:16-alpine` | la base ; publiée sur `127.0.0.1:5432` seulement, pour `pnpm dev` |
-| `migrate`  | `apps/api/Dockerfile`, cible `migrate` | applique les migrations (`prisma migrate deploy`) puis s'arrête |
-| `api`      | `apps/api/Dockerfile`, cible `runtime` | l'API NestJS ; démarre une fois `migrate` terminé avec succès |
-| `web`      | `apps/web/Dockerfile` | le serveur Next.js ; démarre une fois l'API déclarée en bonne santé |
+| service    | image                                  | rôle                                                                |
+| ---------- | -------------------------------------- | ------------------------------------------------------------------- |
+| `postgres` | `postgres:16-alpine`                   | la base ; publiée sur `127.0.0.1:5432` seulement, pour `pnpm dev`   |
+| `migrate`  | `apps/api/Dockerfile`, cible `migrate` | applique les migrations (`prisma migrate deploy`) puis s'arrête     |
+| `api`      | `apps/api/Dockerfile`, cible `runtime` | l'API NestJS ; démarre une fois `migrate` terminé avec succès       |
+| `web`      | `apps/web/Dockerfile`                  | le serveur Next.js ; démarre une fois l'API déclarée en bonne santé |
 
-**Ordre de démarrage.** `depends_on` avec conditions : `postgres` *healthy* (`pg_isready`) → `migrate` *completed successfully* → `api` *healthy* (`GET /health`, qui interroge aussi la base) → `web`. Sans ces conditions, les services démarreraient en même temps et l'API tenterait de se connecter à une base pas encore prête.
+**Ordre de démarrage.** `depends_on` avec conditions : `postgres` _healthy_ (`pg_isready`) → `migrate` _completed successfully_ → `api` _healthy_ (`GET /health`, qui interroge aussi la base) → `web`. Sans ces conditions, les services démarreraient en même temps et l'API tenterait de se connecter à une base pas encore prête.
 
 **Isolation.** Seul `web` est publié sur la machine hôte. L'API n'est joignable que par `web`, sur le réseau `frontend` (le navigateur ne l'appelle jamais directement, voir [apps/web/README.md](./apps/web/README.md)) ; la base n'est que sur le réseau `backend`, que `web` ne voit pas. Les conteneurs s'adressent les uns aux autres par nom de service (`http://api:3000`, `postgres:5432`), résolu par le DNS de Docker.
 
@@ -102,6 +104,30 @@ navigateur ──3001──▶ web ──(frontend)──▶ api ──(backend)
 3. image finale — Node seul, le code compilé et les dépendances de production, sous l'utilisateur non privilégié `node`. Ni sources, ni outils de build, ni dépendances de développement.
 
 Le build se lance depuis la racine (le contexte Docker est tout le monorepo, filtré par `.dockerignore`) : chaque Dockerfile vit à côté de son app mais a besoin du lockfile et de la config pnpm de la racine.
+
+## Intégration continue (phase 9)
+
+Chaque pull request, et chaque push sur `main`, déclenche [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) : six jobs indépendants, lancés en parallèle (environ une minute au total).
+
+| job                     | vérifie                                                                                                                                                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Formatage               | `pnpm format:check` : tout le dépôt suit la configuration Prettier (`.prettierrc.json`)                                                                                                                                                          |
+| Lint                    | `pnpm lint` : oxlint pour l'API, ESLint pour le web                                                                                                                                                                                              |
+| Tests unitaires         | `pnpm test` (Vitest)                                                                                                                                                                                                                             |
+| Build                   | `pnpm build` : compile l'API et le web, ce qui vérifie aussi les types                                                                                                                                                                           |
+| Migrations et tests e2e | sur un vrai PostgreSQL (_service container_) : les migrations, rejouées depuis zéro, correspondent exactement à `schema.prisma` (`prisma migrate diff --exit-code`), s'appliquent sur une base vide, puis les tests e2e de l'API tournent dessus |
+| Images Docker           | `docker compose build` : un Dockerfile cassé est repéré ici, pas au déploiement                                                                                                                                                                  |
+
+- **Caches** : le store pnpm (les paquets téléchargés) est mis en cache par `actions/setup-node`, indexé sur le lockfile ; le cache de Turborepo (`.turbo/cache`) permet de rejouer sans les relancer les tâches dont les entrées n'ont pas changé.
+- **Mise en place commune** : [`.github/actions/setup`](./.github/actions/setup/action.yml), une action locale (pnpm, Node, caches, `pnpm install --frozen-lockfile`) partagée par les jobs.
+- **Un nouveau push annule le passage en cours** sur la même PR (`concurrency`), et le jeton fourni au workflow est en lecture seule.
+
+Avant de pousser, les mêmes vérifications en local :
+
+```bash
+pnpm format        # corrige le formatage (ou format:check pour vérifier seulement)
+pnpm lint && pnpm test && pnpm build
+```
 
 ## Conventions
 
