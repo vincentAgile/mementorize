@@ -1,0 +1,105 @@
+# Continuous deployment (phase 10): when the CI is green on a push to main,
+# the commit goes to production. The server is reached over SSH, with a key
+# that can only run deploy/deploy.sh; that script does the rest (pull the
+# images published by the CI, back up, migrate, replace the containers
+# without interruption). Setup and rollback: deploy/README.md.
+
+name: Deploy
+
+on:
+  # After every CI run on main. The job below only goes ahead if the run
+  # succeeded, and was triggered by a push (not by a pull request whose
+  # branch happens to be called main, for instance).
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  # "Run workflow" button, in the Actions tab: redeploy, or go back to an
+  # earlier commit of main.
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Commit à déployer (SHA complet ou abrégé, ou main pour le dernier)"
+        required: true
+        default: main
+
+# One deployment at a time, and never interrupted halfway: a deployment
+# triggered while another runs waits for it.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read # resolve the commit
+  packages: read # the token sent to the server pulls the images with it
+
+jobs:
+  deploy:
+    name: Production
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Settings → Environments → production: the SSH key (secret), the
+    # server's address and identity, the app's URL (variables). The
+    # deployments are listed on the repository's home page.
+    environment:
+      name: production
+      url: ${{ vars.APP_URL }}
+    steps:
+      - name: Commit to deploy
+        id: commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ inputs.ref || github.event.workflow_run.head_sha }}
+        run: |
+          [[ $REF =~ ^[0-9A-Za-z._-]+$ ]] || { echo "::error::Référence invalide : $REF"; exit 1; }
+          sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$REF" --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          # Two quick pushes: their CI runs can finish in any order. Only
+          # the latest commit of main is deployed automatically, so that an
+          # older one never replaces a newer one.
+          head=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if [[ $GITHUB_EVENT_NAME == workflow_run && $sha != "$head" ]]; then
+            echo "::notice::${sha:0:7} n'est plus le dernier commit de main (${head:0:7}) : son propre déploiement suivra."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: SSH key and server identity
+        if: steps.commit.outputs.skip != 'true'
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          # The server's public host key: ssh refuses to connect to a
+          # machine that doesn't present it (no "trust on first use").
+          KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          install -m 600 /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      # The "command" is the commit: the server only accepts that (see
+      # deploy/deploy.sh). The job's token goes on stdin, never on a command
+      # line; it expires when the job ends.
+      - name: Deploy ${{ steps.commit.outputs.sha }}
+        if: steps.commit.outputs.skip != 'true'
+        env:
+          TOKEN: ${{ github.token }}
+          SHA: ${{ steps.commit.outputs.sha }}
+          TARGET: ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}
+        run: |
+          printf '%s\n' "$TOKEN" | ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=20 -o ServerAliveInterval=30 \
+            "$TARGET" "$SHA"
+
+      - name: Smoke test
+        if: steps.commit.outputs.skip != 'true'
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 --retry-all-errors \
+            --output /dev/null --write-out "GET /login: %{http_code} en %{time_total} s\n" "$APP_URL/login"
+          echo "Déployé : [\`${SHA:0:7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$SHA) sur $APP_URL" >> "$GITHUB_STEP_SUMMARY"
