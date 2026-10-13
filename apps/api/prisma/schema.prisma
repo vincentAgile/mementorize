@@ -14,6 +14,17 @@ model User {
   updatedAt    DateTime @updatedAt
   items        Item[]
 
+  /// E-mail reminder of the due reviews (phase 11), once a day at most.
+  /// Off until the user turns it on in the settings.
+  reminderEnabled    Boolean @default(false)
+  /// Local hour (0-23), in reminderTimeZone, from which it is sent.
+  reminderHour       Int     @default(8)
+  /// IANA time zone (e.g. Europe/Paris), sent by the user's browser.
+  reminderTimeZone   String  @default("Europe/Paris")
+  /// Local date (YYYY-MM-DD) of the last day handled: at most one reminder
+  /// a day, even with two API containers running during a deployment.
+  reminderLastSentOn String?
+
   @@map("users")
 }
 

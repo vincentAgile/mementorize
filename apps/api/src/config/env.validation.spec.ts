@@ -17,6 +17,22 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...valid, JWT_SECRET: 'change-me' })).not.toThrow();
   });
 
+  it('needs no e-mail settings, but checks them once SMTP_HOST is set', () => {
+    expect(() => validateEnv(valid)).not.toThrow();
+    expect(() => validateEnv({ ...valid, SMTP_HOST: 'smtp.example.fr' })).toThrow(/MAIL_FROM[\s\S]*APP_URL/);
+    expect(() =>
+      validateEnv({
+        ...valid,
+        SMTP_HOST: 'smtp.example.fr',
+        SMTP_USER: 'me@example.fr',
+        APP_URL: 'https://app.example.fr',
+      }),
+    ).not.toThrow();
+    expect(() =>
+      validateEnv({ ...valid, SMTP_HOST: 'h', SMTP_USER: 'u', APP_URL: 'https://a.fr', SMTP_PORT: 'tls' }),
+    ).toThrow(/SMTP_PORT/);
+  });
+
   it('lists every problem at once', () => {
     expect(() => validateEnv({ JWT_EXPIRES_IN: 'soon' })).toThrow(/DATABASE_URL[\s\S]*JWT_SECRET[\s\S]*JWT_EXPIRES_IN/);
   });
