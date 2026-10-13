@@ -1,6 +1,6 @@
-# Déploiement sur le VPS (phases 8 et 10)
+# Déploiement sur le VPS (phases 8 à 11)
 
-Mementorize sur un VPS OVH, en HTTPS sur un vrai nom de domaine. La phase 8 a installé le serveur à la main (étapes 1 à 8) ; depuis la phase 10, chaque push sur `main` y est déployé automatiquement, sans coupure (étape 9 pour la mise en place, puis [Déploiement continu](#déploiement-continu-phase-10)).
+Mementorize sur un VPS OVH, en HTTPS sur un vrai nom de domaine. La phase 8 a installé le serveur à la main (étapes 1 à 8) ; depuis la phase 10, chaque push sur `main` y est déployé automatiquement, sans coupure (étape 9 pour la mise en place, puis [Déploiement continu](#déploiement-continu-phase-10)). La phase 11 y ajoute les e-mails de rappel, la supervision et les sauvegardes automatiques ([Rappels, supervision et sauvegardes](#rappels-supervision-et-sauvegardes-phase-11)).
 
 ```
 navigateur ──HTTPS──▶ Traefik (:80, :443) ──(réseau proxy)──▶ web ──▶ api ──▶ postgres
@@ -341,6 +341,7 @@ Seuls les commits à partir de la phase 10 sont déployables ainsi : les précé
 
 - **Traefik** (`deploy/traefik`) : une modification de sa configuration ne s'applique qu'avec `cd ~/mementorize/deploy/traefik && docker compose up -d`, après le déploiement qui l'apporte.
 - **`.env`** : un nouveau réglage s'y ajoute à la main, avant le déploiement qui en a besoin.
+- **Uptime Kuma** (`deploy/uptime-kuma`) et les **timers systemd** (`deploy/systemd`) : comme Traefik, à mettre à jour à la main quand ils changent (voir la phase 11 ci-dessous).
 - **`postgres`** : une modification de son service (version de l'image, par exemple) le recrée au déploiement suivant, avec quelques secondes d'interruption.
 
 ### Passer un serveur de la phase 8 à la phase 10
@@ -359,9 +360,155 @@ Sur le serveur installé en phase 8 :
 3. fusionner : la CI publie les images, puis _Deploy_ remplace les conteneurs. Ceux de la phase 8 n'ont pas encore de _healthcheck_ de vidage : ce premier remplacement peut faire échouer quelques requêtes, les suivants non ;
 4. supprimer les images construites sur le serveur en phase 8, devenues inutiles : `docker image rm mementorize-api mementorize-migrate mementorize-web`.
 
+## Rappels, supervision et sauvegardes (phase 11)
+
+Quatre choses à mettre en place, une fois, dans cet ordre : l'adresse d'envoi des e-mails, Uptime Kuma, la sauvegarde hors serveur, la sonde externe. Le code (rappels, `/health`) arrive par le déploiement automatique ; tout le reste vit sur le serveur.
+
+### E-mails de rappel
+
+L'API envoie les rappels par le SMTP d'une boîte mail de ton domaine, chez OVH. Une boîte dédiée (`rappels@mondomaine.fr`, par exemple) évite de mettre le mot de passe de ta boîte personnelle sur le serveur : **Web Cloud → E-mails → ton domaine → Comptes e-mail → Créer une adresse**.
+
+Pour que les rappels n'arrivent pas en indésirables, la zone DNS du domaine doit autoriser OVH à envoyer pour lui. Dans **Noms de domaine → ton domaine → Zone DNS**, une entrée **TXT** sur le domaine lui-même doit contenir `v=spf1 include:mx.ovh.com ~all` (OVH la crée en général avec l'offre e-mail). Si l'espace client le propose pour l'offre e-mail, activer aussi **DKIM** (signature des e-mails envoyés).
+
+Sur le serveur, ajouter dans `~/mementorize/.env` :
+
+```bash
+SMTP_HOST=ssl0.ovh.net
+SMTP_PORT=465
+SMTP_USER="rappels@mondomaine.fr"
+SMTP_PASSWORD="<mot de passe de la boîte>"
+MAIL_FROM="Mementorize <rappels@mondomaine.fr>"
+```
+
+`MAIL_FROM` doit utiliser l'adresse de la boîte : OVH refuse d'envoyer au nom d'une autre. Puis remplacer le conteneur `api` pour qu'il lise ces réglages, sans coupure, comme le ferait un déploiement :
+
+```bash
+cd ~/mementorize
+docker rollout api
+docker compose logs api | grep -i smtp     # rien : « SMTP_HOST is not set » ne doit plus apparaître
+```
+
+(`APP_URL`, pour les liens des e-mails, est déduit de `APP_DOMAIN` par `docker-compose.prod.yml`.)
+
+Vérifier dans l'application : **Réglages → M'envoyer un e-mail de test**, puis activer le rappel et choisir l'heure.
+
+### Uptime Kuma
+
+Une entrée DNS de plus, comme à l'étape 7 : type **A**, sous-domaine `status`, cible `IP_DU_VPS`. Une fois le nom résolu :
+
+```bash
+cd ~/mementorize/deploy/uptime-kuma
+cp .env.example .env
+nano .env                  # STATUS_DOMAIN="status.mondomaine.fr"
+docker compose up -d
+```
+
+**Tout de suite après**, ouvrir `https://status.mondomaine.fr` et créer le compte administrateur : tant qu'il n'existe pas, le premier venu pourrait le créer. Choisir un mot de passe solide (Uptime Kuma est sur Internet), et activer la double authentification dans **Paramètres → Sécurité**.
+
+Ensuite, dans Uptime Kuma :
+
+1. **Paramètres → Notifications → Configurer une notification** : type _SMTP (e-mail)_, hôte `ssl0.ovh.net`, port `465`, sécurité _TLS_, la même boîte que l'API, et ton adresse personnelle en destinataire. Cocher **Activé par défaut** et **Appliquer à toutes les sondes existantes**. Le bouton **Tester** envoie un e-mail.
+2. **Ajouter une sonde** : type _HTTP(s) - Mot-clé_, URL `https://mementorize.mondomaine.fr/health`, mot-clé `ok`, intervalle 60 s. Dans les options avancées, cocher **Notification d'expiration du certificat**.
+3. **Pages de statut → Nouvelle page de statut** : nom `Mementorize`, adresse `mementorize`, y ajouter la sonde, enregistrer. Elle est publique : `https://status.mondomaine.fr/status/mementorize`.
+4. **Paramètres → Général → Page d'accueil** : la page de statut. Les visiteurs voient le statut, l'administration reste derrière la connexion.
+
+Pour vérifier l'alerte, arrêter le site un instant : depuis `~/mementorize`, `docker compose stop web`, attendre l'e-mail d'Uptime Kuma (1 à 2 minutes), puis `docker compose up -d web`. Un second e-mail annonce le retour.
+
+### Sauvegarde quotidienne, chiffrée, hors serveur
+
+Chaque nuit à 3 h 30, `deploy/backup.sh` (lancé par un _timer_ systemd) fait un `pg_dump` dans `~/backups/daily` (14 jours gardés), puis en envoie une copie chiffrée sur OVH Object Storage (30 jours gardés). Une sauvegarde qui ne vit que sur le serveur disparaît avec lui : la copie hors serveur est la vraie sauvegarde.
+
+**Le stockage** : dans l'espace client OVH, **Public Cloud** (créer un projet si tu n'en as pas), puis **Object Storage** :
+
+- créer un **utilisateur S3** et noter sa _clé d'accès_ et sa _clé secrète_ ;
+- noter la région (par exemple `gra`, Gravelines) : l'adresse S3 est alors `s3.gra.io.cloud.ovh.net`.
+
+Le conteneur (_bucket_) sera créé par rclone ci-dessous. Le coût est de l'ordre de quelques centimes par mois pour quelques mégaoctets.
+
+**rclone**, l'outil de copie vers le stockage, installé sur le serveur :
+
+```bash
+sudo apt install -y rclone
+rclone version              # 1.70 ou plus pour provider=OVHcloud (sinon, provider=Other)
+```
+
+Deux « remotes » rclone : `ovh`, le stockage brut, et `sauvegardes`, qui chiffre tout ce qui passe par lui avant de l'envoyer dans `ovh`. Les clés et le mot de passe sont lus au clavier (`read -s` : rien à l'écran ni dans l'historique du shell) :
+
+```bash
+read -rp "Clé d'accès S3 : " S3_KEY
+read -rsp "Clé secrète S3 : " S3_SECRET; echo
+rclone config create ovh s3 provider=OVHcloud env_auth=false \
+  access_key_id="$S3_KEY" secret_access_key="$S3_SECRET" \
+  endpoint=s3.gra.io.cloud.ovh.net region=gra
+rclone mkdir ovh:mementorize-sauvegardes      # crée le bucket (le nom doit être unique : en changer si refusé)
+
+openssl rand -base64 24                       # → mot de passe de chiffrement : À NOTER dans ton gestionnaire de mots de passe
+read -rsp "Mot de passe de chiffrement : " CRYPT_PASSWORD; echo
+rclone config create sauvegardes crypt remote=ovh:mementorize-sauvegardes \
+  password="$CRYPT_PASSWORD" --obscure
+unset S3_KEY S3_SECRET CRYPT_PASSWORD
+chmod 600 ~/.config/rclone/rclone.conf
+rclone lsf sauvegardes:                       # vide, sans erreur
+```
+
+> **Le mot de passe de chiffrement ne se récupère pas.** Si le serveur disparaît, il faudra, sur une autre machine, la clé d'accès, la clé secrète **et** ce mot de passe pour relire les sauvegardes. Garde les trois dans ton gestionnaire de mots de passe.
+
+**Les réglages** du script, lus par le service systemd :
+
+```bash
+mkdir -p ~/.config/mementorize
+cp ~/mementorize/deploy/backup.env.example ~/.config/mementorize/backup.env
+chmod 600 ~/.config/mementorize/backup.env
+nano ~/.config/mementorize/backup.env        # APP_URL ; les URL healthchecks.io viendront à l'étape suivante
+```
+
+**Les timers** : les fichiers de `deploy/systemd` sont copiés dans systemd (ils supposent l'utilisateur `ubuntu` et le dépôt dans `~/mementorize` ; à adapter sinon) :
+
+```bash
+sudo cp ~/mementorize/deploy/systemd/mementorize-* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now mementorize-backup.timer
+sudo systemctl start mementorize-backup.service    # une première sauvegarde tout de suite
+journalctl -u mementorize-backup -n 20 --no-pager  # « ==> Done »
+rclone lsf sauvegardes:                            # le fichier est là (son nom en clair : seul rclone le voit ainsi)
+rclone lsf ovh:mementorize-sauvegardes             # ce qu'OVH voit : des noms et un contenu chiffrés
+systemctl list-timers 'mementorize-*'              # prochaine exécution
+```
+
+### Sonde externe (healthchecks.io)
+
+Uptime Kuma tourne sur le serveur qu'il surveille : si le VPS tombe, il tombe avec, et personne ne te prévient. [healthchecks.io](https://healthchecks.io) (gratuit) fait l'inverse : c'est le serveur qui lui donne des nouvelles, et c'est le silence qui déclenche l'alerte.
+
+Créer un compte (les alertes partent par e-mail par défaut), puis deux _checks_ :
+
+| nom                      | période (_Period_) | délai de grâce (_Grace_) | pingé par                                                    |
+| ------------------------ | ------------------ | ------------------------ | ------------------------------------------------------------ |
+| `mementorize-serveur`    | 5 minutes          | 5 minutes                | `deploy/heartbeat.sh`, toutes les 5 min, si `/health` répond |
+| `mementorize-sauvegarde` | 1 jour             | 1 heure                  | `deploy/backup.sh`, chaque nuit (succès ou échec)            |
+
+Copier leurs _ping URL_ dans `~/.config/mementorize/backup.env` (`HC_HEARTBEAT_URL`, `HC_BACKUP_URL`), puis :
+
+```bash
+sudo systemctl enable --now mementorize-heartbeat.timer
+sudo systemctl start mementorize-backup.service    # le check « sauvegarde » passe au vert
+```
+
+Après 5 minutes, les deux checks sont verts sur healthchecks.io.
+
+### Restaurer depuis la copie hors serveur
+
+Sur le serveur (ou sur une machine neuve, après y avoir recréé les deux remotes rclone avec les mêmes clés et le même mot de passe) :
+
+```bash
+rclone lsf sauvegardes:                                     # choisir un fichier
+rclone copy sauvegardes:mementorize-AAAAMMJJ-HHMMSS.sql.gz ~/restauration/
+```
+
+Puis la procédure de _Sauvegarder et restaurer_ ci-dessous, avec ce fichier.
+
 ## Sauvegarder et restaurer
 
-Chaque déploiement en fait une, dans `~/backups` (`ls -lt ~/backups`). À la main :
+Automatiquement : une chaque nuit dans `~/backups/daily` (et sa copie chiffrée hors serveur, voir ci-dessus), et une avant chaque déploiement dans `~/backups`. À la main :
 
 ```bash
 cd ~/mementorize
@@ -386,21 +533,23 @@ Le même `pg_dump`, lancé sur ton PC (`docker compose exec -T postgres pg_dump 
 
 ## Dépannage
 
-| symptôme                                                     | piste                                                                                                                                                                                                               |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pas de certificat, ou erreur `acme` dans les logs de Traefik | Le DNS ne pointe pas encore vers le VPS (`Resolve-DnsName`), le port 80 est fermé (`sudo ufw status`), une entrée AAAA existe, ou la limite de Let's Encrypt est atteinte (repasser en _staging_).                  |
-| `404 page not found` (texte brut, servi par Traefik)         | Aucune route ne correspond : `APP_DOMAIN` différent du nom tapé, `COMPOSE_FILE` absent de `.env` (labels non appliqués), ou `web` pas démarré. `docker compose config` montre la configuration réellement utilisée. |
-| `Bad Gateway` / `Gateway Timeout`                            | Traefik voit le conteneur mais ne le joint pas : `web` doit être sur le réseau `proxy` (`docker network inspect proxy`).                                                                                            |
-| `api` redémarre en boucle                                    | `docker compose logs api` : un `JWT_SECRET` absent ou laissé à `change-me` fait refuser le démarrage, avec le message correspondant.                                                                                |
-| `migrate` en erreur                                          | `docker compose logs migrate` ; l'API ne démarre pas tant que les migrations n'ont pas réussi.                                                                                                                      |
-| Le build s'arrête sans message clair (`Killed`, code 137)    | Mémoire insuffisante : voir l'étape 5 (swap).                                                                                                                                                                       |
-| _Deploy_ : `Host key verification failed`                    | `DEPLOY_KNOWN_HOSTS` ne correspond pas au serveur (adresse, ligne tronquée) : la refaire à l'étape 9.                                                                                                               |
-| _Deploy_ : `Permission denied (publickey)`                   | `DEPLOY_SSH_KEY` incomplète (lignes BEGIN et END comprises), `DEPLOY_USER` erroné, ou ligne absente de `~/.ssh/authorized_keys`.                                                                                    |
-| _Deploy_ : `deploy.sh: No such file or directory`            | Le dépôt du serveur n'est pas dans `~/mementorize`, ou pas sur un commit de la phase 10 (voir _Passer un serveur de la phase 8 à la phase 10_).                                                                     |
-| _Deploy_ : `denied` ou `unauthorized` au téléchargement      | Le workflow n'a pas accès aux paquets : sur GitHub, chaque paquet → **Package settings → Manage Actions access** → ajouter le dépôt, en lecture.                                                                    |
-| _Deploy_ : `Files modified on the server`                    | Un fichier suivi par git a été modifié sur le serveur (`git status`) : `git stash`, ou `git checkout -- <fichier>`, puis relancer.                                                                                  |
-| _Deploy_ : `New containers are not healthy. Rolling back.`   | La nouvelle version ne démarre pas ; ses journaux sont dans ceux du job. L'ancienne version continue de servir.                                                                                                     |
-| `IMAGE_TAG is missing` sur une commande `docker compose`     | Aucun déploiement n'a encore eu lieu sur ce serveur : en lancer un (étape 10).                                                                                                                                      |
+| symptôme                                                     | piste                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pas de certificat, ou erreur `acme` dans les logs de Traefik | Le DNS ne pointe pas encore vers le VPS (`Resolve-DnsName`), le port 80 est fermé (`sudo ufw status`), une entrée AAAA existe, ou la limite de Let's Encrypt est atteinte (repasser en _staging_).                                              |
+| `404 page not found` (texte brut, servi par Traefik)         | Aucune route ne correspond : `APP_DOMAIN` différent du nom tapé, `COMPOSE_FILE` absent de `.env` (labels non appliqués), ou `web` pas démarré. `docker compose config` montre la configuration réellement utilisée.                             |
+| `Bad Gateway` / `Gateway Timeout`                            | Traefik voit le conteneur mais ne le joint pas : `web` doit être sur le réseau `proxy` (`docker network inspect proxy`).                                                                                                                        |
+| `api` redémarre en boucle                                    | `docker compose logs api` : un `JWT_SECRET` absent ou laissé à `change-me` fait refuser le démarrage, avec le message correspondant.                                                                                                            |
+| `migrate` en erreur                                          | `docker compose logs migrate` ; l'API ne démarre pas tant que les migrations n'ont pas réussi.                                                                                                                                                  |
+| Le build s'arrête sans message clair (`Killed`, code 137)    | Mémoire insuffisante : voir l'étape 5 (swap).                                                                                                                                                                                                   |
+| _Deploy_ : `Host key verification failed`                    | `DEPLOY_KNOWN_HOSTS` ne correspond pas au serveur (adresse, ligne tronquée) : la refaire à l'étape 9.                                                                                                                                           |
+| _Deploy_ : `Permission denied (publickey)`                   | `DEPLOY_SSH_KEY` incomplète (lignes BEGIN et END comprises), `DEPLOY_USER` erroné, ou ligne absente de `~/.ssh/authorized_keys`.                                                                                                                |
+| _Deploy_ : `deploy.sh: No such file or directory`            | Le dépôt du serveur n'est pas dans `~/mementorize`, ou pas sur un commit de la phase 10 (voir _Passer un serveur de la phase 8 à la phase 10_).                                                                                                 |
+| _Deploy_ : `denied` ou `unauthorized` au téléchargement      | Le workflow n'a pas accès aux paquets : sur GitHub, chaque paquet → **Package settings → Manage Actions access** → ajouter le dépôt, en lecture.                                                                                                |
+| _Deploy_ : `Files modified on the server`                    | Un fichier suivi par git a été modifié sur le serveur (`git status`) : `git stash`, ou `git checkout -- <fichier>`, puis relancer.                                                                                                              |
+| _Deploy_ : `New containers are not healthy. Rolling back.`   | La nouvelle version ne démarre pas ; ses journaux sont dans ceux du job. L'ancienne version continue de servir.                                                                                                                                 |
+| Pas d'e-mail de rappel                                       | **Réglages → e-mail de test** : « pas configuré » → `SMTP_*` absents de `.env` ou `docker rollout api` pas relancé ; « refusé » → `docker compose logs api` (mot de passe, `MAIL_FROM` différent de la boîte). Reçu en indésirables : SPF/DKIM. |
+| Sauvegarde en échec (alerte healthchecks.io)                 | `journalctl -u mementorize-backup -n 50 --no-pager` ; tester la copie seule : `rclone lsf sauvegardes:`.                                                                                                                                        |
+| `IMAGE_TAG is missing` sur une commande `docker compose`     | Aucun déploiement n'a encore eu lieu sur ce serveur : en lancer un (étape 10).                                                                                                                                                                  |
 
 Commandes utiles :
 
@@ -413,4 +562,4 @@ grep IMAGE_TAG .env                       # commit en production
 
 ---
 
-Sources : [docker-rollout](https://github.com/wowu/docker-rollout), [GitHub — environnements de déploiement](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments), [GitHub — publier sur le Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry), [Docker — healthcheck](https://docs.docker.com/reference/compose-file/services/#healthcheck), [OpenSSH — authorized_keys](https://man.openbsd.org/sshd#AUTHORIZED_KEYS_FILE_FORMAT), [Traefik — Let's Encrypt](https://doc.traefik.io/traefik/https/acme/), [Traefik — Docker provider](https://doc.traefik.io/traefik/providers/docker/), [Docker — Install Docker Engine](https://docs.docker.com/engine/install/), [Docker — ufw](https://docs.docker.com/engine/network/packet-filtering-firewalls/#docker-and-ufw), [Let's Encrypt — environnement de staging](https://letsencrypt.org/docs/staging-environment/).
+Sources : [Uptime Kuma](https://github.com/louislam/uptime-kuma), [healthchecks.io — documentation](https://healthchecks.io/docs/), [rclone — crypt](https://rclone.org/crypt/), [OVHcloud — rclone et Object Storage](https://docs.ovhcloud.com/fr/guides/storage-and-backup/object-storage/s3-migration), [systemd.timer](https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html), [docker-rollout](https://github.com/wowu/docker-rollout), [GitHub — environnements de déploiement](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments), [GitHub — publier sur le Container registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry), [Docker — healthcheck](https://docs.docker.com/reference/compose-file/services/#healthcheck), [OpenSSH — authorized_keys](https://man.openbsd.org/sshd#AUTHORIZED_KEYS_FILE_FORMAT), [Traefik — Let's Encrypt](https://doc.traefik.io/traefik/https/acme/), [Traefik — Docker provider](https://doc.traefik.io/traefik/providers/docker/), [Docker — Install Docker Engine](https://docs.docker.com/engine/install/), [Docker — ufw](https://docs.docker.com/engine/network/packet-filtering-firewalls/#docker-and-ufw), [Let's Encrypt — environnement de staging](https://letsencrypt.org/docs/staging-environment/).

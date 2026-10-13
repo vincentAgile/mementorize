@@ -652,3 +652,61 @@ kbd {
     background: #3a2c14;
   }
 }
+
+/* --- Phase 11: settings --- */
+
+.settings__form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.settings__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.settings__form .settings__check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+}
+
+.settings__form select {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.settings__hint {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.settings__form button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  background: #147d80;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.settings__form .button--secondary {
+  background: none;
+  color: #147d80;
+  border: 1px solid #147d80;
+}
+
+.settings__form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

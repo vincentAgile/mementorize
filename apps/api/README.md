@@ -186,13 +186,32 @@ La CLI Prisma est une dépendance de développement : la garder hors de l'image 
 - `prisma.config.ts` lit `DATABASE_URL` même pour `prisma generate`, qui ne se connecte jamais : l'étape de build définit une URL factice, qui n'atteint pas l'image finale.
 - Le client Prisma est du code _généré_ à côté de `@prisma/client`, dans `node_modules`. Après `pnpm deploy`, ce `node_modules` est neuf : il faut relancer `prisma generate` dans le dossier déployé, avec la CLI de l'étape de build.
 
+## Rappels par e-mail (phase 11)
+
+Chaque utilisateur peut recevoir, une fois par jour à l'heure de son choix (dans son fuseau horaire), un e-mail qui lui dit combien de cartes l'attendent. Rien n'est envoyé les jours où rien n'est dû.
+
+```bash
+# Réglages (désactivé, 8 h, Europe/Paris par défaut)
+curl http://localhost:3000/reminders/settings -H "Authorization: Bearer $TOKEN"
+curl -X PUT http://localhost:3000/reminders/settings -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"enabled":true,"hour":8,"timeZone":"Europe/Paris"}'
+
+# Envoyer le rappel tout de suite, pour vérifier la configuration (204 ; 503 sans SMTP)
+curl -X POST http://localhost:3000/reminders/test -H "Authorization: Bearer $TOKEN"
+```
+
+- **Tâche planifiée** (`@nestjs/schedule`, `RemindersScheduler`) : toutes les 10 minutes, elle cherche les utilisateurs dont l'heure est venue (jusqu'à 3 h de retard, si l'API était arrêtée à ce moment-là) et qui n'ont pas encore été traités aujourd'hui.
+- **Une fois par jour, même à deux** : avant d'envoyer, la tâche « réserve » la journée par un seul `UPDATE … WHERE reminderLastSentOn <> aujourd'hui`. Pendant un déploiement, deux conteneurs `api` tournent quelques secondes : un seul obtient la ligne, un seul envoie. Si l'envoi échoue, la journée est rendue, et le passage suivant réessaie.
+- **Envoi** (`MailService`, Nodemailer) : SMTP configuré par `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` et `APP_URL` (pour les liens). Sans `SMTP_HOST`, rien n'est envoyé, et le reste de l'API fonctionne pareil. En local, Mailpit attrape les e-mails : `docker compose --profile mail up -d mailpit`, puis http://localhost:8025.
+- **Désinscription sans connexion** : le lien de l'e-mail porte l'identifiant de l'utilisateur et sa signature HMAC (avec `JWT_SECRET`). `POST /reminders/unsubscribe { user, token }` (public) vérifie la signature et désactive les rappels.
+
 ## Tests
 
 ```bash
 pnpm --filter api test
 ```
 
-`ItemsService`, `AuthService` et `ReviewsService` sont testés avec leurs dépendances mockées (Prisma, JWT) : pas besoin d'une vraie base. `validateMindMap()` et `cardSlots()` sont des fonctions pures, testées directement. `SchedulerService` est testé avec une horloge fixe et sans aléa (_fuzz_), ce qui permet de vérifier précisément les intervalles calculés.
+`ItemsService`, `AuthService` et `ReviewsService` sont testés avec leurs dépendances mockées (Prisma, JWT) : pas besoin d'une vraie base. `validateMindMap()` et `cardSlots()` sont des fonctions pures, testées directement. `RemindersService` est testé de la même façon (heure locale, fuseaux, journée déjà traitée, échec d'envoi). `SchedulerService` est testé avec une horloge fixe et sans aléa (_fuzz_), ce qui permet de vérifier précisément les intervalles calculés.
 
 ## Prisma Studio
 

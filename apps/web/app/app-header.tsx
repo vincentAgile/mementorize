@@ -14,6 +14,7 @@ export function AppHeader({ email, dueCount }: AppHeaderProps) {
         <nav className="page__nav">
           <Link href="/">Mes fiches</Link>
           <Link href="/review">Réviser {dueCount > 0 && <span className="badge">{dueCount}</span>}</Link>
+          <Link href="/settings">Réglages</Link>
         </nav>
       </div>
       <form action={logoutAction} className="page__user">

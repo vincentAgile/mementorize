@@ -1,0 +1,35 @@
+# Uptime Kuma: supervision and status page (phase 11).
+#
+# Checks every minute that the app answers (https://<app>/health, which goes
+# through Traefik, web, the API and the database), keeps the history, sends
+# an e-mail when it goes down, and publishes a status page. Behind Traefik,
+# like the app: its own subdomain, its own certificate.
+#
+# From this folder: docker compose up -d   (settings: .env, see .env.example)
+# Then, right away, open https://<STATUS_DOMAIN> and create the admin
+# account: until then, anyone could. Guide: deploy/README.md.
+
+name: uptime-kuma
+
+services:
+  uptime-kuma:
+    # Exact version: an update of Uptime Kuma can migrate its database, so
+    # it's done on purpose (change the tag, docker compose up -d).
+    image: louislam/uptime-kuma:2.5.0
+    restart: unless-stopped
+    volumes:
+      - data:/app/data # SQLite database: monitors, history, settings
+    networks: [proxy]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.uptime-kuma.rule=Host(`${STATUS_DOMAIN:?STATUS_DOMAIN is missing - copy .env.example to .env}`)
+      - traefik.http.routers.uptime-kuma.entrypoints=websecure
+      - traefik.http.routers.uptime-kuma.tls.certresolver=letsencrypt
+      - traefik.http.services.uptime-kuma.loadbalancer.server.port=3001
+
+networks:
+  proxy:
+    external: true # created in phase 8, shared with Traefik
+
+volumes:
+  data:

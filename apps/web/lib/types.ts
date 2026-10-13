@@ -102,3 +102,13 @@ export interface Credentials {
   email: string;
   password: string;
 }
+
+export interface ReminderSettingsInput {
+  enabled: boolean;
+  hour: number; // 0-23, local time
+  timeZone: string; // IANA name, e.g. Europe/Paris
+}
+
+export interface ReminderSettings extends ReminderSettingsInput {
+  emailAvailable: boolean; // false: the server can't send e-mails
+}

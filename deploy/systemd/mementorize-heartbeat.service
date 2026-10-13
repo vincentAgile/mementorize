@@ -1,0 +1,11 @@
+# External probe (phase 11): see deploy/heartbeat.sh.
+[Unit]
+Description=Mementorize: heartbeat to healthchecks.io
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+EnvironmentFile=/home/ubuntu/.config/mementorize/backup.env
+ExecStart=/home/ubuntu/mementorize/deploy/heartbeat.sh

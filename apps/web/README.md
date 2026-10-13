@@ -21,6 +21,9 @@ pnpm --filter web dev        # http://localhost:3001 (le 3000 est déjà pris pa
 - `app/items/` — formulaire d'ajout, citation ou mot de vocabulaire (client component + Server Action).
 - `app/review/` — écran « À réviser » : une carte à la fois, « Afficher la réponse », puis 4 boutons d'auto-évaluation qui indiquent quand la carte reviendra. Raccourcis : `Espace` pour révéler, `1` à `4` pour répondre. `facesOf()` (dans `page.tsx`) décide du recto et du verso selon le type de carte : auteur + premiers mots pour une citation, mot anglais ou traduction pour le vocabulaire.
 - `app/mind-maps/` — cartes mentales (phase 6), voir ci-dessous.
+- `app/settings/` — réglages du rappel par e-mail (phase 11) : activation, heure, et le fuseau horaire du navigateur, envoyé avec ; bouton « e-mail de test ».
+- `app/unsubscribe/` — page publique ouverte depuis le lien d'un e-mail de rappel. La désinscription se fait au clic sur le bouton, pas à l'ouverture du lien : certaines messageries ouvrent d'elles-mêmes les liens des e-mails reçus.
+- `app/health/route.ts` — `GET /health`, public : `200` si l'API (et donc la base) répond, `503` sinon. C'est ce que surveille Uptime Kuma : toute la chaîne, de Traefik à la base.
 - `app/app-header.tsx` — en-tête commun (navigation, nombre de révisions en attente, déconnexion).
 - `lib/session.ts` — le cookie de session (httpOnly) qui contient le JWT renvoyé par l'API.
 - `lib/api.ts` — client HTTP vers l'API, **côté serveur uniquement** (`import 'server-only'`).

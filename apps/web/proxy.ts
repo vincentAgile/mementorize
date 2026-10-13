@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { SESSION_COOKIE } from './lib/session-cookie';
 
 // Pages reachable without being logged in.
-const PUBLIC_PATHS = ['/login', '/register', '/session-expired'];
+// /unsubscribe: the link of a reminder e-mail, opened without a session.
+// /health: checked by Uptime Kuma (phase 11).
+const PUBLIC_PATHS = ['/login', '/register', '/session-expired', '/unsubscribe', '/health'];
 
 /**
  * Runs before every matched request. It's an *optimistic* check: it only

@@ -17,7 +17,7 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 ✅ **Phase 8 terminée.** En ligne sur un VPS OVH, derrière Traefik, en HTTPS (Let's Encrypt) : https://mementorize.delaneuville.fr — guide dans [deploy/README.md](./deploy/README.md).
 ✅ **Phase 9 terminée.** Intégration continue avec GitHub Actions : formatage, lint, tests unitaires, build, migrations et tests e2e sur PostgreSQL, images Docker, sur chaque pull request.
 ✅ **Phase 10 terminée.** Déploiement continu : chaque push sur `main` part en production (images publiées sur GHCR par la CI, déploiement par SSH, sauvegarde et migrations dans le pipeline), sans coupure de service.
-🚧 **Phase 11 — Observabilité et rappels.** Pas encore commencée (dont la sauvegarde automatique de la base).
+🚧 **Phase 11 — Observabilité et rappels.** En cours : rappel quotidien par e-mail des révisions dues, page de statut (Uptime Kuma), sonde externe, sauvegarde quotidienne chiffrée hors serveur.
 
 ## Stack cible
 
@@ -36,7 +36,7 @@ apps/
   api/       # API NestJS (à partir de la phase 1)
   web/       # Interface Next.js (à partir de la phase 2)
 packages/    # Code partagé entre apps/* (config, types) — à partir de la phase 5
-deploy/      # Production sur le VPS : Traefik, scripts de déploiement, guide pas à pas (phases 8 et 10)
+deploy/      # Production sur le VPS : Traefik, déploiement, supervision, sauvegardes, guide pas à pas (phases 8 à 11)
 ```
 
 Le monorepo est géré avec **pnpm workspaces** + **Turborepo** pour orchestrer les tâches (`build`, `dev`, `lint`, `test`) et mettre en cache ce qui n'a pas changé.
@@ -151,6 +151,15 @@ push sur main ──▶ CI (ci.yml) ──vert──▶ Deploy (deploy.yml) ─�
 **Migrations rétrocompatibles.** Elles s'appliquent _avant_ le remplacement : pendant quelques secondes, l'ancienne version du code tourne sur le nouveau schéma. Une migration doit donc rester compatible avec la version précédente : on ajoute (colonne facultative, table) dans une version, on retire dans une suivante, une fois le code qui s'en servait parti.
 
 Mise en place, retour à une version précédente, dépannage : [deploy/README.md](./deploy/README.md#déploiement-continu-phase-10).
+
+## Rappels et supervision (phase 11)
+
+- **Rappel par e-mail** : dans **Réglages**, chacun choisit l'heure (dans son fuseau horaire) d'un e-mail quotidien qui annonce les cartes à réviser. Une tâche planifiée de l'API (`@nestjs/schedule`) l'envoie par SMTP (Nodemailer). Détails : [apps/api/README.md](./apps/api/README.md#rappels-par-e-mail-phase-11).
+- **Page de statut** : [Uptime Kuma](https://github.com/louislam/uptime-kuma), sur le VPS derrière Traefik, interroge chaque minute `/health` (Traefik → web → API → base), garde l'historique et prévient par e-mail.
+- **Sonde externe** : Uptime Kuma tombe avec le serveur qu'il surveille. Toutes les 5 minutes, le serveur signale donc à [healthchecks.io](https://healthchecks.io) que le site répond ; sans nouvelles, c'est healthchecks.io qui prévient.
+- **Sauvegarde quotidienne** : `pg_dump` chaque nuit (timer systemd), 14 jours gardés sur le serveur, et une copie chiffrée par rclone sur OVH Object Storage, 30 jours gardés. Elle aussi est surveillée par healthchecks.io.
+
+Mise en place sur le serveur : [deploy/README.md](./deploy/README.md#rappels-supervision-et-sauvegardes-phase-11).
 
 ## Conventions
 

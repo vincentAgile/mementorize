@@ -24,6 +24,8 @@ services:
   api:
     build: !reset null
     image: ghcr.io/vincentagile/mementorize-api:${IMAGE_TAG:?IMAGE_TAG is missing in .env (written by deploy/release.sh)}
+    environment:
+      APP_URL: https://${APP_DOMAIN:?APP_DOMAIN is missing in .env (see .env.example)}
 
   web:
     build: !reset null

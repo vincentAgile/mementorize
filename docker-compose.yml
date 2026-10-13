@@ -71,6 +71,15 @@ services:
       JWT_SECRET: ${JWT_SECRET:-}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-3600}
       PORT: 3000
+      # E-mail reminders (phase 11). Without SMTP_HOST, nothing is sent.
+      # Locally: `docker compose --profile mail up` adds Mailpit (below).
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-465}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      # Address of the app, for the links of the e-mails.
+      APP_URL: ${APP_URL:-http://localhost:${WEB_PORT:-3001}}
     depends_on:
       postgres:
         condition: service_healthy
@@ -115,6 +124,18 @@ services:
       start_period: 30s
       start_interval: 1s
     networks: [frontend]
+
+  # Local test mail server (phase 11), only with `--profile mail`: catches
+  # every e-mail the API sends, readable at http://localhost:8025. With
+  # SMTP_HOST=mailpit and SMTP_PORT=1025 in .env (and 127.0.0.1 instead of
+  # mailpit for `pnpm dev`).
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    profiles: [mail]
+    ports:
+      - "127.0.0.1:8025:8025" # web interface
+      - "127.0.0.1:1025:1025" # SMTP, for `pnpm dev`
+    networks: [backend]
 
 networks:
   backend:

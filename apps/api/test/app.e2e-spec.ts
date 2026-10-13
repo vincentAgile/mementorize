@@ -69,6 +69,37 @@ describe('API (e2e)', () => {
     expect(bobItems.body).toEqual([]);
   });
 
+  it('saves the reminder settings, and validates the time zone', async () => {
+    const token = await register('dave');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const initial = await http().get('/reminders/settings').set(auth).expect(200);
+    expect(initial.body).toMatchObject({ enabled: false, hour: 8, timeZone: 'Europe/Paris' });
+
+    await http()
+      .put('/reminders/settings')
+      .set(auth)
+      .send({ enabled: true, hour: 19, timeZone: 'America/Montreal' })
+      .expect(200);
+    const saved = await http().get('/reminders/settings').set(auth).expect(200);
+    expect(saved.body).toMatchObject({ enabled: true, hour: 19, timeZone: 'America/Montreal' });
+
+    await http()
+      .put('/reminders/settings')
+      .set(auth)
+      .send({ enabled: true, hour: 24, timeZone: 'Europe/Paris' })
+      .expect(400);
+    await http()
+      .put('/reminders/settings')
+      .set(auth)
+      .send({ enabled: true, hour: 8, timeZone: 'Mars/Olympus' })
+      .expect(400);
+  });
+
+  it('refuses a forged unsubscribe link', async () => {
+    await http().post('/reminders/unsubscribe').send({ user: 'someone', token: 'forged' }).expect(400);
+  });
+
   it('rejects an invalid mind map (cycle) with a 400', async () => {
     const token = await register('carol');
     const at = { x: 0, y: 0 };
