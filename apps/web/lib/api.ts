@@ -11,6 +11,8 @@ import type {
   ItemType,
   MindMap,
   MindMapNode,
+  ReminderSettings,
+  ReminderSettingsInput,
   ReviewRating,
 } from './types';
 
@@ -157,4 +159,49 @@ export function submitReview(cardId: string, rating: ReviewRating): Promise<void
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rating }),
   });
+}
+
+// ---------------------------------------------------------------------------
+// E-mail reminders (phase 11)
+// ---------------------------------------------------------------------------
+
+export function getReminderSettings(): Promise<ReminderSettings> {
+  return authedFetch<ReminderSettings>('/reminders/settings');
+}
+
+export function saveReminderSettings(input: ReminderSettingsInput): Promise<ReminderSettings> {
+  return authedFetch<ReminderSettings>('/reminders/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+/** Sends the reminder e-mail right away. ApiError 503: no SMTP settings; 429: too soon; 502: refused. */
+export function sendTestReminder(): Promise<void> {
+  return authedFetch<void>('/reminders/test', { method: 'POST' });
+}
+
+/** Public (no session): the link of a reminder e-mail. False if the link is invalid. */
+export async function unsubscribeFromReminders(user: string, token: string): Promise<boolean> {
+  const res = await fetch(`${API_URL}/reminders/unsubscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user, token }),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+  });
+  if (res.status === 400) return false;
+  if (!res.ok) throw new ApiError(res.status, `API error ${res.status} on /reminders/unsubscribe`);
+  return true;
+}
+
+/** For the public /health route: true when the API (and its database) answers. */
+export async function isApiHealthy(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_URL}/health`, { cache: 'no-store', signal: AbortSignal.timeout(5_000) });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
