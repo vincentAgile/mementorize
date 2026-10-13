@@ -1,0 +1,12 @@
+# Every night at 3:30 (Paris time), give or take 10 minutes. Persistent: if
+# the server was off at that time, the backup runs when it starts again.
+[Unit]
+Description=Mementorize: daily database backup
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Europe/Paris
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
