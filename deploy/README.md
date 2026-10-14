@@ -429,7 +429,7 @@ Le conteneur (_bucket_) sera créé par rclone ci-dessous. Le coût est de l'ord
 
 ```bash
 sudo apt install -y rclone
-rclone version              # 1.70 ou plus pour provider=OVHcloud (sinon, provider=Other)
+rclone version              # Ubuntu 26.04 fournit la 1.60 : elle ne connaît pas encore OVH par son nom
 ```
 
 Deux « remotes » rclone : `ovh`, le stockage brut, et `sauvegardes`, qui chiffre tout ce qui passe par lui avant de l'envoyer dans `ovh`. Les clés et le mot de passe sont lus au clavier (`read -s` : rien à l'écran ni dans l'historique du shell) :
@@ -437,10 +437,10 @@ Deux « remotes » rclone : `ovh`, le stockage brut, et `sauvegardes`, qui chiff
 ```bash
 read -rp "Clé d'accès S3 : " S3_KEY
 read -rsp "Clé secrète S3 : " S3_SECRET; echo
-rclone config create ovh s3 provider=OVHcloud env_auth=false \
+rclone config create ovh s3 provider=Other env_auth=false \
   access_key_id="$S3_KEY" secret_access_key="$S3_SECRET" \
-  endpoint=s3.gra.io.cloud.ovh.net region=gra
-rclone mkdir ovh:mementorize-sauvegardes      # crée le bucket (le nom doit être unique : en changer si refusé)
+  endpoint=https://s3.gra.io.cloud.ovh.net region=gra acl=private
+rclone mkdir ovh:mementorize-sauvegardes      # crée le bucket, s'il n'a pas été créé dans l'espace client
 
 openssl rand -base64 24                       # → mot de passe de chiffrement : À NOTER dans ton gestionnaire de mots de passe
 read -rsp "Mot de passe de chiffrement : " CRYPT_PASSWORD; echo
@@ -469,7 +469,7 @@ sudo cp ~/mementorize/deploy/systemd/mementorize-* /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now mementorize-backup.timer
 sudo systemctl start mementorize-backup.service    # une première sauvegarde tout de suite
-journalctl -u mementorize-backup -n 20 --no-pager  # « ==> Done »
+sudo journalctl -u mementorize-backup -n 20 --no-pager  # « ==> Done » (sudo : journal d'un service système)
 rclone lsf sauvegardes:                            # le fichier est là (son nom en clair : seul rclone le voit ainsi)
 rclone lsf ovh:mementorize-sauvegardes             # ce qu'OVH voit : des noms et un contenu chiffrés
 systemctl list-timers 'mementorize-*'              # prochaine exécution
@@ -548,7 +548,7 @@ Le même `pg_dump`, lancé sur ton PC (`docker compose exec -T postgres pg_dump 
 | _Deploy_ : `Files modified on the server`                    | Un fichier suivi par git a été modifié sur le serveur (`git status`) : `git stash`, ou `git checkout -- <fichier>`, puis relancer.                                                                                                              |
 | _Deploy_ : `New containers are not healthy. Rolling back.`   | La nouvelle version ne démarre pas ; ses journaux sont dans ceux du job. L'ancienne version continue de servir.                                                                                                                                 |
 | Pas d'e-mail de rappel                                       | **Réglages → e-mail de test** : « pas configuré » → `SMTP_*` absents de `.env` ou `docker rollout api` pas relancé ; « refusé » → `docker compose logs api` (mot de passe, `MAIL_FROM` différent de la boîte). Reçu en indésirables : SPF/DKIM. |
-| Sauvegarde en échec (alerte healthchecks.io)                 | `journalctl -u mementorize-backup -n 50 --no-pager` ; tester la copie seule : `rclone lsf sauvegardes:`.                                                                                                                                        |
+| Sauvegarde en échec (alerte healthchecks.io)                 | `sudo journalctl -u mementorize-backup -n 50 --no-pager` ; tester la copie seule : `rclone lsf sauvegardes:`.                                                                                                                                   |
 | `IMAGE_TAG is missing` sur une commande `docker compose`     | Aucun déploiement n'a encore eu lieu sur ce serveur : en lancer un (étape 10).                                                                                                                                                                  |
 
 Commandes utiles :
