@@ -17,7 +17,8 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 ✅ **Phase 8 terminée.** En ligne sur un VPS OVH, derrière Traefik, en HTTPS (Let's Encrypt) : https://mementorize.delaneuville.fr — guide dans [deploy/README.md](./deploy/README.md).
 ✅ **Phase 9 terminée.** Intégration continue avec GitHub Actions : formatage, lint, tests unitaires, build, migrations et tests e2e sur PostgreSQL, images Docker, sur chaque pull request.
 ✅ **Phase 10 terminée.** Déploiement continu : chaque push sur `main` part en production (images publiées sur GHCR par la CI, déploiement par SSH, sauvegarde et migrations dans le pipeline), sans coupure de service.
-🚧 **Phase 11 — Observabilité et rappels.** En cours : rappel quotidien par e-mail des révisions dues, page de statut (Uptime Kuma), sonde externe, sauvegarde quotidienne chiffrée hors serveur.
+✅ **Phase 11 terminée.** Rappel quotidien par e-mail des révisions dues, à l'heure choisie par chacun ; page de statut (Uptime Kuma) et sonde externe (healthchecks.io) ; sauvegarde quotidienne chiffrée hors serveur (OVH Object Storage).
+🎯 **La feuille de route principale est terminée.** Suite possible : les bonus (tests de bout en bout, staging, PWA, observabilité avancée).
 
 ## Stack cible
 
