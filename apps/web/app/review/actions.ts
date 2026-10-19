@@ -15,5 +15,5 @@ export async function reviewAction(cardId: string, rating: ReviewRating): Promis
   }
   await submitReview(cardId, rating);
   revalidatePath('/review'); // show the next due card
-  revalidatePath('/'); // due counter and schedules on the home page
+  revalidatePath('/', 'layout'); // due counter in the header, schedules in the spaces
 }

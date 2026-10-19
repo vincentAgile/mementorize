@@ -1,5 +1,5 @@
-import Link from 'next/link';
 import { logoutAction } from './(auth)/actions';
+import { MainNav } from './main-nav';
 
 interface AppHeaderProps {
   email: string;
@@ -11,11 +11,7 @@ export function AppHeader({ email, dueCount }: AppHeaderProps) {
     <header className="page__header">
       <div className="page__brand">
         <h1>Mementorize</h1>
-        <nav className="page__nav">
-          <Link href="/">Mes fiches</Link>
-          <Link href="/review">Réviser {dueCount > 0 && <span className="badge">{dueCount}</span>}</Link>
-          <Link href="/settings">Réglages</Link>
-        </nav>
+        <MainNav dueCount={dueCount} />
       </div>
       <form action={logoutAction} className="page__user">
         <span>{email}</span>

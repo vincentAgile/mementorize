@@ -17,14 +17,17 @@ pnpm --filter web dev        # http://localhost:3001 (le 3000 est déjà pris pa
 
 - `proxy.ts` — s'exécute avant chaque requête : sans cookie de session, redirige vers `/login` (vérification « optimiste », la vraie vérification du token est faite par l'API).
 - `app/(auth)/` — groupe de routes (les parenthèses n'apparaissent pas dans l'URL) : `/login`, `/register`, les Server Actions d'authentification et `/session-expired` (Route Handler qui efface un cookie périmé).
-- `app/page.tsx` — Server Component : récupère l'utilisateur et ses fiches côté serveur, avec le token de la session ; filtre par type via `?type=`.
+- `app/citations/`, `app/cartes-mentales/`, `app/anglais/` — les trois espaces par sujet (MEM-2). Chaque route se contente de dire quel espace elle affiche ; la liste des espaces (type de fiche, libellé, adresse) est dans `lib/spaces.ts`.
+- `app/spaces/space-page.tsx` — Server Component commun aux trois espaces : récupère l'utilisateur et les fiches du type de l'espace côté serveur, avec le token de la session.
+- `app/page.tsx` — la racine `/` redirige vers l'espace Anglais (bientôt : l'espace choisi dans les Réglages, MEM-6).
 - `app/items/` — formulaire d'ajout, citation ou mot de vocabulaire (client component + Server Action).
 - `app/review/` — écran « À réviser » : une carte à la fois, « Afficher la réponse », puis 4 boutons d'auto-évaluation qui indiquent quand la carte reviendra. Raccourcis : `Espace` pour révéler, `1` à `4` pour répondre. `facesOf()` (dans `page.tsx`) décide du recto et du verso selon le type de carte : auteur + premiers mots pour une citation, mot anglais ou traduction pour le vocabulaire.
 - `app/mind-maps/` — cartes mentales (phase 6), voir ci-dessous.
-- `app/settings/` — réglages du rappel par e-mail (phase 11) : activation, heure, et le fuseau horaire du navigateur, envoyé avec ; bouton « e-mail de test ».
+- `app/reglages/` — réglages du rappel par e-mail (phase 11), à l'adresse `/reglages` : activation, heure, et le fuseau horaire du navigateur, envoyé avec ; bouton « e-mail de test ».
 - `app/unsubscribe/` — page publique ouverte depuis le lien d'un e-mail de rappel. La désinscription se fait au clic sur le bouton, pas à l'ouverture du lien : certaines messageries ouvrent d'elles-mêmes les liens des e-mails reçus.
 - `app/health/route.ts` — `GET /health`, public : `200` si l'API (et donc la base) répond, `503` sinon. C'est ce que surveille Uptime Kuma : toute la chaîne, de Traefik à la base.
 - `app/app-header.tsx` — en-tête commun (navigation, nombre de révisions en attente, déconnexion).
+- `app/main-nav.tsx` — la navigation de l'en-tête : un Client Component, parce que seul le navigateur connaît l'adresse courante (`usePathname`) pour mettre en évidence la section où l'on se trouve. L'éditeur de cartes mentales (`/mind-maps/…`) appartient à l'espace Cartes mentales.
 - `lib/session.ts` — le cookie de session (httpOnly) qui contient le JWT renvoyé par l'API.
 - `lib/api.ts` — client HTTP vers l'API, **côté serveur uniquement** (`import 'server-only'`).
 - `lib/types.ts` — `Item` est une _union discriminée_ : tester `item.type` suffit pour que TypeScript connaisse la forme de `item.content`.

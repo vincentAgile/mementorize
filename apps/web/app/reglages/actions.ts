@@ -25,7 +25,7 @@ export async function saveRemindersAction(
     if (error instanceof ApiError) return { error: "Impossible d'enregistrer les réglages." };
     throw error; // e.g. the redirect of an expired session
   }
-  revalidatePath('/settings');
+  revalidatePath('/reglages');
   return { message: enabled ? `Rappel enregistré : chaque jour vers ${hour} h.` : 'Rappels désactivés.' };
 }
 

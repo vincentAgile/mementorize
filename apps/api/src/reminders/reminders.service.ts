@@ -173,7 +173,7 @@ export class RemindersService {
     const query = new URLSearchParams({ user: userId, token: this.unsubscribeToken(userId) });
     return {
       review: `${this.appUrl}/review`,
-      settings: `${this.appUrl}/settings`,
+      settings: `${this.appUrl}/reglages`,
       unsubscribe: `${this.appUrl}/unsubscribe?${query.toString()}`,
     };
   }
