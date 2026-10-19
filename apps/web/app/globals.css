@@ -179,7 +179,8 @@ body {
 
 .page__nav {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
   font-size: 0.95rem;
 }
 
@@ -190,6 +191,19 @@ body {
 
 .page__nav a:hover {
   text-decoration: underline;
+}
+
+/* MEM-2: the section we are in */
+.page__nav a.is-active {
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.3em;
+}
+
+.space__title {
+  margin: 1.25rem 0 0.75rem;
+  font-size: 1.35rem;
 }
 
 .badge {
@@ -377,27 +391,6 @@ kbd {
   .items__row {
     grid-template-columns: 1fr;
   }
-}
-
-.filters {
-  display: flex;
-  gap: 1rem;
-  margin: 0.5rem 0 1rem;
-  font-size: 0.9rem;
-  border-bottom: 1px solid #ddd;
-}
-
-.filters a {
-  padding: 0.35rem 0;
-  color: #666;
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-}
-
-.filters a.is-active {
-  color: #147d80;
-  border-bottom-color: #147d80;
 }
 
 .vocab {

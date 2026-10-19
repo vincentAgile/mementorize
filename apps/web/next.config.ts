@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
   // them in the root node_modules), so the standalone folder mirrors the
   // repo layout and the server ends up in .next/standalone/apps/web/.
   outputFileTracingRoot: path.join(__dirname, '../..'),
+  // MEM-2: Settings moved to /reglages. Reminder e-mails already sent still
+  // link to /settings.
+  async redirects() {
+    return [{ source: '/settings', destination: '/reglages', permanent: true }];
+  },
 };
 
 export default nextConfig;

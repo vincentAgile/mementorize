@@ -49,15 +49,13 @@ export async function saveMindMapAction(id: string, nodes: MindMapNode[]): Promi
     throw error;
   }
 
-  revalidatePath(`/mind-maps/${id}`);
-  revalidatePath('/'); // list of items, due counter
-  revalidatePath('/review'); // new or removed branch cards
+  revalidatePath('/', 'layout'); // this map, the list of mind maps, branch cards and due counters
   return {};
 }
 
 export async function deleteMindMapAction(id: string): Promise<void> {
   if (typeof id !== 'string') throw new Error('Invalid id');
   await deleteMindMap(id);
-  revalidatePath('/');
-  redirect('/?type=MindMap');
+  revalidatePath('/', 'layout');
+  redirect('/cartes-mentales');
 }

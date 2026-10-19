@@ -54,6 +54,7 @@ describe('RemindersService', () => {
       expect(sentMail.to).toBe('alice@example.fr');
       expect(sentMail.subject).toContain('3 cartes');
       expect(sentMail.text).toContain('https://app.example.fr/review');
+      expect(sentMail.text).toContain('https://app.example.fr/reglages');
       expect(sentMail.headers['List-Unsubscribe']).toMatch(
         /^<https:\/\/app\.example\.fr\/unsubscribe\?user=user-1&token=/,
       );

@@ -56,7 +56,7 @@ export async function createItemAction(_previous: ItemFormState, formData: FormD
     throw error;
   }
 
-  revalidatePath('/');
+  revalidatePath('/', 'layout'); // the space's list, the due counter of every header
   if (createdMapId) {
     redirect(`/mind-maps/${createdMapId}`); // outside the try/catch: redirect() works by throwing
   }
