@@ -239,10 +239,10 @@ curl -X PUT http://localhost:3000/preferences -H "Authorization: Bearer $TOKEN" 
 
 ## Profil (MEM-11)
 
-Le nom de l'utilisateur, facultatif (colonne `users.name`, vide pour les comptes existants), sert aux initiales de l'avatar et au menu du compte. Espaces de début et de fin supprimés, 80 caractères au plus ; une chaîne vide efface le nom.
+Le prénom et le nom de l'utilisateur, facultatifs (colonnes `users.firstName` et `users.lastName`, vides pour les comptes existants), servent aux initiales de l'avatar et au menu du compte. Espaces de début et de fin supprimés, 80 caractères au plus chacun ; une chaîne vide efface la valeur.
 
 ```bash
 curl http://localhost:3000/profile -H "Authorization: Bearer $TOKEN"
 curl -X PUT http://localhost:3000/profile -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" -d '{"name":"Vincent Carpentier"}'
+  -H "Content-Type: application/json" -d '{"firstName":"Vincent","lastName":"Carpentier"}'
 ```

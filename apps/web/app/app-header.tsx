@@ -15,7 +15,7 @@ export async function AppHeader() {
     <header className="page__header">
       <div className="page__topbar">
         <h1>Mementorize</h1>
-        <HeaderActions email={profile.email} name={profile.name} />
+        <HeaderActions profile={profile} />
       </div>
       <MainNav due={due} />
     </header>

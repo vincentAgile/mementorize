@@ -4,23 +4,27 @@ import type { ProfileDto } from './dto/profile.dto.js';
 
 export interface Profile {
   email: string;
-  name: string | null;
+  firstName: string | null;
+  lastName: string | null;
 }
 
-/** The profile of the user (MEM-11): their e-mail, read only, and their name. */
+const PROFILE_FIELDS = { email: true, firstName: true, lastName: true } as const;
+
+/** The profile of the user (MEM-11): their e-mail, read only, first name and last name. */
 @Injectable()
 export class ProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
   get(userId: string): Promise<Profile> {
-    return this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true, name: true } });
+    return this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: PROFILE_FIELDS });
   }
 
   update(userId: string, dto: ProfileDto): Promise<Profile> {
     return this.prisma.user.update({
       where: { id: userId },
-      data: { name: dto.name || null }, // the DTO already trimmed it: '' clears the name
-      select: { email: true, name: true },
+      // The DTO already trimmed them: an empty string clears the value.
+      data: { firstName: dto.firstName || null, lastName: dto.lastName || null },
+      select: PROFILE_FIELDS,
     });
   }
 }

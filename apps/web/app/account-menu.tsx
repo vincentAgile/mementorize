@@ -2,14 +2,9 @@
 
 import Link from 'next/link';
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
-import { initialsOf } from '../lib/initials';
+import { fullNameOf, initialsOf } from '../lib/initials';
+import type { Profile } from '../lib/types';
 import { logoutAction } from './(auth)/actions';
-
-interface AccountMenuProps {
-  email: string;
-  /** The name of the account, once it can be filled in (MEM-11). */
-  name?: string | null;
-}
 
 /**
  * The account menu (MEM-10): the avatar of the header opens a popup with the
@@ -17,13 +12,15 @@ interface AccountMenuProps {
  * the "menu button" pattern of the WAI-ARIA guide: arrows to move between
  * the entries, Escape to close, and the focus goes back to the avatar.
  */
-export function AccountMenu({ email, name }: AccountMenuProps) {
+export function AccountMenu({ profile }: { profile: Profile }) {
+  const { email } = profile;
+  const name = fullNameOf(profile);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
-  const initials = initialsOf(email, name);
+  const initials = initialsOf(profile);
 
   const items = () => Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
 

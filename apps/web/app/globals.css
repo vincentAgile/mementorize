@@ -846,7 +846,8 @@ kbd {
 
 .settings__form select,
 .settings__form input[type='email'],
-.settings__form input[name='name'] {
+.settings__form input[name='firstName'],
+.settings__form input[name='lastName'] {
   font: inherit;
   padding: 0.4rem 0.5rem;
   border: 1px solid #ccc;

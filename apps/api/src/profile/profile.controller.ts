@@ -10,13 +10,13 @@ import { ProfileService } from './profile.service.js';
 export class ProfileController {
   constructor(private readonly profile: ProfileService) {}
 
-  /** GET /profile — { email, name } */
+  /** GET /profile — { email, firstName, lastName } */
   @Get()
   get(@CurrentUser() user: AuthUser) {
     return this.profile.get(user.id);
   }
 
-  /** PUT /profile { name } — trimmed, at most 80 characters; '' clears it. */
+  /** PUT /profile { firstName, lastName } — trimmed, at most 80 characters each; '' clears a value. */
   @Put()
   update(@CurrentUser() user: AuthUser, @Body() dto: ProfileDto) {
     return this.profile.update(user.id, dto);

@@ -156,12 +156,12 @@ export function getProfile(): Promise<Profile> {
   return authedFetch<Profile>('/profile');
 }
 
-/** Saves the name (trimmed by the API; an empty name clears it). */
-export function saveProfile(name: string): Promise<Profile> {
+/** Saves the first name and last name (trimmed by the API; an empty value clears it). */
+export function saveProfile(input: { firstName: string; lastName: string }): Promise<Profile> {
   return authedFetch<Profile>('/profile', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(input),
   });
 }
 

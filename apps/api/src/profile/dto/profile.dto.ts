@@ -3,10 +3,17 @@ import { IsString, MaxLength } from 'class-validator';
 
 export const NAME_MAX_LENGTH = 80;
 
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
+/** Both fields are trimmed; an empty string clears the value. */
 export class ProfileDto {
-  /** The name, trimmed; an empty string clears it. */
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
+  @Transform(trim)
   @IsString()
   @MaxLength(NAME_MAX_LENGTH)
-  name: string;
+  firstName: string;
+
+  @Transform(trim)
+  @IsString()
+  @MaxLength(NAME_MAX_LENGTH)
+  lastName: string;
 }

@@ -118,7 +118,8 @@ export interface ReminderSettingsInput {
 /** The profile of the user (MEM-11). */
 export interface Profile {
   email: string;
-  name: string | null;
+  firstName: string | null;
+  lastName: string | null;
 }
 
 /** The user's preferences of the web app (MEM-6). */

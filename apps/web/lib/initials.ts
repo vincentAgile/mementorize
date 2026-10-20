@@ -1,18 +1,19 @@
+import type { Profile } from './types';
+
+const firstLetter = (text: string) => (Array.from(text.trim())[0] ?? '?').toLocaleUpperCase('fr');
+
 /**
- * The letters of the avatar (MEM-9): the initials of the first and last
- * words of the name, or its first letter when it is a single word; without
- * a name, the first letter of the e-mail. Always in capitals.
+ * The letters of the avatar (MEM-9, MEM-11): the first letter of the first
+ * name and of the last name; with only one of them, its first letter;
+ * without either, the first letter of the e-mail. Always in capitals.
+ * (Array.from splits by code points: an accented letter stays whole.)
  */
-export function initialsOf(email: string, name?: string | null): string {
-  const words = (name ?? '').trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) {
-    return firstLetter(email);
-  }
-  if (words.length === 1) {
-    return firstLetter(words[0]);
-  }
-  return firstLetter(words[0]) + firstLetter(words[words.length - 1]);
+export function initialsOf({ email, firstName, lastName }: Profile): string {
+  const parts = [firstName, lastName].filter((part): part is string => !!part?.trim());
+  return parts.length > 0 ? parts.map(firstLetter).join('') : firstLetter(email);
 }
 
-// Array.from splits by code points: an accented or non-Latin letter stays whole.
-const firstLetter = (text: string) => (Array.from(text)[0] ?? '?').toLocaleUpperCase('fr');
+/** "Prénom Nom", or whichever is filled in; null when neither is. */
+export function fullNameOf({ firstName, lastName }: Profile): string | null {
+  return [firstName, lastName].filter(Boolean).join(' ') || null;
+}
