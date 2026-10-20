@@ -23,6 +23,12 @@ import { ReviewsService } from './reviews.service.js';
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
+  /** GET /reviews/due/summary — number of due cards, in all and per type of item. */
+  @Get('due/summary')
+  summary(@CurrentUser() user: AuthUser) {
+    return this.reviewsService.countDue(user.id);
+  }
+
   /** GET /reviews/due?limit=20&type=Vocabulary — what to review now (type is optional). */
   @Get('due')
   findDue(

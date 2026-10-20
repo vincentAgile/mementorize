@@ -7,6 +7,7 @@ import type {
   CreateVocabularyInput,
   Credentials,
   DueReviews,
+  DueSummary,
   Item,
   ItemType,
   MindMap,
@@ -147,6 +148,11 @@ export function saveMindMap(id: string, nodes: MindMapNode[]): Promise<MindMap> 
 
 export function deleteMindMap(id: string): Promise<void> {
   return authedFetch<void>(`/mind-maps/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+/** How many cards are due, in all and per subject (the menu's counters, MEM-5). */
+export function getDueSummary(): Promise<DueSummary> {
+  return authedFetch<DueSummary>('/reviews/due/summary');
 }
 
 /** Cards to review now; with `type`, only those of one subject space. */

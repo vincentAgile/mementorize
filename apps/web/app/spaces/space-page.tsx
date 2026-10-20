@@ -16,17 +16,16 @@ import { ItemForm } from '../items/item-form';
  * session's token), and the browser receives ready-made HTML.
  */
 export async function SpacePage({ space }: { space: Space }) {
-  const [user, items, due, spaceDue] = await Promise.all([
+  const [user, items, spaceDue] = await Promise.all([
     getCurrentUser(),
     getItems(space.type),
-    getDueReviews(1), // all subjects: the counter of the header
     getDueReviews(1, space.type), // this subject only
   ]);
   const now = new Date();
 
   return (
     <main className="page">
-      <AppHeader email={user.email} dueCount={due.total} />
+      <AppHeader email={user.email} />
 
       <h2 className="space__title">{space.label}</h2>
       {items.length > 0 &&

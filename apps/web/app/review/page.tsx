@@ -93,12 +93,7 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
 // string stays in the URL across answers.
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const space = findSpace((await searchParams).type);
-  const [user, all, subject] = await Promise.all([
-    getCurrentUser(),
-    getDueReviews(1), // all subjects: the counter of the header
-    space ? getDueReviews(1, space.type) : null,
-  ]);
-  const due = subject ?? all;
+  const [user, due] = await Promise.all([getCurrentUser(), getDueReviews(1, space?.type)]);
   const next = due.items[0];
   const now = new Date();
 
@@ -110,7 +105,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
   return (
     <main className="page">
-      <AppHeader email={user.email} dueCount={all.total} />
+      <AppHeader email={user.email} />
 
       {!next ? (
         <section className="review-empty">

@@ -15,13 +15,14 @@ export interface Space {
   reviewLabel: string;
 }
 
+// In the order of the menu (MEM-5).
 export const SPACES: Space[] = [
   {
-    type: 'Quote',
-    label: 'Citations',
-    href: '/citations',
-    emptyText: 'Aucune citation pour le moment : ajoute ta première citation avec le formulaire ci-dessus.',
-    reviewLabel: 'Réviser les citations',
+    type: 'Vocabulary',
+    label: 'Anglais',
+    href: '/anglais',
+    emptyText: 'Aucun mot pour le moment : ajoute ton premier mot anglais avec le formulaire ci-dessus.',
+    reviewLabel: "Réviser l'anglais",
   },
   {
     type: 'MindMap',
@@ -31,16 +32,16 @@ export const SPACES: Space[] = [
     reviewLabel: 'Réviser les cartes mentales',
   },
   {
-    type: 'Vocabulary',
-    label: 'Anglais',
-    href: '/anglais',
-    emptyText: 'Aucun mot pour le moment : ajoute ton premier mot anglais avec le formulaire ci-dessus.',
-    reviewLabel: "Réviser l'anglais",
+    type: 'Quote',
+    label: 'Citations',
+    href: '/citations',
+    emptyText: 'Aucune citation pour le moment : ajoute ta première citation avec le formulaire ci-dessus.',
+    reviewLabel: 'Réviser les citations',
   },
 ];
 
 /** Where `/` leads, until the home page can be chosen in Settings (MEM-6). */
-export const DEFAULT_SPACE = SPACES[2];
+export const DEFAULT_SPACE = SPACES.find((space) => space.type === 'Vocabulary')!;
 
 export function spaceOf(type: ItemType): Space {
   return SPACES.find((space) => space.type === type)!;

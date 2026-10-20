@@ -26,8 +26,8 @@ pnpm --filter web dev        # http://localhost:3001 (le 3000 est déjà pris pa
 - `app/reglages/` — réglages du rappel par e-mail (phase 11), à l'adresse `/reglages` : activation, heure, et le fuseau horaire du navigateur, envoyé avec ; bouton « e-mail de test ».
 - `app/unsubscribe/` — page publique ouverte depuis le lien d'un e-mail de rappel. La désinscription se fait au clic sur le bouton, pas à l'ouverture du lien : certaines messageries ouvrent d'elles-mêmes les liens des e-mails reçus.
 - `app/health/route.ts` — `GET /health`, public : `200` si l'API (et donc la base) répond, `503` sinon. C'est ce que surveille Uptime Kuma : toute la chaîne, de Traefik à la base.
-- `app/app-header.tsx` — en-tête commun (navigation, nombre de révisions en attente, déconnexion).
-- `app/main-nav.tsx` — la navigation de l'en-tête : un Client Component, parce que seul le navigateur connaît l'adresse courante (`usePathname`) pour mettre en évidence la section où l'on se trouve. L'éditeur de cartes mentales (`/mind-maps/…`) appartient à l'espace Cartes mentales.
+- `app/app-header.tsx` — en-tête commun (menu, déconnexion). Un Server Component asynchrone : il récupère lui-même les compteurs du menu (`GET /reviews/due/summary`), les pages ne lui passent que l'e-mail.
+- `app/main-nav.tsx` — le menu (MEM-5) : Anglais, Cartes mentales, Citations, Tout réviser, Réglages. Chaque espace et « Tout réviser » portent leur nombre de cartes dues, ou une coche dans une pastille claire quand il n'y a rien à réviser. Un Client Component, parce que seul le navigateur connaît l'adresse courante (`usePathname`, `useSearchParams`) : la révision d'un seul sujet met ce sujet en évidence, l'éditeur de cartes mentales relève de Cartes mentales.
 - `lib/session.ts` — le cookie de session (httpOnly) qui contient le JWT renvoyé par l'API.
 - `lib/api.ts` — client HTTP vers l'API, **côté serveur uniquement** (`import 'server-only'`).
 - `lib/types.ts` — `Item` est une _union discriminée_ : tester `item.type` suffit pour que TypeScript connaisse la forme de `item.content`.
