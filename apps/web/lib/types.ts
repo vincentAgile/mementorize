@@ -87,6 +87,12 @@ export interface DueItem {
   nextDue: Record<ReviewRating, string>; // ISO dates
 }
 
+/** Number of due cards, in all and per type of item (the menu's counters). */
+export interface DueSummary {
+  total: number;
+  byType: Record<ItemType, number>;
+}
+
 export interface DueReviews {
   total: number;
   items: DueItem[];

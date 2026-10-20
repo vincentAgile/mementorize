@@ -185,20 +185,36 @@ body {
 }
 
 .page__nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: #147d80;
   text-decoration: none;
 }
 
-.page__nav a:hover {
+/* Underline the label only, not the counter next to it */
+.page__nav a:hover .page__nav-label {
   text-decoration: underline;
 }
 
 /* MEM-2: the section we are in */
-.page__nav a.is-active {
+.page__nav a.is-active .page__nav-label {
   font-weight: 600;
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 0.3em;
+}
+
+/* MEM-5: nothing to review in this section */
+.badge.badge--done {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4em;
+  height: 1.4em;
+  padding: 0;
+  background: #e3efef;
+  color: #147d80;
 }
 
 .space__title {
@@ -615,6 +631,11 @@ kbd {
 }
 
 @media (prefers-color-scheme: dark) {
+  .badge.badge--done {
+    background: #203334;
+    color: #7fd3d6;
+  }
+
   .mind-map {
     border-color: #444;
   }

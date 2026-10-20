@@ -84,6 +84,9 @@ curl http://localhost:3000/reviews/due -H "Authorization: Bearer $TOKEN"
 # Seulement les cartes d'un type de fiche (un espace par sujet) : Quote | Vocabulary | MindMap
 curl "http://localhost:3000/reviews/due?type=Vocabulary" -H "Authorization: Bearer $TOKEN"
 
+# Combien de cartes à réviser, en tout et par type (les compteurs du menu)
+curl http://localhost:3000/reviews/due/summary -H "Authorization: Bearer $TOKEN"
+
 # S'auto-évaluer sur une carte : Again | Hard | Good | Easy
 curl -X POST http://localhost:3000/reviews/<cardId> \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \

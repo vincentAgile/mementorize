@@ -1,66 +1,94 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { SPACES } from '../lib/spaces';
+import type { DueSummary } from '../lib/types';
 
 interface NavLink {
   href: string;
   label: string;
-  /** The URLs that belong to this section. */
-  prefixes: string[];
+  /** Whether this section is the one shown at this URL. */
+  isActive: (pathname: string, type: string | null) => boolean;
+  /** Number of due cards of this section; undefined: no counter. */
+  count?: number;
 }
 
-const SPACE_LINKS: NavLink[] = SPACES.map((space) => ({
-  href: space.href,
-  label: space.label,
-  // The mind map editor belongs to the "Cartes mentales" space.
-  prefixes: space.type === 'MindMap' ? [space.href, '/mind-maps'] : [space.href],
-}));
-const REVIEW_LINK: NavLink = { href: '/review', label: 'Réviser', prefixes: ['/review'] };
-const SETTINGS_LINK: NavLink = { href: '/reglages', label: 'Réglages', prefixes: ['/reglages'] };
+const startsWith = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`);
 
-function isActive(pathname: string, { prefixes }: NavLink): boolean {
-  return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+function navLinks(due: DueSummary): NavLink[] {
+  return [
+    ...SPACES.map((space) => ({
+      href: space.href,
+      label: space.label,
+      count: due.byType[space.type],
+      isActive: (pathname: string, type: string | null) =>
+        startsWith(pathname, space.href) ||
+        // The review of this subject only (MEM-4), and the mind map editor.
+        (pathname === '/review' && type === space.type) ||
+        (space.type === 'MindMap' && startsWith(pathname, '/mind-maps')),
+    })),
+    {
+      href: '/review',
+      label: 'Tout réviser',
+      count: due.total,
+      isActive: (pathname, type) => pathname === '/review' && !SPACES.some((space) => space.type === type),
+    },
+    { href: '/reglages', label: 'Réglages', isActive: (pathname) => startsWith(pathname, '/reglages') },
+  ];
+}
+
+/** The number of due cards, or a check in a light badge when there is none. */
+function DueBadge({ count }: { count: number }) {
+  if (count > 0) {
+    return (
+      <span className="badge" aria-label={`${count} carte${count > 1 ? 's' : ''} à réviser`}>
+        {count}
+      </span>
+    );
+  }
+  return (
+    <span className="badge badge--done" role="img" aria-label="rien à réviser">
+      <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
+        <path
+          d="M2.5 6.3l2.4 2.4 4.6-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
 }
 
 /**
- * The sections of the app (MEM-2): the three subject spaces, the review and
- * Settings. A Client Component: only the browser knows the current URL, to
- * highlight the section we are in.
+ * The menu (MEM-5): the three subject spaces, "Tout réviser" and Settings,
+ * each space and "Tout réviser" with its number of due cards. A Client
+ * Component: only the browser knows the current URL, to highlight the
+ * section we are in.
  */
-export function MainNav({ dueCount }: { dueCount: number }) {
+export function MainNav({ due }: { due: DueSummary }) {
   const pathname = usePathname();
-
-  const linkTo = (link: NavLink, extra?: React.ReactNode) => {
-    const active = isActive(pathname, link);
-    return (
-      <Link
-        key={link.href}
-        href={link.href}
-        className={active ? 'is-active' : undefined}
-        aria-current={active ? 'page' : undefined}
-      >
-        {link.label}
-        {extra}
-      </Link>
-    );
-  };
+  const type = useSearchParams().get('type');
 
   return (
     <nav className="page__nav" aria-label="Navigation principale">
-      {SPACE_LINKS.map((link) => linkTo(link))}
-      {/* Kept as is until the "review everything" action of MEM-5 */}
-      {linkTo(
-        REVIEW_LINK,
-        dueCount > 0 && (
-          <>
-            {' '}
-            <span className="badge">{dueCount}</span>
-          </>
-        ),
-      )}
-      {linkTo(SETTINGS_LINK)}
+      {navLinks(due).map((link) => {
+        const active = link.isActive(pathname, type);
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={active ? 'is-active' : undefined}
+            aria-current={active ? 'page' : undefined}
+          >
+            <span className="page__nav-label">{link.label}</span>
+            {link.count !== undefined && <DueBadge count={link.count} />}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

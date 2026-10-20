@@ -1,13 +1,13 @@
-import { getCurrentUser, getDueReviews, getReminderSettings } from '../../lib/api';
+import { getCurrentUser, getReminderSettings } from '../../lib/api';
 import { AppHeader } from '../app-header';
 import { ReminderForm } from './reminder-form';
 
 export default async function SettingsPage() {
-  const [user, due, settings] = await Promise.all([getCurrentUser(), getDueReviews(1), getReminderSettings()]);
+  const [user, settings] = await Promise.all([getCurrentUser(), getReminderSettings()]);
 
   return (
     <main className="page">
-      <AppHeader email={user.email} dueCount={due.total} />
+      <AppHeader email={user.email} />
       <ReminderForm settings={settings} />
     </main>
   );

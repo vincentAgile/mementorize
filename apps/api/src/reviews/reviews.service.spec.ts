@@ -83,6 +83,21 @@ describe('ReviewsService', () => {
     });
   });
 
+  describe('countDue', () => {
+    it('counts the due cards of each type of item, and their total', async () => {
+      prismaMock.card.count.mockImplementation(({ where }: { where: { item: { type: string } } }) =>
+        Promise.resolve({ Quote: 1, Vocabulary: 3, MindMap: 0 }[where.item.type]),
+      );
+
+      const summary = await service.countDue(userId, NOW);
+
+      expect(summary).toEqual({ total: 4, byType: { Quote: 1, Vocabulary: 3, MindMap: 0 } });
+      expect(prismaMock.card.count).toHaveBeenCalledWith({
+        where: { due: { lte: NOW }, item: { userId, type: 'Vocabulary' } },
+      });
+    });
+  });
+
   describe('review', () => {
     it("refuses to review a card that doesn't exist or isn't the user's", async () => {
       prismaMock.card.findFirst.mockResolvedValue(null);
