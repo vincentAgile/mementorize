@@ -86,18 +86,144 @@ body {
 
 .page__header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.page__user {
+/* MEM-9: the name of the app, and the Settings and account icons on the right */
+.page__topbar {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.page__topbar h1 {
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
+}
+
+.header-actions__icon {
+  display: inline-flex;
+  padding: 0.3rem;
+  border-radius: 99px;
   color: #666;
+}
+
+.header-actions__icon:hover {
+  color: #147d80;
+  background: rgba(20, 125, 128, 0.1);
+}
+
+.header-actions__icon.is-active {
+  color: #147d80;
+  background: rgba(20, 125, 128, 0.15);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: none;
+  border-radius: 99px;
+  background: #147d80;
+  color: white;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.avatar:hover {
+  background: #0f6366;
+}
+
+.avatar--large {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  font-size: 1.05rem;
+  cursor: default;
+}
+
+/* MEM-10: the popup of the avatar, aligned on its right edge */
+.account-menu {
+  position: relative;
+}
+
+.account-menu__popup {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 10;
+  min-width: 15rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.5rem 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
+
+.account-menu__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem 0.75rem;
+}
+
+.account-menu__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   font-size: 0.9rem;
+}
+
+.account-menu__who span {
+  overflow: hidden;
+  color: #666;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu__item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.account-menu__item:hover,
+.account-menu__item:focus-visible {
+  outline: none;
+  background: rgba(20, 125, 128, 0.1);
+}
+
+.account-menu__separator {
+  margin: 0.4rem 0;
+  border: none;
+  border-top: 1px solid #ddd;
+}
+
+.avatar:focus-visible,
+.header-actions__icon:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
 }
 
 .link-button {
@@ -169,13 +295,6 @@ body {
 }
 
 /* --- Phase 4: navigation & review --- */
-
-.page__brand {
-  display: flex;
-  align-items: baseline;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-}
 
 .page__nav {
   display: flex;
@@ -631,6 +750,24 @@ kbd {
 }
 
 @media (prefers-color-scheme: dark) {
+  .account-menu__popup {
+    border-color: #444;
+    background: #1e1e1e;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .account-menu__who span {
+    color: #aaa;
+  }
+
+  .account-menu__separator {
+    border-top-color: #444;
+  }
+
+  .header-actions__icon {
+    color: #aaa;
+  }
+
   .badge.badge--done {
     background: #203334;
     color: #7fd3d6;
@@ -699,7 +836,8 @@ kbd {
   font-size: 1rem;
 }
 
-.settings__form select {
+.settings__form select,
+.settings__form input[type='email'] {
   font: inherit;
   padding: 0.4rem 0.5rem;
   border: 1px solid #ccc;
