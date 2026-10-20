@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { getCurrentUser, getDueReviews, getItems } from '../../lib/api';
 import { formatDelay } from '../../lib/format';
 import { branchesOf, rootOf } from '../../lib/mind-map';
-import type { Space } from '../../lib/spaces';
+import { reviewHref, type Space } from '../../lib/spaces';
 import type { CardSummary, DueReviews, Item } from '../../lib/types';
 import { AppHeader } from '../app-header';
 import { ItemForm } from '../items/item-form';
@@ -29,7 +29,14 @@ export async function SpacePage({ space }: { space: Space }) {
       <AppHeader email={user.email} dueCount={due.total} />
 
       <h2 className="space__title">{space.label}</h2>
-      {items.length > 0 && <p className="space__due">{dueLabel(spaceDue, now)}</p>}
+      {items.length > 0 &&
+        (spaceDue.total > 0 ? (
+          <Link href={reviewHref(space)} className="space__review">
+            {space.reviewLabel} <span className="space__review-count">{spaceDue.total}</span>
+          </Link>
+        ) : (
+          <p className="space__due">{nothingDueLabel(spaceDue, now)}</p>
+        ))}
 
       <ItemForm type={space.type} />
 
@@ -53,11 +60,8 @@ export async function SpacePage({ space }: { space: Space }) {
   );
 }
 
-/** How many cards of this subject wait for a review (MEM-3). */
-function dueLabel(due: DueReviews, now: Date): string {
-  if (due.total > 0) {
-    return `${due.total} carte${due.total > 1 ? 's' : ''} à réviser`;
-  }
+/** Shown instead of the review button when no card of this subject is due. */
+function nothingDueLabel(due: DueReviews, now: Date): string {
   return due.nextDueAt
     ? `Rien à réviser pour le moment · prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}`
     : 'Rien à réviser pour le moment';
