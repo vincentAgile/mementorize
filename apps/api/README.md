@@ -226,3 +226,13 @@ Pour explorer la base visuellement :
 ```bash
 pnpm --filter api prisma:studio
 ```
+
+## Préférences (MEM-6)
+
+L'espace ouvert à l'arrivée (`/`, après la connexion, depuis l'e-mail de rappel) est enregistré sur le compte, colonne `users.homeSpace` (Anglais par défaut, y compris pour les comptes existants).
+
+```bash
+curl http://localhost:3000/preferences -H "Authorization: Bearer $TOKEN"
+curl -X PUT http://localhost:3000/preferences -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"homeSpace":"Quote"}'
+```

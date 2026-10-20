@@ -82,6 +82,21 @@ describe('API (e2e)', () => {
     expect(bobItems.body).toEqual([]);
   });
 
+  it('saves the home space, Anglais by default, and validates it', async () => {
+    const token = await register('erin');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const initial = await http().get('/preferences').set(auth).expect(200);
+    expect(initial.body).toEqual({ homeSpace: 'Vocabulary' });
+
+    await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
+    const saved = await http().get('/preferences').set(auth).expect(200);
+    expect(saved.body).toEqual({ homeSpace: 'Quote' });
+
+    await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
+    await http().get('/preferences').expect(401);
+  });
+
   it('saves the reminder settings, and validates the time zone', async () => {
     const token = await register('dave');
     const auth = { Authorization: `Bearer ${token}` };

@@ -1,13 +1,15 @@
-import { getCurrentUser, getReminderSettings } from '../../lib/api';
+import { getCurrentUser, getPreferences, getReminderSettings } from '../../lib/api';
 import { AppHeader } from '../app-header';
+import { HomeSpaceForm } from './home-space-form';
 import { ReminderForm } from './reminder-form';
 
 export default async function SettingsPage() {
-  const [user, settings] = await Promise.all([getCurrentUser(), getReminderSettings()]);
+  const [user, preferences, settings] = await Promise.all([getCurrentUser(), getPreferences(), getReminderSettings()]);
 
   return (
     <main className="page">
       <AppHeader email={user.email} />
+      <HomeSpaceForm homeSpace={preferences.homeSpace} />
       <ReminderForm settings={settings} />
     </main>
   );

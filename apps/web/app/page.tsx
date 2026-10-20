@@ -1,8 +1,10 @@
 import { redirect } from 'next/navigation';
-import { DEFAULT_SPACE } from '../lib/spaces';
+import { getPreferences } from '../lib/api';
+import { spaceOf } from '../lib/spaces';
 
-// The old home page (all items, filtered by type) is gone (MEM-2): `/` now
-// opens a subject space. Login, the review page and bookmarks still lead here.
-export default function HomePage() {
-  redirect(DEFAULT_SPACE.href);
+// `/` opens the subject space chosen in Settings (MEM-6), Anglais by
+// default. Login and the link of the reminder e-mail lead here.
+export default async function HomePage() {
+  const { homeSpace } = await getPreferences();
+  redirect(spaceOf(homeSpace).href);
 }

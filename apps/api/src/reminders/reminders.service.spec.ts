@@ -53,7 +53,7 @@ describe('RemindersService', () => {
       const sentMail = mail.send.mock.calls[0][0];
       expect(sentMail.to).toBe('alice@example.fr');
       expect(sentMail.subject).toContain('3 cartes');
-      expect(sentMail.text).toContain('https://app.example.fr/review');
+      expect(sentMail.text).toContain('Réviser maintenant : https://app.example.fr/\n');
       expect(sentMail.text).toContain('https://app.example.fr/reglages');
       expect(sentMail.headers['List-Unsubscribe']).toMatch(
         /^<https:\/\/app\.example\.fr\/unsubscribe\?user=user-1&token=/,

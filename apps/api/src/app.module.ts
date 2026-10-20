@@ -6,6 +6,7 @@ import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { validateEnv } from './config/env.validation.js';
 import { HealthController } from './health/health.controller.js';
+import { PreferencesModule } from './preferences/preferences.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ItemsModule } from './items/items.module.js';
 import { RemindersModule } from './reminders/reminders.module.js';
@@ -21,6 +22,7 @@ import { ReviewsModule } from './reviews/reviews.module.js';
     // Scheduled tasks (@Cron), e.g. the e-mail reminders.
     ScheduleModule.forRoot(),
     RemindersModule,
+    PreferencesModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

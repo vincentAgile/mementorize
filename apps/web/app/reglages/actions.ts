@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { ApiError, saveReminderSettings, sendTestReminder } from '../../lib/api';
+import { ApiError, savePreferences, saveReminderSettings, sendTestReminder } from '../../lib/api';
+import { findSpace } from '../../lib/spaces';
 
 export interface SettingsFormState {
   message?: string;
@@ -42,4 +43,21 @@ export async function sendTestAction(): Promise<SettingsFormState> {
     return { error: reasons[error.status] ?? "L'envoi a échoué." };
   }
   return { message: 'E-mail de test envoyé : regarde ta boîte de réception (et les indésirables).' };
+}
+
+export async function saveHomeSpaceAction(
+  _previous: SettingsFormState,
+  formData: FormData,
+): Promise<SettingsFormState> {
+  const space = findSpace(String(formData.get('homeSpace') ?? ''));
+  if (!space) return { error: 'Page d’accueil invalide.' };
+
+  try {
+    await savePreferences({ homeSpace: space.type });
+  } catch (error) {
+    if (error instanceof ApiError) return { error: "Impossible d'enregistrer la page d'accueil." };
+    throw error;
+  }
+  revalidatePath('/reglages');
+  return { message: `Page d’accueil enregistrée : ${space.label}.` };
 }

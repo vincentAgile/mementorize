@@ -1,7 +1,8 @@
 import type { Mail } from '../mail/mail.service.js';
 
 export interface ReminderLinks {
-  review: string;
+  /** The home page: it opens the subject space chosen in the settings (MEM-6). */
+  home: string;
   settings: string;
   unsubscribe: string;
 }
@@ -17,7 +18,7 @@ export function reminderEmail(to: string, dueCount: number, links: ReminderLinks
   const text = [
     lead,
     '',
-    `Réviser maintenant : ${links.review}`,
+    `Réviser maintenant : ${links.home}`,
     '',
     '--',
     `Choisir l'heure du rappel : ${links.settings}`,
@@ -31,7 +32,7 @@ export function reminderEmail(to: string, dueCount: number, links: ReminderLinks
     <h1 style="font-size: 1.25rem">Mementorize</h1>
     <p>${lead}</p>
     <p>
-      <a href="${links.review}" style="display: inline-block; padding: 0.6rem 1rem; background: #147d80; color: #ffffff; border-radius: 6px; text-decoration: none">Réviser maintenant</a>
+      <a href="${links.home}" style="display: inline-block; padding: 0.6rem 1rem; background: #147d80; color: #ffffff; border-radius: 6px; text-decoration: none">Réviser maintenant</a>
     </p>
     <p style="font-size: 0.85rem; color: #57606a">
       <a href="${links.settings}" style="color: #57606a">Choisir l'heure du rappel</a> ·

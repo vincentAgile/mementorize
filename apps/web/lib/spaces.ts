@@ -40,9 +40,6 @@ export const SPACES: Space[] = [
   },
 ];
 
-/** Where `/` leads, until the home page can be chosen in Settings (MEM-6). */
-export const DEFAULT_SPACE = SPACES.find((space) => space.type === 'Vocabulary')!;
-
 export function spaceOf(type: ItemType): Space {
   return SPACES.find((space) => space.type === type)!;
 }
