@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { initialsOf } from '../lib/initials';
+import { AccountMenu } from './account-menu';
 
 /**
  * The two icons at the top right of the header (MEM-9): Settings, the only
@@ -23,10 +23,7 @@ export function HeaderActions({ email }: { email: string }) {
       >
         <GearIcon />
       </Link>
-      {/* The account menu (profile, logout) opens from here with MEM-10. */}
-      <button type="button" className="avatar" aria-label={`Mon compte (${email})`} title="Mon compte">
-        {initialsOf(email)}
-      </button>
+      <AccountMenu email={email} />
     </div>
   );
 }

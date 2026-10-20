@@ -146,6 +146,80 @@ body {
   background: #0f6366;
 }
 
+.avatar--large {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  font-size: 1.05rem;
+  cursor: default;
+}
+
+/* MEM-10: the popup of the avatar, aligned on its right edge */
+.account-menu {
+  position: relative;
+}
+
+.account-menu__popup {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 10;
+  min-width: 15rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.5rem 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+}
+
+.account-menu__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem 0.75rem;
+}
+
+.account-menu__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.9rem;
+}
+
+.account-menu__who span {
+  overflow: hidden;
+  color: #666;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu__item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.account-menu__item:hover,
+.account-menu__item:focus-visible {
+  outline: none;
+  background: rgba(20, 125, 128, 0.1);
+}
+
+.account-menu__separator {
+  margin: 0.4rem 0;
+  border: none;
+  border-top: 1px solid #ddd;
+}
+
 .avatar:focus-visible,
 .header-actions__icon:focus-visible {
   outline: 2px solid #147d80;
@@ -676,6 +750,20 @@ kbd {
 }
 
 @media (prefers-color-scheme: dark) {
+  .account-menu__popup {
+    border-color: #444;
+    background: #1e1e1e;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  }
+
+  .account-menu__who span {
+    color: #aaa;
+  }
+
+  .account-menu__separator {
+    border-top-color: #444;
+  }
+
   .header-actions__icon {
     color: #aaa;
   }
@@ -748,7 +836,8 @@ kbd {
   font-size: 1rem;
 }
 
-.settings__form select {
+.settings__form select,
+.settings__form input[type='email'] {
   font: inherit;
   padding: 0.4rem 0.5rem;
   border: 1px solid #ccc;
