@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Card, Item, ReviewRating } from '@prisma/client';
+import type { Card, Item, ItemType, ReviewRating } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
 
@@ -22,14 +22,18 @@ export class ReviewsService {
     private readonly scheduler: SchedulerService,
   ) {}
 
-  /** Cards of this user whose due date has passed, oldest first. */
-  async findDue(userId: string, limit = 20, now = new Date()): Promise<DueReviews> {
-    const where = { due: { lte: now }, item: { userId } };
+  /**
+   * Cards of this user whose due date has passed, oldest first. With `type`,
+   * only the cards of that type of item (a subject space, MEM-3).
+   */
+  async findDue(userId: string, limit = 20, type?: ItemType, now = new Date()): Promise<DueReviews> {
+    const item = type ? { userId, type } : { userId };
+    const where = { due: { lte: now }, item };
     const [total, cards, upcoming] = await Promise.all([
       this.prisma.card.count({ where }),
       this.prisma.card.findMany({ where, include: { item: true }, orderBy: { due: 'asc' }, take: limit }),
       this.prisma.card.findFirst({
-        where: { due: { gt: now }, item: { userId } },
+        where: { due: { gt: now }, item },
         orderBy: { due: 'asc' },
         select: { due: true },
       }),

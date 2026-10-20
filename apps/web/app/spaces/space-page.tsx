@@ -3,7 +3,7 @@ import { getCurrentUser, getDueReviews, getItems } from '../../lib/api';
 import { formatDelay } from '../../lib/format';
 import { branchesOf, rootOf } from '../../lib/mind-map';
 import type { Space } from '../../lib/spaces';
-import type { CardSummary, Item } from '../../lib/types';
+import type { CardSummary, DueReviews, Item } from '../../lib/types';
 import { AppHeader } from '../app-header';
 import { ItemForm } from '../items/item-form';
 
@@ -16,7 +16,12 @@ import { ItemForm } from '../items/item-form';
  * session's token), and the browser receives ready-made HTML.
  */
 export async function SpacePage({ space }: { space: Space }) {
-  const [user, items, due] = await Promise.all([getCurrentUser(), getItems(space.type), getDueReviews(1)]);
+  const [user, items, due, spaceDue] = await Promise.all([
+    getCurrentUser(),
+    getItems(space.type),
+    getDueReviews(1), // all subjects: the counter of the header
+    getDueReviews(1, space.type), // this subject only
+  ]);
   const now = new Date();
 
   return (
@@ -24,11 +29,12 @@ export async function SpacePage({ space }: { space: Space }) {
       <AppHeader email={user.email} dueCount={due.total} />
 
       <h2 className="space__title">{space.label}</h2>
+      {items.length > 0 && <p className="space__due">{dueLabel(spaceDue, now)}</p>}
 
       <ItemForm type={space.type} />
 
       {items.length === 0 ? (
-        <p>Aucune fiche pour le moment.</p>
+        <p className="space__empty">{space.emptyText}</p>
       ) : (
         <ul className="items__list">
           {items.map((item) => (
@@ -45,6 +51,16 @@ export async function SpacePage({ space }: { space: Space }) {
       )}
     </main>
   );
+}
+
+/** How many cards of this subject wait for a review (MEM-3). */
+function dueLabel(due: DueReviews, now: Date): string {
+  if (due.total > 0) {
+    return `${due.total} carte${due.total > 1 ? 's' : ''} à réviser`;
+  }
+  return due.nextDueAt
+    ? `Rien à réviser pour le moment · prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}`
+    : 'Rien à réviser pour le moment';
 }
 
 function ItemContent({ item }: { item: Item }) {

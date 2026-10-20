@@ -44,7 +44,7 @@ describe('ReviewsService', () => {
       prismaMock.card.findMany.mockResolvedValue([]);
       prismaMock.card.findFirst.mockResolvedValue(null);
 
-      const result = await service.findDue(userId, 20, NOW);
+      const result = await service.findDue(userId, 20, undefined, NOW);
 
       const where = { due: { lte: NOW }, item: { userId } };
       expect(prismaMock.card.count).toHaveBeenCalledWith({ where });
@@ -59,13 +59,27 @@ describe('ReviewsService', () => {
       prismaMock.card.findMany.mockResolvedValue([{ ...aCard(), item }]);
       prismaMock.card.findFirst.mockResolvedValue({ due: later });
 
-      const result = await service.findDue(userId, 20, NOW);
+      const result = await service.findDue(userId, 20, undefined, NOW);
 
       expect(result.total).toBe(1);
       expect(result.items[0].item).toEqual(item);
       expect(result.items[0].card).not.toHaveProperty('item');
       expect(Object.keys(result.items[0].nextDue)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
       expect(result.nextDueAt).toEqual(later);
+    });
+
+    it('only counts the cards of one type of item when asked to (a subject space)', async () => {
+      prismaMock.card.count.mockResolvedValue(0);
+      prismaMock.card.findMany.mockResolvedValue([]);
+      prismaMock.card.findFirst.mockResolvedValue(null);
+
+      await service.findDue(userId, 20, 'Vocabulary', NOW);
+
+      const item = { userId, type: 'Vocabulary' };
+      expect(prismaMock.card.count).toHaveBeenCalledWith({ where: { due: { lte: NOW }, item } });
+      expect(prismaMock.card.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { due: { gt: NOW }, item } }),
+      );
     });
   });
 
