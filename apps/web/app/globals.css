@@ -202,8 +202,18 @@ body {
 }
 
 .space__title {
-  margin: 1.25rem 0 0.75rem;
+  margin: 1.25rem 0 0;
   font-size: 1.35rem;
+}
+
+.space__due {
+  margin: 0.15rem 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.space__empty {
+  color: #666;
 }
 
 .badge {

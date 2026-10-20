@@ -63,6 +63,14 @@ describe('API (e2e)', () => {
 
     const due = await http().get('/reviews/due').set('Authorization', `Bearer ${alice}`).expect(200);
     expect(due.body.items.map((d: { item: { id: string } }) => d.item.id)).toContain(created.body.id);
+    const dueQuotes = await http().get('/reviews/due?type=Quote').set('Authorization', `Bearer ${alice}`).expect(200);
+    expect(dueQuotes.body.total).toBe(due.body.total);
+    const dueWords = await http()
+      .get('/reviews/due?type=Vocabulary')
+      .set('Authorization', `Bearer ${alice}`)
+      .expect(200);
+    expect(dueWords.body.total).toBe(0);
+    await http().get('/reviews/due?type=Nope').set('Authorization', `Bearer ${alice}`).expect(400);
 
     await http().get(`/quotes/${created.body.id}`).set('Authorization', `Bearer ${bob}`).expect(404);
     const bobItems = await http().get('/items').set('Authorization', `Bearer ${bob}`).expect(200);

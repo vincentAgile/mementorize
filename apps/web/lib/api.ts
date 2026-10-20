@@ -149,8 +149,9 @@ export function deleteMindMap(id: string): Promise<void> {
   return authedFetch<void>(`/mind-maps/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
-export function getDueReviews(limit = 20): Promise<DueReviews> {
-  return authedFetch<DueReviews>(`/reviews/due?limit=${limit}`);
+/** Cards to review now; with `type`, only those of one subject space. */
+export function getDueReviews(limit = 20, type?: ItemType): Promise<DueReviews> {
+  return authedFetch<DueReviews>(`/reviews/due?limit=${limit}${type ? `&type=${type}` : ''}`);
 }
 
 export function submitReview(cardId: string, rating: ReviewRating): Promise<void> {

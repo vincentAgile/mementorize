@@ -1,6 +1,19 @@
-import { Body, Controller, DefaultValuePipe, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Get,
+  Param,
+  ParseEnumPipe,
+  ParseIntPipe,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import type { ItemType } from '@prisma/client';
 import type { AuthUser } from '../auth/auth-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
+import { ITEM_TYPES } from '../items/item-content.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { ReviewDto } from './dto/review.dto.js';
 import { ReviewsService } from './reviews.service.js';
@@ -10,10 +23,14 @@ import { ReviewsService } from './reviews.service.js';
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  /** GET /reviews/due?limit=20 — what to review now. */
+  /** GET /reviews/due?limit=20&type=Vocabulary — what to review now (type is optional). */
   @Get('due')
-  findDue(@CurrentUser() user: AuthUser, @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number) {
-    return this.reviewsService.findDue(user.id, Math.min(Math.max(limit, 1), 100));
+  findDue(
+    @CurrentUser() user: AuthUser,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('type', new ParseEnumPipe(ITEM_TYPES, { optional: true })) type?: ItemType,
+  ) {
+    return this.reviewsService.findDue(user.id, Math.min(Math.max(limit, 1), 100), type);
   }
 
   /**
