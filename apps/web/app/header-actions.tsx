@@ -9,7 +9,7 @@ import { AccountMenu } from './account-menu';
  * way to reach them, and the account's avatar. A Client Component, to
  * highlight the gear on the Settings page.
  */
-export function HeaderActions({ email }: { email: string }) {
+export function HeaderActions({ email, name }: { email: string; name: string | null }) {
   const onSettings = usePathname().startsWith('/reglages');
 
   return (
@@ -23,7 +23,7 @@ export function HeaderActions({ email }: { email: string }) {
       >
         <GearIcon />
       </Link>
-      <AccountMenu email={email} />
+      <AccountMenu email={email} name={name} />
     </div>
   );
 }

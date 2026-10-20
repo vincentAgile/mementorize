@@ -10,6 +10,8 @@ model User {
   id           String   @id @default(uuid())
   email        String   @unique
   passwordHash String
+  /// Name shown in the avatar and the account menu (MEM-11); optional.
+  name         String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   items        Item[]

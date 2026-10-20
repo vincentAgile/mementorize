@@ -236,3 +236,13 @@ curl http://localhost:3000/preferences -H "Authorization: Bearer $TOKEN"
 curl -X PUT http://localhost:3000/preferences -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" -d '{"homeSpace":"Quote"}'
 ```
+
+## Profil (MEM-11)
+
+Le nom de l'utilisateur, facultatif (colonne `users.name`, vide pour les comptes existants), sert aux initiales de l'avatar et au menu du compte. Espaces de début et de fin supprimés, 80 caractères au plus ; une chaîne vide efface le nom.
+
+```bash
+curl http://localhost:3000/profile -H "Authorization: Bearer $TOKEN"
+curl -X PUT http://localhost:3000/profile -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"name":"Vincent Carpentier"}'
+```

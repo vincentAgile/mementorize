@@ -845,11 +845,17 @@ kbd {
 }
 
 .settings__form select,
-.settings__form input[type='email'] {
+.settings__form input[type='email'],
+.settings__form input[name='name'] {
   font: inherit;
   padding: 0.4rem 0.5rem;
   border: 1px solid #ccc;
   border-radius: 4px;
+}
+
+.settings__form input[readonly] {
+  background: rgba(127, 127, 127, 0.1);
+  color: #666;
 }
 
 .settings__hint {

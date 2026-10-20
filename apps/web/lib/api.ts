@@ -13,6 +13,7 @@ import type {
   MindMap,
   MindMapNode,
   Preferences,
+  Profile,
   ReminderSettings,
   ReminderSettingsInput,
   ReviewRating,
@@ -149,6 +150,19 @@ export function saveMindMap(id: string, nodes: MindMapNode[]): Promise<MindMap> 
 
 export function deleteMindMap(id: string): Promise<void> {
   return authedFetch<void>(`/mind-maps/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export function getProfile(): Promise<Profile> {
+  return authedFetch<Profile>('/profile');
+}
+
+/** Saves the name (trimmed by the API; an empty name clears it). */
+export function saveProfile(name: string): Promise<Profile> {
+  return authedFetch<Profile>('/profile', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
 }
 
 export function getPreferences(): Promise<Preferences> {

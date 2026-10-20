@@ -115,6 +115,12 @@ export interface ReminderSettingsInput {
   timeZone: string; // IANA name, e.g. Europe/Paris
 }
 
+/** The profile of the user (MEM-11). */
+export interface Profile {
+  email: string;
+  name: string | null;
+}
+
 /** The user's preferences of the web app (MEM-6). */
 export interface Preferences {
   homeSpace: ItemType;

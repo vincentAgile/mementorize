@@ -82,6 +82,25 @@ describe('API (e2e)', () => {
     expect(bobItems.body).toEqual([]);
   });
 
+  it('saves the name of the profile, trimmed, and clears it when empty', async () => {
+    const token = await register('frank');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const initial = await http().get('/profile').set(auth).expect(200);
+    expect(initial.body).toEqual({ email: `frank-${unique}@e2e.test`, name: null });
+
+    const saved = await http().put('/profile').set(auth).send({ name: '  Frank Martin  ' }).expect(200);
+    expect(saved.body.name).toBe('Frank Martin');
+
+    await http()
+      .put('/profile')
+      .set(auth)
+      .send({ name: 'x'.repeat(81) })
+      .expect(400);
+    const cleared = await http().put('/profile').set(auth).send({ name: '   ' }).expect(200);
+    expect(cleared.body.name).toBeNull();
+  });
+
   it('saves the home space, Anglais by default, and validates it', async () => {
     const token = await register('erin');
     const auth = { Authorization: `Bearer ${token}` };
