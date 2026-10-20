@@ -25,7 +25,7 @@ export async function SpacePage({ space }: { space: Space }) {
 
       <h2 className="space__title">{space.label}</h2>
 
-      <ItemForm defaultType={space.type} />
+      <ItemForm type={space.type} />
 
       {items.length === 0 ? (
         <p>Aucune fiche pour le moment.</p>

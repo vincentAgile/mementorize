@@ -350,37 +350,6 @@ kbd {
 
 /* --- Phase 5: item types --- */
 
-.segmented {
-  display: inline-flex;
-  align-self: flex-start;
-  border: 1px solid #147d80;
-  border-radius: 6px;
-  overflow: hidden;
-  font-size: 0.9rem;
-}
-
-.segmented label {
-  padding: 0.35rem 0.9rem;
-  color: #147d80;
-  cursor: pointer;
-}
-
-.segmented label.is-active {
-  background: #147d80;
-  color: white;
-}
-
-.segmented input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.segmented label:has(input:focus-visible) {
-  outline: 2px solid #147d80;
-  outline-offset: 2px;
-}
-
 .items__row {
   display: grid;
   grid-template-columns: 1fr 1fr;
