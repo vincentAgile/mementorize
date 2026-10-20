@@ -34,7 +34,6 @@ function navLinks(due: DueSummary): NavLink[] {
       count: due.total,
       isActive: (pathname, type) => pathname === '/review' && !SPACES.some((space) => space.type === type),
     },
-    { href: '/reglages', label: 'Réglages', isActive: (pathname) => startsWith(pathname, '/reglages') },
   ];
 }
 
@@ -64,10 +63,10 @@ function DueBadge({ count }: { count: number }) {
 }
 
 /**
- * The menu (MEM-5): the three subject spaces, "Tout réviser" and Settings,
- * each space and "Tout réviser" with its number of due cards. A Client
- * Component: only the browser knows the current URL, to highlight the
- * section we are in.
+ * The menu (MEM-5): the three subject spaces and "Tout réviser", each with
+ * its number of due cards. Settings moved to an icon of the header (MEM-9).
+ * A Client Component: only the browser knows the current URL, to highlight
+ * the section we are in.
  */
 export function MainNav({ due }: { due: DueSummary }) {
   const pathname = usePathname();

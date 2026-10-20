@@ -86,18 +86,70 @@ body {
 
 .page__header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.page__user {
+/* MEM-9: the name of the app, and the Settings and account icons on the right */
+.page__topbar {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.page__topbar h1 {
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
+}
+
+.header-actions__icon {
+  display: inline-flex;
+  padding: 0.3rem;
+  border-radius: 99px;
   color: #666;
-  font-size: 0.9rem;
+}
+
+.header-actions__icon:hover {
+  color: #147d80;
+  background: rgba(20, 125, 128, 0.1);
+}
+
+.header-actions__icon.is-active {
+  color: #147d80;
+  background: rgba(20, 125, 128, 0.15);
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: none;
+  border-radius: 99px;
+  background: #147d80;
+  color: white;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.avatar:hover {
+  background: #0f6366;
+}
+
+.avatar:focus-visible,
+.header-actions__icon:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
 }
 
 .link-button {
@@ -169,13 +221,6 @@ body {
 }
 
 /* --- Phase 4: navigation & review --- */
-
-.page__brand {
-  display: flex;
-  align-items: baseline;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-}
 
 .page__nav {
   display: flex;
@@ -631,6 +676,10 @@ kbd {
 }
 
 @media (prefers-color-scheme: dark) {
+  .header-actions__icon {
+    color: #aaa;
+  }
+
   .badge.badge--done {
     background: #203334;
     color: #7fd3d6;
