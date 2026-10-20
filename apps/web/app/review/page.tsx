@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getCurrentUser, getDueReviews } from '../../lib/api';
+import { getDueReviews } from '../../lib/api';
 import { firstWords, formatDelay } from '../../lib/format';
 import { subtreeIds } from '../../lib/mind-map';
 import { findSpace } from '../../lib/spaces';
@@ -93,7 +93,7 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
 // string stays in the URL across answers.
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const space = findSpace((await searchParams).type);
-  const [user, due] = await Promise.all([getCurrentUser(), getDueReviews(1, space?.type)]);
+  const due = await getDueReviews(1, space?.type);
   const next = due.items[0];
   const now = new Date();
 
@@ -105,7 +105,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
   return (
     <main className="page">
-      <AppHeader email={user.email} />
+      <AppHeader />
 
       {!next ? (
         <section className="review-empty">

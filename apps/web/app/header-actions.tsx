@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { Profile } from '../lib/types';
 import { AccountMenu } from './account-menu';
 
 /**
@@ -9,7 +10,7 @@ import { AccountMenu } from './account-menu';
  * way to reach them, and the account's avatar. A Client Component, to
  * highlight the gear on the Settings page.
  */
-export function HeaderActions({ email }: { email: string }) {
+export function HeaderActions({ profile }: { profile: Profile }) {
   const onSettings = usePathname().startsWith('/reglages');
 
   return (
@@ -23,7 +24,7 @@ export function HeaderActions({ email }: { email: string }) {
       >
         <GearIcon />
       </Link>
-      <AccountMenu email={email} />
+      <AccountMenu profile={profile} />
     </div>
   );
 }

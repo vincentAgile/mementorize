@@ -1,17 +1,17 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ApiError, getCurrentUser, getMindMap } from '../../../lib/api';
+import { ApiError, getMindMap } from '../../../lib/api';
 import { AppHeader } from '../../app-header';
 import { DeleteMindMapButton } from '../delete-mind-map-button';
 import { MindMapEditor } from '../mind-map-editor';
 
 export default async function MindMapPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [user, map] = await Promise.all([getCurrentUser(), getMindMap(id).catch(notFoundOn404)]);
+  const map = await getMindMap(id).catch(notFoundOn404);
 
   return (
     <main className="page">
-      <AppHeader email={user.email} />
+      <AppHeader />
       <p className="mind-map-page__back">
         <Link href="/cartes-mentales">← Mes cartes mentales</Link>
       </p>

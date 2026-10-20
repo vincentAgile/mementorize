@@ -1,23 +1,16 @@
-import { getCurrentUser } from '../../lib/api';
+import { getProfile } from '../../lib/api';
 import { AppHeader } from '../app-header';
+import { ProfileForm } from './profile-form';
 
-// The profile, opened from the account menu (MEM-10). For now it only shows
-// the e-mail of the account; the name can be filled in with MEM-11.
+// The profile, opened from the account menu (MEM-10): the e-mail of the
+// account, read only, and the name, optional (MEM-11).
 export default async function ProfilePage() {
-  const user = await getCurrentUser();
+  const profile = await getProfile();
 
   return (
     <main className="page">
-      <AppHeader email={user.email} />
-      <section className="settings">
-        <h2>Profil</h2>
-        <form className="settings__form">
-          <label>
-            E-mail
-            <input type="email" value={user.email} readOnly />
-          </label>
-        </form>
-      </section>
+      <AppHeader />
+      <ProfileForm profile={profile} />
     </main>
   );
 }

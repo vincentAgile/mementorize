@@ -8,6 +8,7 @@ import { validateEnv } from './config/env.validation.js';
 import { HealthController } from './health/health.controller.js';
 import { PreferencesModule } from './preferences/preferences.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { ProfileModule } from './profile/profile.module.js';
 import { ItemsModule } from './items/items.module.js';
 import { RemindersModule } from './reminders/reminders.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
@@ -23,6 +24,7 @@ import { ReviewsModule } from './reviews/reviews.module.js';
     ScheduleModule.forRoot(),
     RemindersModule,
     PreferencesModule,
+    ProfileModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

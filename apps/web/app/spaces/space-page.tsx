@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getCurrentUser, getDueReviews, getItems } from '../../lib/api';
+import { getDueReviews, getItems } from '../../lib/api';
 import { formatDelay } from '../../lib/format';
 import { branchesOf, rootOf } from '../../lib/mind-map';
 import { reviewHref, type Space } from '../../lib/spaces';
@@ -16,8 +16,7 @@ import { ItemForm } from '../items/item-form';
  * session's token), and the browser receives ready-made HTML.
  */
 export async function SpacePage({ space }: { space: Space }) {
-  const [user, items, spaceDue] = await Promise.all([
-    getCurrentUser(),
+  const [items, spaceDue] = await Promise.all([
     getItems(space.type),
     getDueReviews(1, space.type), // this subject only
   ]);
@@ -25,7 +24,7 @@ export async function SpacePage({ space }: { space: Space }) {
 
   return (
     <main className="page">
-      <AppHeader email={user.email} />
+      <AppHeader />
 
       <h2 className="space__title">{space.label}</h2>
       {items.length > 0 &&
