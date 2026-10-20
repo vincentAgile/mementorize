@@ -195,7 +195,9 @@ body {
 }
 
 .account-menu__item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   width: 100%;
   padding: 0.5rem 1rem;
   border: none;
@@ -212,6 +214,11 @@ body {
 .account-menu__item:focus-visible {
   outline: none;
   background: rgba(20, 125, 128, 0.1);
+}
+
+.account-menu__icon {
+  flex-shrink: 0;
+  color: #666;
 }
 
 .account-menu__separator {
@@ -756,7 +763,8 @@ kbd {
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
   }
 
-  .account-menu__who span {
+  .account-menu__who span,
+  .account-menu__icon {
     color: #aaa;
   }
 

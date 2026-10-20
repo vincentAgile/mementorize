@@ -142,11 +142,34 @@ export function AccountMenu({ email, name }: AccountMenuProps) {
           <hr className="account-menu__separator" role="separator" />
           <form action={logoutAction}>
             <button type="submit" role="menuitem" tabIndex={-1} className="account-menu__item">
+              <LogoutIcon />
               Déconnexion
             </button>
           </form>
         </div>
       )}
     </div>
+  );
+}
+
+/** An open frame with an arrow going out of it (MEM-12). */
+function LogoutIcon() {
+  return (
+    <svg
+      className="account-menu__icon"
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4" />
+      <path d="M10 12h10" />
+      <path d="m16 8 4 4-4 4" />
+    </svg>
   );
 }
