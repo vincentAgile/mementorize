@@ -12,6 +12,7 @@ import type {
   ItemType,
   MindMap,
   MindMapNode,
+  Preferences,
   ReminderSettings,
   ReminderSettingsInput,
   ReviewRating,
@@ -148,6 +149,18 @@ export function saveMindMap(id: string, nodes: MindMapNode[]): Promise<MindMap> 
 
 export function deleteMindMap(id: string): Promise<void> {
   return authedFetch<void>(`/mind-maps/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export function getPreferences(): Promise<Preferences> {
+  return authedFetch<Preferences>('/preferences');
+}
+
+export function savePreferences(input: Preferences): Promise<Preferences> {
+  return authedFetch<Preferences>('/preferences', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
 }
 
 /** How many cards are due, in all and per subject (the menu's counters, MEM-5). */

@@ -115,6 +115,11 @@ export interface ReminderSettingsInput {
   timeZone: string; // IANA name, e.g. Europe/Paris
 }
 
+/** The user's preferences of the web app (MEM-6). */
+export interface Preferences {
+  homeSpace: ItemType;
+}
+
 export interface ReminderSettings extends ReminderSettingsInput {
   emailAvailable: boolean; // false: the server can't send e-mails
 }

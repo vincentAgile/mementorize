@@ -25,6 +25,10 @@ model User {
   /// a day, even with two API containers running during a deployment.
   reminderLastSentOn String?
 
+  /// The subject space opened on arrival (MEM-6): `/`, after login and from
+  /// the reminder e-mail.
+  homeSpace ItemType @default(Vocabulary)
+
   @@map("users")
 }
 
