@@ -212,6 +212,35 @@ body {
   font-size: 0.9rem;
 }
 
+.space__review {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 4px;
+  background: #147d80;
+  color: white;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.space__review:hover {
+  background: #0f6366;
+}
+
+.space__review-count {
+  padding: 0 0.45em;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 0.8rem;
+  line-height: 1.5em;
+}
+
+.review-progress a {
+  color: #147d80;
+}
+
 .space__empty {
   color: #666;
 }
