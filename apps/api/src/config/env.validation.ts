@@ -34,6 +34,12 @@ export function validateEnv(env: Record<string, unknown>): Record<string, unknow
     }
   }
 
+  // Pronunciation (MEM-39) is optional: without KOKORO_URL, the web app
+  // keeps the browser's speech synthesis.
+  if (text('KOKORO_URL') && !/^https?:\/\/[^/]+/.test(text('KOKORO_URL'))) {
+    problems.push('KOKORO_URL must be the address of the Kokoro server (e.g. http://kokoro:8880)');
+  }
+
   if (problems.length > 0) {
     throw new Error(`Invalid configuration:\n- ${problems.join('\n- ')}`);
   }

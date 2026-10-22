@@ -88,7 +88,18 @@ printf '%s\n' "$backups"/mementorize-*.sql.gz | sort -r | tail -n +11 | xargs -r
 step "Applying the migrations"
 docker compose up --no-deps --exit-code-from migrate migrate
 
-# --- 5. Replacing the containers ----------------------------------------------
+# --- 5. Kokoro (MEM-39) -------------------------------------------------------
+# The speech synthesis, started before the API, which sends it the
+# pronunciations to generate. Never blocking: if its image can't be pulled
+# or it doesn't start, the app is deployed anyway and the web app falls back
+# on the browser's voices. `up` recreates it only when its image or its
+# settings changed.
+step "Starting Kokoro"
+if ! { docker compose pull --quiet kokoro && docker compose up --detach --no-deps kokoro; }; then
+  echo "Kokoro could not be started: the pronunciations use the browser's voices." >&2
+fi
+
+# --- 6. Replacing the containers ----------------------------------------------
 # docker rollout starts a second container of the service, waits until it's
 # healthy, then stops the old one (after its pre-stop hook, for web). api
 # first: the new web may rely on the new API, the old web works with both.
@@ -97,7 +108,7 @@ docker rollout --timeout 120 api
 step "Replacing web"
 docker rollout --timeout 120 web
 
-# --- 6. Recording the version, cleaning up --------------------------------------
+# --- 7. Recording the version, cleaning up --------------------------------------
 # From now on, any `docker compose ...` on the server uses this version.
 sed -i '/^IMAGE_TAG=/d' .env
 echo "IMAGE_TAG=$sha" >> .env

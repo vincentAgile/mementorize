@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
+import { PronunciationModule } from '../pronunciation/pronunciation.module.js';
 import { SchedulingModule } from '../scheduling/scheduling.module.js';
 import { ItemsController } from './items.controller.js';
 import { ItemsService } from './items.service.js';
@@ -8,7 +9,7 @@ import { QuotesController } from './quotes/quotes.controller.js';
 import { VocabularyController } from './vocabulary/vocabulary.controller.js';
 
 @Module({
-  imports: [AuthModule, SchedulingModule], // JwtAuthGuard, SchedulerService
+  imports: [AuthModule, SchedulingModule, PronunciationModule], // JwtAuthGuard, SchedulerService, PronunciationService
   controllers: [ItemsController, QuotesController, VocabularyController, MindMapsController],
   providers: [ItemsService],
 })

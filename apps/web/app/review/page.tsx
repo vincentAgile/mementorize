@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getDueReviews } from '../../lib/api';
 import { firstWords, formatDelay } from '../../lib/format';
 import { subtreeIds } from '../../lib/mind-map';
+import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { findSpace } from '../../lib/spaces';
 import type { DueItem, ReviewRating } from '../../lib/types';
 import { AppHeader } from '../app-header';
@@ -72,7 +73,7 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
   }
 
   const { word, translation, example } = item.content;
-  const english = { main: word, lang: 'en', speak: true };
+  const english = { main: word, lang: 'en', speak: true, audioUrl: pronunciationUrl(item.id, word) };
   const french = { main: translation, lang: 'fr' };
 
   return card.kind === 'EnglishToFrench'
