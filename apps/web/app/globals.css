@@ -1139,7 +1139,71 @@ kbd {
   border-radius: 4px 4px 0 0;
 }
 
+/* MEM-25: the tab "Apprendre · Réviser", one card per process */
+.learn-review {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .learn-review {
+    grid-template-columns: 1fr;
+  }
+}
+
+.learn-review__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem 1.15rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.learn-review__card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.learn-review__card p {
+  margin: 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.learn-review__card .space__review {
+  margin-top: auto;
+}
+
+.learn-review__none a,
+.learn-review__empty a:not(.space__review) {
+  color: #147d80;
+}
+
+.learn-review__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.learn-review__empty p {
+  margin: 0;
+  color: #555;
+}
+
 @media (prefers-color-scheme: dark) {
+  .learn-review__card {
+    border-color: #444;
+  }
+
+  .learn-review__card p,
+  .learn-review__empty p {
+    color: #bbb;
+  }
+
   .tabs {
     border-bottom-color: #444;
   }
