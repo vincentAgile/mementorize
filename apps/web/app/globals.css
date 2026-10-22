@@ -191,8 +191,13 @@ body {
   background: var(--band-2);
 }
 
-/* MEM-32: the logo, [M]ementorize. The monogram is centred on the lowercase
-   letters (Outfit's x-height: 0.483 em), against them: one word. */
+/* MEM-32, MEM-35: the logo, [M]ementorize. The white « M » is an initial:
+   its foot on the baseline, its top at the height of a capital (Outfit:
+   0.703 em). It spans 35/64 of the square, so the square is
+   0.703 × 64 / 35 = 1.286 em, and goes 14.5/64 of it (0.291 em) below the
+   baseline. The flex baseline puts its bottom on the baseline; it is moved
+   down by 0.291 em (relative: no effect on layout), and a negative top
+   margin of the same amount keeps the line as tall as the text. */
 .logo {
   display: inline-flex;
   color: inherit;
@@ -211,10 +216,12 @@ body {
 
 .logo__mark {
   position: relative;
-  top: 0.14em; /* from the baseline down to centred on the x-height */
-  width: 0.76em;
-  height: 0.76em;
-  margin-inline-end: 0.035em;
+  top: 0.291em;
+  flex-shrink: 0;
+  width: 1.286em;
+  height: 1.286em;
+  margin-block-start: -0.291em;
+  margin-inline-end: 0.05em;
 }
 
 .logo:focus-visible {
