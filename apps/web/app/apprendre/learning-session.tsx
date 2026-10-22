@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { formatDelay } from '../../lib/format';
+import { stopPronouncing } from '../../lib/speech';
 import type { LearningItem, LearningSession, ReviewRating } from '../../lib/types';
+import { Speakable } from '../speech/speak-button';
 import { learnAction } from './actions';
 
 const RATINGS: { rating: ReviewRating; label: string }[] = [
@@ -44,7 +46,11 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
   const item = items[index];
   const last = index === items.length - 1;
 
+  // Leaving the session stops the reading (MEM-37).
+  useEffect(() => stopPronouncing, []);
+
   function goOn() {
+    stopPronouncing(); // next card
     if (phase === 'discover') {
       setRevealed(false);
       if (last) {
@@ -59,6 +65,7 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
   async function rate(rating: ReviewRating) {
     if (answered.current || !item) return;
     answered.current = true;
+    stopPronouncing();
     setSending(true);
     const ok = await learnAction(item.id, rating);
     if (ok) setLearned((done) => [...done, item]);
@@ -140,9 +147,11 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
 
         {discovering ? (
           <>
-            <blockquote className="review-card__text" lang="en">
-              {item.word}
-            </blockquote>
+            <Speakable text={item.word}>
+              <blockquote className="review-card__text" lang="en">
+                {item.word}
+              </blockquote>
+            </Speakable>
             {revealed ? (
               <>
                 <p className="review-card__answer">{item.translation}</p>
@@ -167,9 +176,11 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
         ) : revealed ? (
           <>
             <p className="review-card__recall">{item.translation}</p>
-            <blockquote className="review-card__text" lang="en">
-              {item.word}
-            </blockquote>
+            <Speakable text={item.word}>
+              <blockquote className="review-card__text" lang="en">
+                {item.word}
+              </blockquote>
+            </Speakable>
             {item.example && (
               <p className="review-card__note" lang="en">
                 {item.example}
