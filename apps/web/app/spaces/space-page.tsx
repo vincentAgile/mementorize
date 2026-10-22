@@ -24,43 +24,45 @@ export async function SpacePage({ space }: { space: Space }) {
   const now = new Date();
 
   return (
-    <main className="page">
+    <>
       <AppHeader />
+      <main className="page">
+        {/* MEM-28: the active menu entry says where we are; the h1 is for screen readers. */}
+        <h1 className="visually-hidden">{space.label}</h1>
+        {items.length > 0 && (
+          <div className="space__actions">
+            {spaceDue.total > 0 ? (
+              <Link href={reviewHref(space)} className="space__review">
+                {space.reviewLabel} <span className="space__review-count">{spaceDue.total}</span>
+              </Link>
+            ) : (
+              <p className="space__due">{nothingDueLabel(spaceDue, now)}</p>
+            )}
+          </div>
+        )}
 
-      <h2 className="space__title">{space.label}</h2>
-      {items.length > 0 && (
-        <div className="space__actions">
-          {spaceDue.total > 0 ? (
-            <Link href={reviewHref(space)} className="space__review">
-              {space.reviewLabel} <span className="space__review-count">{spaceDue.total}</span>
-            </Link>
-          ) : (
-            <p className="space__due">{nothingDueLabel(spaceDue, now)}</p>
-          )}
-        </div>
-      )}
+        <ItemForm type={space.type} />
 
-      <ItemForm type={space.type} />
-
-      {items.length === 0 ? (
-        <p className="space__empty">{space.emptyText}</p>
-      ) : (
-        <ul className="items__list">
-          {items.map((item) => (
-            <li key={item.id}>
-              <ItemContent item={item} />
-              <p className="items__schedule">
-                {item.learningStatus !== 'Learning'
-                  ? LEARNING_STATUS_LABELS[item.learningStatus] // not reviewed: no schedule to show (MEM-15)
-                  : item.cards?.length
-                    ? item.cards.map((card) => scheduleLabel(item, card, now)).join(' · ')
-                    : 'Pas encore de branche : rien à réviser'}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+        {items.length === 0 ? (
+          <p className="space__empty">{space.emptyText}</p>
+        ) : (
+          <ul className="items__list">
+            {items.map((item) => (
+              <li key={item.id}>
+                <ItemContent item={item} />
+                <p className="items__schedule">
+                  {item.learningStatus !== 'Learning'
+                    ? LEARNING_STATUS_LABELS[item.learningStatus] // not reviewed: no schedule to show (MEM-15)
+                    : item.cards?.length
+                      ? item.cards.map((card) => scheduleLabel(item, card, now)).join(' · ')
+                      : 'Pas encore de branche : rien à réviser'}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </main>
+    </>
   );
 }
 

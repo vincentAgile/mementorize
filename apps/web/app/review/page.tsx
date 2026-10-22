@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getDueReviews } from '../../lib/api';
@@ -91,6 +92,16 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
 // Server Action revalidates this page, which then shows the next due card.
 // With ?type=…, only the cards of one subject space (MEM-4); the query
 // string stays in the URL across answers.
+// MEM-28: « Réviser · Anglais · Mementorize », or « Tout réviser · Mementorize ».
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>;
+}): Promise<Metadata> {
+  const space = findSpace((await searchParams).type);
+  return { title: space ? `Réviser · ${space.label}` : 'Tout réviser' };
+}
+
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const space = findSpace((await searchParams).type);
   const due = await getDueReviews(1, space?.type);
@@ -104,44 +115,47 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   }
 
   return (
-    <main className="page">
+    <>
       <AppHeader />
+      <main className="page">
+        <h1 className="visually-hidden">{space ? `Réviser · ${space.label}` : 'Tout réviser'}</h1>
 
-      {!next ? (
-        <section className="review-empty">
-          <h2>Rien à réviser pour le moment</h2>
-          <p>
-            {due.nextDueAt
-              ? `Prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}.`
-              : "Les fiches reviennent ici quand c'est le bon moment pour les revoir."}{' '}
-            <Link href="/">Voir mes fiches</Link>
-          </p>
-        </section>
-      ) : (
-        <>
-          <p className="review-progress">
-            {space && <strong>{space.label} · </strong>}
-            {due.total} carte{due.total > 1 ? 's' : ''} à réviser
-            {space && (
-              <>
-                {' · '}
-                <Link href={space.href}>Arrêter</Link>
-              </>
-            )}
-          </p>
-          <ReviewCard
-            key={`${next.card.id}-${next.card.due}`} // fresh (hidden) card after each answer
-            cardId={next.card.id}
-            {...facesOf(next)}
-            learnedItemId={next.item.type === 'Vocabulary' ? next.item.id : undefined}
-            options={(Object.keys(LABELS) as ReviewRating[]).map((rating): RatingOption => ({
-              rating,
-              label: LABELS[rating],
-              delay: formatDelay(now, new Date(next.nextDue[rating])),
-            }))}
-          />
-        </>
-      )}
-    </main>
+        {!next ? (
+          <section className="review-empty">
+            <h2>Rien à réviser pour le moment</h2>
+            <p>
+              {due.nextDueAt
+                ? `Prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}.`
+                : "Les fiches reviennent ici quand c'est le bon moment pour les revoir."}{' '}
+              <Link href="/">Voir mes fiches</Link>
+            </p>
+          </section>
+        ) : (
+          <>
+            <p className="review-progress">
+              {space && <strong>{space.label} · </strong>}
+              {due.total} carte{due.total > 1 ? 's' : ''} à réviser
+              {space && (
+                <>
+                  {' · '}
+                  <Link href={space.href}>Arrêter</Link>
+                </>
+              )}
+            </p>
+            <ReviewCard
+              key={`${next.card.id}-${next.card.due}`} // fresh (hidden) card after each answer
+              cardId={next.card.id}
+              {...facesOf(next)}
+              learnedItemId={next.item.type === 'Vocabulary' ? next.item.id : undefined}
+              options={(Object.keys(LABELS) as ReviewRating[]).map((rating): RatingOption => ({
+                rating,
+                label: LABELS[rating],
+                delay: formatDelay(now, new Date(next.nextDue[rating])),
+              }))}
+            />
+          </>
+        )}
+      </main>
+    </>
   );
 }
