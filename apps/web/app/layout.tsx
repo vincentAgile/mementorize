@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Mementorize',
+  // MEM-28: each page names itself, e.g. « Liste · Anglais · Mementorize ».
+  title: { default: 'Mementorize', template: '%s · Mementorize' },
   description: 'Mémorisation à long terme par répétition espacée.',
 };
 

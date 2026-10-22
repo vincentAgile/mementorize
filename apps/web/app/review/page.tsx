@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getDueReviews } from '../../lib/api';
@@ -91,6 +92,16 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
 // Server Action revalidates this page, which then shows the next due card.
 // With ?type=…, only the cards of one subject space (MEM-4); the query
 // string stays in the URL across answers.
+// MEM-28: « Réviser · Anglais · Mementorize », or « Tout réviser · Mementorize ».
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string }>;
+}): Promise<Metadata> {
+  const space = findSpace((await searchParams).type);
+  return { title: space ? `Réviser · ${space.label}` : 'Tout réviser' };
+}
+
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const space = findSpace((await searchParams).type);
   const due = await getDueReviews(1, space?.type);
@@ -106,6 +117,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   return (
     <main className="page">
       <AppHeader />
+      <h1 className="visually-hidden">{space ? `Réviser · ${space.label}` : 'Tout réviser'}</h1>
 
       {!next ? (
         <section className="review-empty">

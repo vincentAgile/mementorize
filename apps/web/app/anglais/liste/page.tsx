@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getItems } from '../../../lib/api';
 import type { VocabularyItem } from '../../../lib/vocabulary-table';
 import { VocabularyTable } from '../vocabulary-table';
+
+export const metadata: Metadata = { title: 'Liste · Anglais' };
 
 // Tab "Liste" (MEM-26): the table of the vocabulary, with its sort, filter
 // and row actions. After an edit or a deletion the page is refreshed in
