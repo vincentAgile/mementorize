@@ -16,6 +16,7 @@ import {
   toRow,
   type VocabularyItem,
 } from '../../lib/vocabulary-table';
+import { VocabularyActions } from './vocabulary-actions';
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: 'english', label: 'Anglais' },
@@ -109,6 +110,9 @@ export function VocabularyTable({ items, now }: VocabularyTableProps) {
                     </th>
                   );
                 })}
+                <th scope="col">
+                  <span className="visually-hidden">Actions</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -129,6 +133,9 @@ export function VocabularyTable({ items, now }: VocabularyTableProps) {
                     <span className={`status status--${row.status}`}>{statusLabel(row.status)}</span>
                   </td>
                   <td className="vocabulary__review">{reviewLabel(row, date)}</td>
+                  <td>
+                    <VocabularyActions row={row} />
+                  </td>
                 </tr>
               ))}
             </tbody>

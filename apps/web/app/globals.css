@@ -804,7 +804,7 @@ kbd {
 
 .vocabulary__table {
   width: 100%;
-  min-width: 34rem;
+  min-width: 36rem;
   border-collapse: collapse;
   font-size: 0.95rem;
 }
@@ -818,7 +818,7 @@ kbd {
 }
 
 .vocabulary__table td {
-  overflow-wrap: anywhere; /* a long sentence wraps inside its cell */
+  overflow-wrap: break-word; /* a long sentence wraps between words inside its cell */
 }
 
 .vocabulary__table th {
@@ -896,7 +896,120 @@ kbd {
   color: #555;
 }
 
+/* MEM-19, MEM-20: the actions of a row and their dialogs */
+.row-actions {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.row-actions__icon {
+  display: inline-flex;
+  padding: 0.3rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: #666;
+  cursor: pointer;
+}
+
+.row-actions__icon:hover {
+  background: rgba(20, 125, 128, 0.1);
+  color: #147d80;
+}
+
+.row-actions__danger:hover {
+  background: rgba(179, 38, 30, 0.1);
+  color: #b3261e;
+}
+
+.dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1.25rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  color: inherit;
+  background: white;
+}
+
+.dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.dialog h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.dialog__hint {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dialog__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.dialog__form input {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.dialog__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.dialog .button--primary,
+.dialog .button--secondary {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dialog .button--primary {
+  background: #147d80;
+  color: white;
+}
+
+.dialog .button--secondary {
+  background: none;
+  color: #147d80;
+}
+
+.dialog button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (prefers-color-scheme: dark) {
+  .dialog {
+    border-color: #444;
+    background: #1e1e1e;
+  }
+
+  .row-actions__icon {
+    color: #aaa;
+  }
+
+  .row-actions__danger:hover {
+    color: #f28b82;
+  }
+
   .vocabulary__table th,
   .vocabulary__table td {
     border-bottom-color: #333;
