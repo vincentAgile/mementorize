@@ -162,6 +162,29 @@ describe('API (e2e)', () => {
     await http().post(`/learning/${words[1].id}`).set(auth).send({ rating: 'Nope' }).expect(400);
   });
 
+  it('takes a learned word out of the review, and puts it back with the same schedule (MEM-22)', async () => {
+    const token = await register('karl');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const word = (
+      await http().post('/vocabulary').set(auth).send({ word: 'thrifty', translation: 'économe' }).expect(201)
+    ).body;
+    await http().post(`/learning/${word.id}/learned`).set(auth).expect(409); // still to learn
+    await http().post(`/learning/${word.id}`).set(auth).send({ rating: 'Good' }).expect(201);
+    const before = await http().get(`/vocabulary/${word.id}`).set(auth).expect(200);
+
+    const learned = await http().post(`/learning/${word.id}/learned`).set(auth).expect(201);
+    expect(learned.body.learningStatus).toBe('Learned');
+    const due = await http().get('/reviews/due/summary').set(auth).expect(200);
+    expect(due.body.byType.Vocabulary).toBe(0);
+
+    const back = await http().post(`/learning/${word.id}/relearn`).set(auth).expect(201);
+    expect(back.body.learningStatus).toBe('Learning');
+    const after = await http().get(`/vocabulary/${word.id}`).set(auth).expect(200);
+    expect(after.body.cards).toEqual(before.body.cards);
+    await http().post(`/learning/${word.id}/relearn`).set(auth).expect(409);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };

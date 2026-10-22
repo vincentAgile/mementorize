@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { ApiError, deleteVocabulary, updateVocabulary } from '../../lib/api';
+import { ApiError, deleteVocabulary, relearnVocabulary, updateVocabulary } from '../../lib/api';
 
 export interface VocabularyEditState {
   saved?: boolean;
@@ -41,4 +41,10 @@ export async function updateVocabularyAction(
 export async function deleteVocabularyAction(id: string): Promise<void> {
   await deleteVocabulary(id);
   revalidatePath('/', 'layout'); // the table, the review and every counter
+}
+
+/** MEM-22: a learned item goes back to the review, with the schedule it had. */
+export async function relearnAction(id: string): Promise<void> {
+  await relearnVocabulary(id);
+  revalidatePath('/', 'layout'); // the table and the counters
 }
