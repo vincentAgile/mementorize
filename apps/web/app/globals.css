@@ -95,9 +95,11 @@ body {
   max-width: calc(380px + 4rem);
 }
 
-/* MEM-33: pages that read better narrow (review, learning, forms), centred in the column */
-.page--reading {
-  max-width: 640px;
+/* MEM-33: pages that read better narrow (review, learning, forms). The page
+   keeps the 960 px column, aligned with the header; its content keeps a
+   reading width, on the left of the column. */
+.page--reading > * {
+  max-width: 576px;
 }
 
 /* MEM-29: the header in two bands across the window; their content stays on the page's column */
