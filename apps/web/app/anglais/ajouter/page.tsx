@@ -1,6 +1,6 @@
-import { ItemForm } from '../../items/item-form';
+import { AddVocabularyForm } from './add-vocabulary-form';
 
-// Tab "Ajouter" (MEM-24, MEM-27): the form to add a vocabulary item, alone.
+// Tab "Ajouter" (MEM-27): the form to add vocabulary items one after the other.
 export default function EnglishAddPage() {
-  return <ItemForm type="Vocabulary" />;
+  return <AddVocabularyForm />;
 }
