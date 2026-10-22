@@ -115,45 +115,47 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   }
 
   return (
-    <main className="page">
+    <>
       <AppHeader />
-      <h1 className="visually-hidden">{space ? `Réviser · ${space.label}` : 'Tout réviser'}</h1>
+      <main className="page">
+        <h1 className="visually-hidden">{space ? `Réviser · ${space.label}` : 'Tout réviser'}</h1>
 
-      {!next ? (
-        <section className="review-empty">
-          <h2>Rien à réviser pour le moment</h2>
-          <p>
-            {due.nextDueAt
-              ? `Prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}.`
-              : "Les fiches reviennent ici quand c'est le bon moment pour les revoir."}{' '}
-            <Link href="/">Voir mes fiches</Link>
-          </p>
-        </section>
-      ) : (
-        <>
-          <p className="review-progress">
-            {space && <strong>{space.label} · </strong>}
-            {due.total} carte{due.total > 1 ? 's' : ''} à réviser
-            {space && (
-              <>
-                {' · '}
-                <Link href={space.href}>Arrêter</Link>
-              </>
-            )}
-          </p>
-          <ReviewCard
-            key={`${next.card.id}-${next.card.due}`} // fresh (hidden) card after each answer
-            cardId={next.card.id}
-            {...facesOf(next)}
-            learnedItemId={next.item.type === 'Vocabulary' ? next.item.id : undefined}
-            options={(Object.keys(LABELS) as ReviewRating[]).map((rating): RatingOption => ({
-              rating,
-              label: LABELS[rating],
-              delay: formatDelay(now, new Date(next.nextDue[rating])),
-            }))}
-          />
-        </>
-      )}
-    </main>
+        {!next ? (
+          <section className="review-empty">
+            <h2>Rien à réviser pour le moment</h2>
+            <p>
+              {due.nextDueAt
+                ? `Prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}.`
+                : "Les fiches reviennent ici quand c'est le bon moment pour les revoir."}{' '}
+              <Link href="/">Voir mes fiches</Link>
+            </p>
+          </section>
+        ) : (
+          <>
+            <p className="review-progress">
+              {space && <strong>{space.label} · </strong>}
+              {due.total} carte{due.total > 1 ? 's' : ''} à réviser
+              {space && (
+                <>
+                  {' · '}
+                  <Link href={space.href}>Arrêter</Link>
+                </>
+              )}
+            </p>
+            <ReviewCard
+              key={`${next.card.id}-${next.card.due}`} // fresh (hidden) card after each answer
+              cardId={next.card.id}
+              {...facesOf(next)}
+              learnedItemId={next.item.type === 'Vocabulary' ? next.item.id : undefined}
+              options={(Object.keys(LABELS) as ReviewRating[]).map((rating): RatingOption => ({
+                rating,
+                label: LABELS[rating],
+                delay: formatDelay(now, new Date(next.nextDue[rating])),
+              }))}
+            />
+          </>
+        )}
+      </main>
+    </>
   );
 }

@@ -1,5 +1,11 @@
 :root {
   color-scheme: light dark;
+  /* MEM-29: the two bands of the header */
+  --band-1: #f3f5f5;
+  --band-2: #dff0f0;
+  --band-ink: #0f6366;
+  --band-muted: #4a5a5b;
+  --band-line: #147d80;
   font-family:
     system-ui,
     -apple-system,
@@ -13,10 +19,14 @@
 
 body {
   margin: 0;
-  padding: 2rem;
+  line-height: 1.5;
+}
+
+/* The column of the page. The header's bands span the whole window (MEM-29). */
+.page {
   max-width: 640px;
   margin-inline: auto;
-  line-height: 1.5;
+  padding: 2rem;
 }
 
 .page__subtitle {
@@ -81,27 +91,54 @@ body {
 /* --- Phase 3: auth pages & header --- */
 
 .page--narrow {
-  max-width: 380px;
+  max-width: calc(380px + 4rem);
 }
 
-.page__header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+/* MEM-29: the header in two bands across the window; their content stays on the page's column */
+.app-header__inner {
+  max-width: 640px;
+  margin-inline: auto;
+  padding-inline: 2rem;
 }
 
-/* MEM-9: the name of the app, and the Settings and account icons on the right */
-.page__topbar {
-  display: flex;
+.app-header__bar {
+  background: var(--band-1);
+}
+
+/* Band 1: the name of the app and its icons (MEM-9), the menu below, along the bottom edge */
+.app-header__top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'brand actions'
+    'nav nav';
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  row-gap: 0.75rem;
+  padding-top: 1.1rem;
 }
 
-/* MEM-28: the name of the app, styled as before but no longer the h1 */
+.app-header__top .page__brand {
+  grid-area: brand;
+}
+
+.app-header__top .header-actions {
+  grid-area: actions;
+}
+
+.app-header__top .page__nav {
+  grid-area: nav;
+}
+
+/* Band 2: the sub-menu of the active space, at a constant height */
+.app-header__sub {
+  min-height: 2.75rem;
+  background: var(--band-2);
+}
+
+/* MEM-28: the name of the app, no longer the h1 */
 .page__brand {
   margin: 0;
-  font-size: 2em;
+  font-size: 1.75rem;
   font-weight: bold;
   line-height: 1.2;
 }
@@ -307,19 +344,23 @@ body {
 
 /* --- Phase 4: navigation & review --- */
 
+/* The menu (MEM-5), as the tabs of a binder along the bottom of band 1 (MEM-29) */
 .page__nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
+  gap: 0.15rem;
+  margin-inline-start: -0.8rem; /* the first label lines up with the name of the app */
   font-size: 0.95rem;
 }
 
 .page__nav a {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  color: #147d80;
+  gap: 0.4rem;
+  padding: 0.55rem 0.8rem 0.6rem;
+  border-radius: 8px 8px 0 0;
+  color: var(--band-ink);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 /* Underline the label only, not the counter next to it */
@@ -327,12 +368,33 @@ body {
   text-decoration: underline;
 }
 
-/* MEM-2: the section we are in */
-.page__nav a.is-active .page__nav-label {
+.page__nav a:focus-visible {
+  outline: 2px solid var(--band-line);
+  outline-offset: -2px;
+}
+
+.page__nav a.is-active {
   font-weight: 600;
+}
+
+/* The active space: its entry takes the colour of band 2 and joins it, without a border */
+.page__nav a.page__nav-space.is-active {
+  background: var(--band-2);
+}
+
+.page__nav a.page__nav-space.is-active .page__nav-label {
+  text-decoration: none;
+}
+
+/* Outside the spaces ("Tout réviser"), the entry is only underlined: nothing joins band 2 */
+.page__nav a.is-active:not(.page__nav-space) .page__nav-label {
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 0.3em;
+}
+
+.page__nav a.page__nav-space.is-active .badge--done {
+  background: #fff;
 }
 
 /* MEM-5: nothing to review in this section */
@@ -1098,44 +1160,50 @@ kbd {
 
 /* --- v0.4: the tabs of the Anglais space (MEM-24) --- */
 
+/* MEM-24, MEM-29: the tabs of a space, in band 2 */
 .tabs {
   display: flex;
   gap: 0.25rem;
-  margin: 0.75rem 0 1.25rem;
-  /* The grey line, drawn inside the box: the underline of the active tab covers it without overflowing. */
-  box-shadow: inset 0 -1px #ddd;
+  margin-inline-start: -0.85rem; /* the first label lines up with the column */
   overflow-x: auto; /* narrow screens: the tabs scroll rather than wrap */
   overflow-y: hidden; /* no vertical scrollbar (Windows) */
 }
 
 .tabs__tab {
-  padding: 0.5rem 0.85rem;
-  border-bottom: 2px solid transparent;
-  color: #555;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.85rem;
+  color: var(--band-muted);
   font-size: 0.95rem;
   text-decoration: none;
   white-space: nowrap;
 }
 
 .tabs__tab:hover {
-  color: #147d80;
+  color: var(--band-ink);
 }
 
+/* Underline drawn inside the tab: nothing overflows the band */
 .tabs__tab.is-active {
-  border-bottom-color: #147d80;
-  color: #147d80;
+  box-shadow: inset 0 -2px var(--band-line);
+  color: var(--band-ink);
   font-weight: 600;
 }
 
 @media (max-width: 480px) {
+  .tabs {
+    margin-inline-start: -0.55rem;
+  }
+
   .tabs__tab {
-    padding: 0.5rem 0.55rem;
+    padding: 0 0.55rem;
     font-size: 0.9rem;
   }
 }
 
 .tabs__tab:focus-visible {
-  outline: 2px solid #147d80;
+  outline: 2px solid var(--band-line);
   outline-offset: -2px;
   border-radius: 4px 4px 0 0;
 }
@@ -1265,12 +1333,16 @@ kbd {
     color: #bbb;
   }
 
-  .tabs {
-    border-bottom-color: #444;
+  :root {
+    --band-1: #1a1e1e;
+    --band-2: #1d3637;
+    --band-ink: #7fd3d6;
+    --band-muted: #b8c8c8;
+    --band-line: #7fd3d6;
   }
 
-  .tabs__tab {
-    color: #aaa;
+  .page__nav a.page__nav-space.is-active .badge--done {
+    background: #142526;
   }
 
   .dialog {

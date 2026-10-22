@@ -11,10 +11,12 @@ export default async function ProfilePage() {
   const profile = await getProfile();
 
   return (
-    <main className="page">
+    <>
       <AppHeader />
-      <h1 className="visually-hidden">Profil</h1>
-      <ProfileForm profile={profile} />
-    </main>
+      <main className="page">
+        <h1 className="visually-hidden">Profil</h1>
+        <ProfileForm profile={profile} />
+      </main>
+    </>
   );
 }

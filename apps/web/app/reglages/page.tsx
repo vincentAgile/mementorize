@@ -10,11 +10,13 @@ export default async function SettingsPage() {
   const [preferences, settings] = await Promise.all([getPreferences(), getReminderSettings()]);
 
   return (
-    <main className="page">
+    <>
       <AppHeader />
-      <h1 className="visually-hidden">Réglages</h1>
-      <HomeSpaceForm homeSpace={preferences.homeSpace} />
-      <ReminderForm settings={settings} />
-    </main>
+      <main className="page">
+        <h1 className="visually-hidden">Réglages</h1>
+        <HomeSpaceForm homeSpace={preferences.homeSpace} />
+        <ReminderForm settings={settings} />
+      </main>
+    </>
   );
 }

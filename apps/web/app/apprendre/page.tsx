@@ -12,20 +12,22 @@ export default async function LearningPage() {
   const session = await getLearningSession();
 
   return (
-    <main className="page">
+    <>
       <AppHeader />
-      <h1 className="visually-hidden">Apprendre</h1>
-      {session.items.length === 0 ? (
-        <section className="review-empty">
-          <h2>Rien à apprendre pour le moment</h2>
-          <p>
-            Les éléments ajoutés dans l’espace Anglais arrivent ici avant d’entrer en révision.{' '}
-            <Link href="/anglais">Retour à l’anglais</Link>
-          </p>
-        </section>
-      ) : (
-        <LearningSessionView session={session} now={new Date().toISOString()} />
-      )}
-    </main>
+      <main className="page">
+        <h1 className="visually-hidden">Apprendre</h1>
+        {session.items.length === 0 ? (
+          <section className="review-empty">
+            <h2>Rien à apprendre pour le moment</h2>
+            <p>
+              Les éléments ajoutés dans l’espace Anglais arrivent ici avant d’entrer en révision.{' '}
+              <Link href="/anglais">Retour à l’anglais</Link>
+            </p>
+          </section>
+        ) : (
+          <LearningSessionView session={session} now={new Date().toISOString()} />
+        )}
+      </main>
+    </>
   );
 }
