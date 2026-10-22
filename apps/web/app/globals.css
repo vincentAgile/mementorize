@@ -756,7 +756,167 @@ kbd {
   opacity: 0; /* anchors for the edges, not meant to be dragged */
 }
 
+/* --- v0.3: the vocabulary table (MEM-16 to MEM-18) --- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.vocabulary {
+  margin-top: 1.5rem;
+}
+
+.vocabulary__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.vocabulary__filters input,
+.vocabulary__filters select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.vocabulary__filters input {
+  flex: 1 1 14rem;
+}
+
+.vocabulary__count,
+.vocabulary__none {
+  margin: 0.6rem 0;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Narrow screens: the table scrolls sideways instead of squeezing its columns */
+.vocabulary__scroll {
+  overflow-x: auto;
+}
+
+.vocabulary__table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.vocabulary__table th,
+.vocabulary__table td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid #e3e3e3;
+  text-align: left;
+  vertical-align: top;
+}
+
+.vocabulary__table td {
+  overflow-wrap: anywhere; /* a long sentence wraps inside its cell */
+}
+
+.vocabulary__table th {
+  padding: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vocabulary__table th button {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vocabulary__table th button:hover,
+.vocabulary__table th[aria-sort] button {
+  color: #147d80;
+}
+
+.vocabulary__arrow {
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+.vocabulary__table th[aria-sort] .vocabulary__arrow {
+  opacity: 1;
+}
+
+.vocabulary__english {
+  display: block;
+  font-weight: 600;
+}
+
+.vocabulary__example {
+  display: block;
+  margin-top: 0.15rem;
+  color: #666;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.vocabulary__review {
+  color: #666;
+  white-space: nowrap;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.status--ToLearn {
+  background: #fff4e0;
+  color: #9a5b00;
+}
+
+.status--Learning {
+  background: rgba(20, 125, 128, 0.12);
+  color: #0f6366;
+}
+
+.status--Learned {
+  background: rgba(127, 127, 127, 0.15);
+  color: #555;
+}
+
 @media (prefers-color-scheme: dark) {
+  .vocabulary__table th,
+  .vocabulary__table td {
+    border-bottom-color: #333;
+  }
+
+  .status--ToLearn {
+    background: #3a2c14;
+    color: #f0b45c;
+  }
+
+  .status--Learning {
+    background: #203334;
+    color: #7fd3d6;
+  }
+
+  .status--Learned {
+    background: #2a2a2a;
+    color: #aaa;
+  }
+
   .account-menu__popup {
     border-color: #444;
     background: #1e1e1e;
