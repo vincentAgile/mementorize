@@ -8,6 +8,7 @@ import type {
   Credentials,
   DueReviews,
   DueSummary,
+  LearningSession,
   Item,
   ItemType,
   MindMap,
@@ -188,6 +189,20 @@ export function savePreferences(input: Preferences): Promise<Preferences> {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
+  });
+}
+
+/** Up to five vocabulary items to learn, the oldest first (MEM-21). */
+export function getLearningSession(): Promise<LearningSession> {
+  return authedFetch<LearningSession>('/learning/session');
+}
+
+/** Step 2 of a learning session: the first review of the French → English card. */
+export function learnVocabulary(itemId: string, rating: ReviewRating): Promise<unknown> {
+  return authedFetch(`/learning/${encodeURIComponent(itemId)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating }),
   });
 }
 

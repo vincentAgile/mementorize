@@ -996,6 +996,82 @@ kbd {
   cursor: not-allowed;
 }
 
+/* --- v0.3: learning the vocabulary (MEM-21) --- */
+
+.space__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.space__actions .space__review,
+.space__actions .space__due {
+  margin: 0;
+}
+
+.space__review--learn {
+  background: #c77700;
+}
+
+.space__review--learn:hover {
+  background: #a86400;
+}
+
+.review-card__answer + .review-card__reveal,
+.review-card__note + .review-card__reveal {
+  margin-top: 1.25rem;
+}
+
+.learning-steps {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.learning-steps li {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(127, 127, 127, 0.25);
+}
+
+.learning-steps li.is-done {
+  background: #147d80;
+}
+
+.learning-steps li.is-current {
+  background: rgba(20, 125, 128, 0.5);
+}
+
+.review-card__answer {
+  margin: 1rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.learning-done {
+  margin-top: 2rem;
+}
+
+.learning-done__list {
+  padding-left: 1.2rem;
+}
+
+.learning-done__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.learning-done__next {
+  color: #147d80;
+}
+
 @media (prefers-color-scheme: dark) {
   .dialog {
     border-color: #444;

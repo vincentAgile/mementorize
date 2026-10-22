@@ -246,3 +246,20 @@ curl http://localhost:3000/profile -H "Authorization: Bearer $TOKEN"
 curl -X PUT http://localhost:3000/profile -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" -d '{"firstName":"Vincent","lastName":"Carpentier"}'
 ```
+
+## Apprentissage du vocabulaire (v0.3)
+
+Un élément de vocabulaire a un état (`items.learningStatus`) : `ToLearn` à la saisie, `Learning` une fois appris, `Learned` quand on le sort de la révision. Seules les cartes des éléments `Learning` sont révisées et comptées (`src/reviews/in-review.ts`) ; citations et cartes mentales sont toujours `Learning`.
+
+Le processus d'apprentissage (`src/learning/`) fait passer les éléments de `ToLearn` à `Learning` :
+
+```bash
+# Jusqu'à cinq éléments à apprendre, les plus anciens d'abord (+ prochaine échéance pour chaque note)
+curl http://localhost:3000/learning/session -H "Authorization: Bearer $TOKEN"
+
+# Étape 2 : première révision de la carte français → anglais ; l'élément passe à Learning
+curl -X POST http://localhost:3000/learning/<itemId> -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"rating":"Good"}'
+```
+
+La carte anglais → français, non notée pendant l'apprentissage, devient due tout de suite. Un élément qui n'est plus `ToLearn` renvoie 409.

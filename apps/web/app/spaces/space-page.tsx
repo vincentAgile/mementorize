@@ -24,20 +24,30 @@ export async function SpacePage({ space }: { space: Space }) {
     getDueReviews(1, space.type), // this subject only
   ]);
   const now = new Date();
+  // MEM-21: the vocabulary waiting for the learning process.
+  const toLearn = items.filter((item) => item.learningStatus === 'ToLearn').length;
 
   return (
     <main className="page">
       <AppHeader />
 
       <h2 className="space__title">{space.label}</h2>
-      {items.length > 0 &&
-        (spaceDue.total > 0 ? (
-          <Link href={reviewHref(space)} className="space__review">
-            {space.reviewLabel} <span className="space__review-count">{spaceDue.total}</span>
-          </Link>
-        ) : (
-          <p className="space__due">{nothingDueLabel(spaceDue, now)}</p>
-        ))}
+      {items.length > 0 && (
+        <div className="space__actions">
+          {toLearn > 0 && (
+            <Link href="/apprendre" className="space__review space__review--learn">
+              Apprendre <span className="space__review-count">{toLearn}</span>
+            </Link>
+          )}
+          {spaceDue.total > 0 ? (
+            <Link href={reviewHref(space)} className="space__review">
+              {space.reviewLabel} <span className="space__review-count">{spaceDue.total}</span>
+            </Link>
+          ) : (
+            <p className="space__due">{nothingDueLabel(spaceDue, now)}</p>
+          )}
+        </div>
+      )}
 
       <ItemForm type={space.type} />
 
