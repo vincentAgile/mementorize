@@ -761,6 +761,50 @@ kbd {
   line-height: 1.5;
 }
 
+/* MEM-37: a line of English and its loudspeaker button, on its right */
+.speakable {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.speakable > :first-child {
+  min-width: 0;
+}
+
+.speak-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-top: -0.1rem;
+  padding: 0;
+  border: none;
+  border-radius: 99px;
+  background: rgba(20, 125, 128, 0.1);
+  color: #147d80;
+  cursor: pointer;
+}
+
+.speak-button:hover {
+  background: rgba(20, 125, 128, 0.2);
+}
+
+.speak-button:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  .speak-button {
+    width: 2.75rem;
+    height: 2.75rem;
+    margin-top: -0.4rem;
+  }
+}
+
 .review-card__text--cue {
   color: #666;
 }
@@ -1582,6 +1626,11 @@ kbd {
 }
 
 @media (prefers-color-scheme: dark) {
+  .speak-button {
+    background: rgba(127, 211, 214, 0.12);
+    color: #7fd3d6;
+  }
+
   .app-header__divider {
     background: rgba(255, 255, 255, 0.18);
   }

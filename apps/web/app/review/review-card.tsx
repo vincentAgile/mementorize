@@ -2,7 +2,9 @@
 
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
+import { stopPronouncing } from '../../lib/speech';
 import type { ReviewRating } from '../../lib/types';
+import { Speakable } from '../speech/speak-button';
 import { learnedAction, reviewAction } from './actions';
 
 export interface RatingOption {
@@ -20,6 +22,7 @@ export interface CardFace {
   lang?: string; // lang attribute of `main`, for screen readers and hyphenation
   note?: string | null; // back only: example sentence
   prompt?: string; // front only: what to do
+  speak?: boolean; // `main` is English vocabulary: a loudspeaker button next to it (MEM-37)
 }
 
 interface ReviewCardProps {
@@ -51,6 +54,9 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
     };
   }
 
+  // A new card mounts a new component: the reading of the previous one stops (MEM-37).
+  useEffect(() => stopPronouncing, []);
+
   async function markLearned() {
     if (answered.current || !learnedItemId) return;
     answered.current = true;
@@ -63,6 +69,8 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
       // Held key (auto-repeat) or browser shortcut such as Ctrl+1: ignored.
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
       if (!revealed && (event.key === ' ' || event.key === 'Enter')) {
+        // A focused button (the loudspeaker, MEM-37) handles Enter/Space itself.
+        if (event.target instanceof HTMLButtonElement || event.target instanceof HTMLAnchorElement) return;
         event.preventDefault();
         setRevealed(true);
       } else if (revealed && ['1', '2', '3', '4', '5'].includes(event.key)) {
@@ -85,14 +93,18 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
       {revealed ? (
         <>
           {repeatFront && (
-            <p className="review-card__recall" lang={front.lang}>
-              {front.main}
-            </p>
+            <Line face={front}>
+              <p className="review-card__recall" lang={front.lang}>
+                {front.main}
+              </p>
+            </Line>
           )}
           {back.figure ?? (
-            <blockquote className="review-card__text" lang={back.lang}>
-              {back.main}
-            </blockquote>
+            <Line face={back}>
+              <blockquote className="review-card__text" lang={back.lang}>
+                {back.main}
+              </blockquote>
+            </Line>
           )}
           {back.note && (
             <p className="review-card__note" lang="en">
@@ -125,9 +137,11 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
       ) : (
         <>
           {front.figure ?? (
-            <blockquote className="review-card__text review-card__text--cue" lang={front.lang}>
-              {front.main}
-            </blockquote>
+            <Line face={front}>
+              <blockquote className="review-card__text review-card__text--cue" lang={front.lang}>
+                {front.main}
+              </blockquote>
+            </Line>
           )}
           <p className="review-card__question">{front.prompt}</p>
           <button type="button" className="review-card__reveal" onClick={() => setRevealed(true)}>
@@ -175,4 +189,9 @@ function LearnedButton({ action, ref }: { action: () => Promise<void>; ref: (el:
       <kbd>5</kbd>
     </button>
   );
+}
+
+/** The text of a face, with the loudspeaker button when it is English vocabulary (MEM-37). */
+function Line({ face, children }: { face: CardFace; children: ReactNode }) {
+  return face.speak ? <Speakable text={face.main}>{children}</Speakable> : children;
 }
