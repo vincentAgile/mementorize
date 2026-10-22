@@ -1,8 +1,8 @@
 'use client';
 
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { stopPronouncing } from '../../lib/speech';
+import { pronounce, stopPronouncing } from '../../lib/speech';
 import type { ReviewRating } from '../../lib/types';
 import { Speakable } from '../speech/speak-button';
 import { learnedAction, reviewAction } from './actions';
@@ -57,6 +57,14 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
   // A new card mounts a new component: the reading of the previous one stops (MEM-37).
   useEffect(() => stopPronouncing, []);
 
+  // MEM-38: when the answer is English (French → English), it is read as it
+  // appears. Called in the click or key handler: browsers only allow speech
+  // started by the user. Without speech synthesis, nothing is said.
+  const reveal = useCallback(() => {
+    setRevealed(true);
+    if (back.speak) pronounce(back.main);
+  }, [back.speak, back.main]);
+
   async function markLearned() {
     if (answered.current || !learnedItemId) return;
     answered.current = true;
@@ -72,14 +80,14 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
         // A focused button (the loudspeaker, MEM-37) handles Enter/Space itself.
         if (event.target instanceof HTMLButtonElement || event.target instanceof HTMLAnchorElement) return;
         event.preventDefault();
-        setRevealed(true);
+        reveal();
       } else if (revealed && ['1', '2', '3', '4', '5'].includes(event.key)) {
         buttons.current[Number(event.key) - 1]?.click();
       }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [revealed]);
+  }, [revealed, reveal]);
 
   const face = revealed ? back : front;
 
@@ -144,7 +152,7 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
             </Line>
           )}
           <p className="review-card__question">{front.prompt}</p>
-          <button type="button" className="review-card__reveal" onClick={() => setRevealed(true)}>
+          <button type="button" className="review-card__reveal" onClick={reveal}>
             Afficher la réponse <kbd>Espace</kbd>
           </button>
         </>
