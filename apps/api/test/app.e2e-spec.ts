@@ -132,6 +132,36 @@ describe('API (e2e)', () => {
     await http().get(`/vocabulary/${id}`).set(auth).expect(404);
   });
 
+  it('learns new vocabulary by sessions of five, the oldest first (MEM-21)', async () => {
+    const token = await register('jade');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const words = [];
+    for (const [word, translation] of [
+      ['snag', 'accroc'],
+      ['to cherish', 'chérir'],
+    ]) {
+      words.push((await http().post('/vocabulary').set(auth).send({ word, translation }).expect(201)).body);
+    }
+
+    const session = await http().get('/learning/session').set(auth).expect(200);
+    expect(session.body.total).toBe(2);
+    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['snag', 'to cherish']);
+
+    const learned = await http().post(`/learning/${words[0].id}`).set(auth).send({ rating: 'Good' }).expect(201);
+    expect(learned.body.learningStatus).toBe('Learning');
+
+    // Its English → French card is due at once; the French → English one, just rated, comes back later.
+    const due = await http().get('/reviews/due?type=Vocabulary').set(auth).expect(200);
+    expect(due.body.total).toBe(1);
+    expect(due.body.items[0].card.kind).toBe('EnglishToFrench');
+
+    const after = await http().get('/learning/session').set(auth).expect(200);
+    expect(after.body.total).toBe(1);
+    await http().post(`/learning/${words[0].id}`).set(auth).send({ rating: 'Good' }).expect(409);
+    await http().post(`/learning/${words[1].id}`).set(auth).send({ rating: 'Nope' }).expect(400);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };

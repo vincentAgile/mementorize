@@ -10,6 +10,7 @@ import { PreferencesModule } from './preferences/preferences.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { ProfileModule } from './profile/profile.module.js';
 import { ItemsModule } from './items/items.module.js';
+import { LearningModule } from './learning/learning.module.js';
 import { RemindersModule } from './reminders/reminders.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 
@@ -20,6 +21,7 @@ import { ReviewsModule } from './reviews/reviews.module.js';
     AuthModule,
     ItemsModule,
     ReviewsModule,
+    LearningModule,
     // Scheduled tasks (@Cron), e.g. the e-mail reminders.
     ScheduleModule.forRoot(),
     RemindersModule,

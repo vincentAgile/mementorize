@@ -96,6 +96,21 @@ export interface DueSummary {
   byType: Record<ItemType, number>;
 }
 
+/** A vocabulary item of a learning session (MEM-21). */
+export interface LearningItem {
+  id: string;
+  word: string;
+  translation: string;
+  example: string | null;
+  /** When the French → English card comes back, for each rating of step 2. */
+  nextDue: Record<ReviewRating, string>;
+}
+
+export interface LearningSession {
+  total: number; // all the items still to learn
+  items: LearningItem[]; // up to five, the oldest first
+}
+
 export interface DueReviews {
   total: number;
   items: DueItem[];

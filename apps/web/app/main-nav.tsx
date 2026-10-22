@@ -26,7 +26,9 @@ function navLinks(due: DueSummary): NavLink[] {
         startsWith(pathname, space.href) ||
         // The review of this subject only (MEM-4), and the mind map editor.
         (pathname === '/review' && type === space.type) ||
-        (space.type === 'MindMap' && startsWith(pathname, '/mind-maps')),
+        (space.type === 'MindMap' && startsWith(pathname, '/mind-maps')) ||
+        // The learning process of the vocabulary (MEM-21).
+        (space.type === 'Vocabulary' && startsWith(pathname, '/apprendre')),
     })),
     {
       href: '/review',
