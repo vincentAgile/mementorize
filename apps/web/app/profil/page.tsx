@@ -13,7 +13,7 @@ export default async function ProfilePage() {
   return (
     <>
       <AppHeader />
-      <main className="page">
+      <main className="page page--reading">
         <h1 className="visually-hidden">Profil</h1>
         <ProfileForm profile={profile} />
       </main>

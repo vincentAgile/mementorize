@@ -5,9 +5,11 @@ import { MainNav } from './main-nav';
 import { SubNav } from './sub-nav';
 
 /**
- * Common header, in two bands across the whole window (MEM-29):
+ * Common header, in two bands across the whole window (MEM-29), on the
+ * page's column (960 px, MEM-33):
  * 1. a neutral band: the logo (MEM-32), its two icons (Settings, account,
- *    MEM-9) and the menu of subjects with their counters (MEM-5);
+ *    MEM-9) and the menu of subjects with their counters (MEM-5), on a
+ *    single line when the window is wide enough (MEM-33), else on two;
  * 2. a band tinted with the colour of the app: the sub-menu of the active
  *    space (SubNav). The menu entry of that space joins it, like the tab of
  *    a binder.
@@ -24,6 +26,7 @@ export async function AppHeader() {
       <div className="app-header__bar">
         <div className="app-header__inner app-header__top">
           <Logo className="page__brand" />
+          <span className="app-header__divider" aria-hidden="true" />
           <HeaderActions profile={profile} />
           <MainNav due={due} />
         </div>
