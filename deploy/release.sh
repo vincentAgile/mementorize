@@ -44,6 +44,21 @@ if [[ -n $token ]]; then
 fi
 
 # --- 2. Images ----------------------------------------------------------------
+# Room first: every deployment brings a few GB of images, and several a day
+# filled the disk (22 October 2026). Images no container uses and the build
+# cache go; the running version stays. A previous version is pulled again
+# from ghcr.io if we go back to it.
+step "Freeing disk space"
+docker image prune --all --force > /dev/null
+docker builder prune --all --force > /dev/null
+free_kb=$(df --output=avail -k / | tail -n 1)
+if (( free_kb < 3 * 1024 * 1024 )); then
+  echo "Only $((free_kb / 1024)) MB free on /: at least 3 GB are needed. Nothing was deployed." >&2
+  df -h /
+  docker system df
+  exit 1
+fi
+
 step "Pulling the images of ${sha:0:7}"
 docker compose pull --quiet migrate api web
 
@@ -87,9 +102,9 @@ docker rollout --timeout 120 web
 sed -i '/^IMAGE_TAG=/d' .env
 echo "IMAGE_TAG=$sha" >> .env
 
-# Images no container uses, older than a week: the recent ones stay, for a
-# quick return to a previous version.
-docker image prune --all --force --filter until=168h > /dev/null
+# The images of the version just replaced: no container uses them any more.
+step "Removing the previous images"
+docker image prune --all --force > /dev/null
 
 step "Deployed: ${sha:0:7}"
 docker compose ps --format 'table {{.Service}}\t{{.Image}}\t{{.Status}}'
