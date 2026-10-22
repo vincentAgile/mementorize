@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { ApiError, deleteVocabulary, relearnVocabulary, updateVocabulary } from '../../lib/api';
+import { ApiError, createVocabulary, deleteVocabulary, relearnVocabulary, updateVocabulary } from '../../lib/api';
 
 export interface VocabularyEditState {
   saved?: boolean;
@@ -11,6 +11,57 @@ export interface VocabularyEditState {
 }
 
 const field = (formData: FormData, name: string) => String(formData.get(name) ?? '').trim();
+
+// Same limits as the API (CreateVocabularyDto).
+const MAX = { word: 200, translation: 200, example: 500 } as const;
+
+export interface VocabularyAddState {
+  /** The English of the item just added, for the confirmation; a new object each time. */
+  added?: { word: string };
+  /** One message per field, shown next to it. */
+  fieldErrors?: Partial<Record<'word' | 'translation' | 'example', string>>;
+  error?: string;
+  /** Sent back with an error: React resets the form after an action, this refills it. */
+  values?: { word: string; translation: string; example: string };
+}
+
+/**
+ * MEM-27: adds a vocabulary item from the "Ajouter" tab. It enters the
+ * state "À apprendre" (MEM-15). Errors come back field by field.
+ */
+export async function addVocabularyAction(
+  _previous: VocabularyAddState,
+  formData: FormData,
+): Promise<VocabularyAddState> {
+  const values = {
+    word: field(formData, 'word'),
+    translation: field(formData, 'translation'),
+    example: field(formData, 'example'),
+  };
+  const fieldErrors: VocabularyAddState['fieldErrors'] = {};
+  if (!values.word) fieldErrors.word = 'Saisis le mot, l’expression ou la phrase en anglais.';
+  else if (values.word.length > MAX.word) fieldErrors.word = `${MAX.word} caractères au plus.`;
+  if (!values.translation) fieldErrors.translation = 'Saisis la traduction en français.';
+  else if (values.translation.length > MAX.translation)
+    fieldErrors.translation = `${MAX.translation} caractères au plus.`;
+  if (values.example.length > MAX.example) fieldErrors.example = `${MAX.example} caractères au plus.`;
+  if (Object.keys(fieldErrors).length > 0) {
+    return { values, fieldErrors };
+  }
+
+  try {
+    await createVocabulary({
+      word: values.word,
+      translation: values.translation,
+      example: values.example || undefined,
+    });
+  } catch (error) {
+    if (error instanceof ApiError) return { values, error: 'Impossible d’enregistrer l’élément. Réessaie.' };
+    throw error; // e.g. the redirect of an expired session
+  }
+  revalidatePath('/', 'layout'); // the counter of the "Apprendre · Réviser" tab, the list
+  return { added: { word: values.word } };
+}
 
 /** MEM-19: same rules as when adding a word (both sides required, same lengths as the API). */
 export async function updateVocabularyAction(
