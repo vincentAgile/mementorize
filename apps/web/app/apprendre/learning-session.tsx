@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { formatDelay } from '../../lib/format';
+import { pronounce, stopPronouncing } from '../../lib/speech';
 import type { LearningItem, LearningSession, ReviewRating } from '../../lib/types';
+import { Speakable } from '../speech/speak-button';
 import { learnAction } from './actions';
 
 const RATINGS: { rating: ReviewRating; label: string }[] = [
@@ -44,7 +46,18 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
   const item = items[index];
   const last = index === items.length - 1;
 
+  // Leaving the session stops the reading (MEM-37).
+  useEffect(() => stopPronouncing, []);
+
+  // MEM-38: at step 2 the answer is the English, read as it appears. Called
+  // in the click or key handler: browsers only allow speech started by the user.
+  function reveal() {
+    setRevealed(true);
+    if (phase === 'rate' && item) pronounce(item.word);
+  }
+
   function goOn() {
+    stopPronouncing(); // next card
     if (phase === 'discover') {
       setRevealed(false);
       if (last) {
@@ -59,6 +72,7 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
   async function rate(rating: ReviewRating) {
     if (answered.current || !item) return;
     answered.current = true;
+    stopPronouncing();
     setSending(true);
     const ok = await learnAction(item.id, rating);
     if (ok) setLearned((done) => [...done, item]);
@@ -78,7 +92,7 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
         // Let a focused button handle Enter/Space itself, once.
         if (event.target instanceof HTMLButtonElement || event.target instanceof HTMLAnchorElement) return;
         event.preventDefault();
-        if (!revealed) setRevealed(true);
+        if (!revealed) reveal();
         else goOn();
       } else if (phase === 'rate' && revealed && ['1', '2', '3', '4'].includes(event.key)) {
         void rate(RATINGS[Number(event.key) - 1].rating);
@@ -140,9 +154,11 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
 
         {discovering ? (
           <>
-            <blockquote className="review-card__text" lang="en">
-              {item.word}
-            </blockquote>
+            <Speakable text={item.word}>
+              <blockquote className="review-card__text" lang="en">
+                {item.word}
+              </blockquote>
+            </Speakable>
             {revealed ? (
               <>
                 <p className="review-card__answer">{item.translation}</p>
@@ -158,7 +174,7 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
             ) : (
               <>
                 <p className="review-card__question">Lis-le, puis découvre sa traduction.</p>
-                <button type="button" className="review-card__reveal" onClick={() => setRevealed(true)}>
+                <button type="button" className="review-card__reveal" onClick={reveal}>
                   Afficher la traduction <kbd>Espace</kbd>
                 </button>
               </>
@@ -167,9 +183,11 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
         ) : revealed ? (
           <>
             <p className="review-card__recall">{item.translation}</p>
-            <blockquote className="review-card__text" lang="en">
-              {item.word}
-            </blockquote>
+            <Speakable text={item.word}>
+              <blockquote className="review-card__text" lang="en">
+                {item.word}
+              </blockquote>
+            </Speakable>
             {item.example && (
               <p className="review-card__note" lang="en">
                 {item.example}
@@ -196,7 +214,7 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
           <>
             <blockquote className="review-card__text review-card__text--cue">{item.translation}</blockquote>
             <p className="review-card__question">Comment le dit-on en anglais ?</p>
-            <button type="button" className="review-card__reveal" onClick={() => setRevealed(true)}>
+            <button type="button" className="review-card__reveal" onClick={reveal}>
               Afficher la réponse <kbd>Espace</kbd>
             </button>
           </>

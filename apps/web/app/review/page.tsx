@@ -72,7 +72,7 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
   }
 
   const { word, translation, example } = item.content;
-  const english = { main: word, lang: 'en' };
+  const english = { main: word, lang: 'en', speak: true };
   const french = { main: translation, lang: 'fr' };
 
   return card.kind === 'EnglishToFrench'
