@@ -119,6 +119,20 @@ export function createQuote(input: CreateQuoteInput): Promise<unknown> {
   });
 }
 
+/** Changes a vocabulary item (MEM-19); an empty example removes it. */
+export function updateVocabulary(id: string, input: CreateVocabularyInput): Promise<unknown> {
+  return authedFetch(`/vocabulary/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+/** Deletes a vocabulary item with its cards and history (MEM-20). */
+export function deleteVocabulary(id: string): Promise<void> {
+  return authedFetch<void>(`/vocabulary/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
 export function createVocabulary(input: CreateVocabularyInput): Promise<unknown> {
   return authedFetch('/vocabulary', {
     method: 'POST',

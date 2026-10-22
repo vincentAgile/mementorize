@@ -99,6 +99,39 @@ describe('API (e2e)', () => {
     expect(summary.body.byType.Vocabulary).toBe(0);
   });
 
+  it('edits a vocabulary word without touching its state or cards, and deletes it (MEM-19, MEM-20)', async () => {
+    const owner = await register('hugo');
+    const other = await register('ines');
+    const auth = { Authorization: `Bearer ${owner}` };
+
+    const created = await http()
+      .post('/vocabulary')
+      .set(auth)
+      .send({ word: 'snag', translation: 'acroc', example: 'We hit a snag.' })
+      .expect(201);
+    const id = created.body.id;
+
+    const edited = await http()
+      .patch(`/vocabulary/${id}`)
+      .set(auth)
+      .send({ translation: 'accroc', example: '  ' })
+      .expect(200);
+    expect(edited.body).toMatchObject({
+      word: 'snag',
+      translation: 'accroc',
+      example: null,
+      learningStatus: 'ToLearn',
+    });
+    expect(edited.body.cards).toEqual(created.body.cards);
+
+    await http().patch(`/vocabulary/${id}`).set(auth).send({ word: '' }).expect(400);
+    await http().patch(`/vocabulary/${id}`).set('Authorization', `Bearer ${other}`).send({ word: 'x' }).expect(404);
+    await http().delete(`/vocabulary/${id}`).set('Authorization', `Bearer ${other}`).expect(404);
+
+    await http().delete(`/vocabulary/${id}`).set(auth).expect(204);
+    await http().get(`/vocabulary/${id}`).set(auth).expect(404);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };
