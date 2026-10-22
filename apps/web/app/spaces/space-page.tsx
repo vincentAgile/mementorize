@@ -5,7 +5,9 @@ import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
 import { branchesOf, rootOf } from '../../lib/mind-map';
 import { reviewHref, type Space } from '../../lib/spaces';
 import type { CardSummary, DueReviews, Item } from '../../lib/types';
+import type { VocabularyItem } from '../../lib/vocabulary-table';
 import { AppHeader } from '../app-header';
+import { VocabularyTable } from '../anglais/vocabulary-table';
 import { ItemForm } from '../items/item-form';
 
 /**
@@ -41,6 +43,8 @@ export async function SpacePage({ space }: { space: Space }) {
 
       {items.length === 0 ? (
         <p className="space__empty">{space.emptyText}</p>
+      ) : space.type === 'Vocabulary' ? (
+        <VocabularyTable items={items as VocabularyItem[]} now={now.toISOString()} />
       ) : (
         <ul className="items__list">
           {items.map((item) => (
