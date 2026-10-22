@@ -8,6 +8,8 @@ import type { ItemType } from './types';
 export interface Space {
   type: ItemType;
   label: string;
+  /** In the bar at the bottom of a phone's screen (MEM-30). */
+  shortLabel: string;
   href: string;
   /** Shown when the space has no item yet: invites to fill the form above. */
   emptyText: string;
@@ -27,6 +29,7 @@ export const SPACES: Space[] = [
   {
     type: 'Vocabulary',
     label: 'Anglais',
+    shortLabel: 'Anglais',
     href: '/anglais',
     emptyText: 'Aucun mot pour le moment : ajoute ton premier mot anglais avec le formulaire ci-dessus.',
     reviewLabel: "Réviser l'anglais",
@@ -39,6 +42,7 @@ export const SPACES: Space[] = [
   {
     type: 'MindMap',
     label: 'Cartes mentales',
+    shortLabel: 'Cartes',
     href: '/cartes-mentales',
     emptyText: 'Aucune carte mentale pour le moment : donne un sujet central à ta première carte ci-dessus.',
     reviewLabel: 'Réviser les cartes mentales',
@@ -46,6 +50,7 @@ export const SPACES: Space[] = [
   {
     type: 'Quote',
     label: 'Citations',
+    shortLabel: 'Citations',
     href: '/citations',
     emptyText: 'Aucune citation pour le moment : ajoute ta première citation avec le formulaire ci-dessus.',
     reviewLabel: 'Réviser les citations',

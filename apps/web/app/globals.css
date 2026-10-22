@@ -397,6 +397,150 @@ body {
   background: #fff;
 }
 
+/* The icons and short labels are for the bar at the bottom of a phone (MEM-30) */
+.page__nav-icon {
+  display: contents;
+}
+
+.page__nav-icon > svg,
+.page__nav-short {
+  display: none;
+}
+
+.page__nav-icon .badge {
+  order: 1; /* after the label on a computer */
+}
+
+/* MEM-30: on a phone, the spaces move to a bar fixed at the bottom of the screen */
+@media (max-width: 639px) {
+  .app-header__inner {
+    padding-inline: 1rem;
+  }
+
+  .page {
+    padding: 1.25rem 1rem;
+  }
+
+  /* A compact band 1: the name of the app, Settings and the avatar */
+  .app-header__top {
+    grid-template-areas: 'brand actions';
+    padding-block: 0.3rem;
+  }
+
+  .page__brand {
+    font-size: 1.3rem;
+  }
+
+  .header-actions {
+    gap: 0.25rem;
+  }
+
+  .header-actions__icon {
+    justify-content: center;
+    align-items: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* The avatar keeps its size; an invisible margin brings its touch target to 44 px */
+  .avatar {
+    position: relative;
+  }
+
+  .avatar::after {
+    content: '';
+    position: absolute;
+    inset: calc((2.1rem - 44px) / 2);
+  }
+
+  /* No sub-menu, no band 2: the height of the screen is precious */
+  .app-header__sub--empty {
+    display: none;
+  }
+
+  .page__nav {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--band-1);
+  }
+
+  .page__nav a {
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+    min-height: 3.6rem;
+    padding: 0.3rem 0.2rem;
+    border-radius: 0;
+    color: var(--band-muted);
+    font-size: 0.72rem;
+    line-height: 1.2;
+  }
+
+  .page__nav a.is-active,
+  .page__nav a.page__nav-space.is-active {
+    background: none;
+    color: var(--band-ink);
+  }
+
+  .page__nav a.is-active:not(.page__nav-space) .page__nav-label,
+  .page__nav a:hover .page__nav-label {
+    text-decoration: none;
+  }
+
+  /* The icon, with its counter at the top right, on a pill when the entry is active */
+  .page__nav-icon {
+    position: relative;
+    display: inline-flex;
+    padding: 0.15rem 0.95rem;
+    border-radius: 99px;
+  }
+
+  .page__nav a.is-active .page__nav-icon {
+    background: var(--band-2);
+  }
+
+  .page__nav-icon > svg {
+    display: block;
+  }
+
+  .page__nav-icon .badge {
+    position: absolute;
+    top: -0.25rem;
+    left: calc(50% + 0.35rem);
+    font-size: 0.65rem;
+  }
+
+  .page__nav a.page__nav-space.is-active .badge--done {
+    background: #e3efef;
+  }
+
+  .page__nav-short {
+    display: inline;
+  }
+
+  .page__nav-label--long {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* The content is never hidden by the bar */
+  body:has(.page__nav) {
+    padding-bottom: calc(3.75rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* MEM-5: nothing to review in this section */
 .badge.badge--done {
   display: inline-flex;
@@ -1343,6 +1487,10 @@ kbd {
 
   .page__nav a.page__nav-space.is-active .badge--done {
     background: #142526;
+  }
+
+  .page__nav {
+    border-top-color: rgba(255, 255, 255, 0.1);
   }
 
   .dialog {
