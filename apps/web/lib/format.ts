@@ -19,3 +19,10 @@ export function firstWords(text: string, count = 3): string {
   const words = text.trim().split(/\s+/);
   return words.length <= count ? words.join(' ') : `${words.slice(0, count).join(' ')}…`;
 }
+
+/** Shown instead of a review button when no card of the subject is due. */
+export function nothingDueLabel(due: { nextDueAt: string | null }, now: Date): string {
+  return due.nextDueAt
+    ? `Rien à réviser pour le moment · prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}`
+    : 'Rien à réviser pour le moment';
+}

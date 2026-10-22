@@ -1,19 +1,17 @@
 import Link from 'next/link';
 import { getDueReviews, getItems } from '../../lib/api';
-import { formatDelay } from '../../lib/format';
+import { formatDelay, nothingDueLabel } from '../../lib/format';
 import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
 import { branchesOf, rootOf } from '../../lib/mind-map';
 import { reviewHref, type Space } from '../../lib/spaces';
-import type { CardSummary, DueReviews, Item } from '../../lib/types';
-import type { VocabularyItem } from '../../lib/vocabulary-table';
+import type { CardSummary, Item } from '../../lib/types';
 import { AppHeader } from '../app-header';
-import { VocabularyTable } from '../anglais/vocabulary-table';
 import { ItemForm } from '../items/item-form';
 
 /**
- * The page of a subject space (MEM-2): the items of a single type. Each space
- * has its own route (/citations, /cartes-mentales, /anglais) that only says
- * which space it is.
+ * The page of a subject space (MEM-2): the items of a single type. Citations
+ * and Cartes mentales use it (each route only says which space it is); the
+ * Anglais space has its own tabs since v0.4 (app/anglais/layout.tsx).
  *
  * Server Component: the data is fetched on the Next.js server (with the
  * session's token), and the browser receives ready-made HTML.
@@ -24,8 +22,6 @@ export async function SpacePage({ space }: { space: Space }) {
     getDueReviews(1, space.type), // this subject only
   ]);
   const now = new Date();
-  // MEM-21: the vocabulary waiting for the learning process.
-  const toLearn = items.filter((item) => item.learningStatus === 'ToLearn').length;
 
   return (
     <main className="page">
@@ -34,11 +30,6 @@ export async function SpacePage({ space }: { space: Space }) {
       <h2 className="space__title">{space.label}</h2>
       {items.length > 0 && (
         <div className="space__actions">
-          {toLearn > 0 && (
-            <Link href="/apprendre" className="space__review space__review--learn">
-              Apprendre <span className="space__review-count">{toLearn}</span>
-            </Link>
-          )}
           {spaceDue.total > 0 ? (
             <Link href={reviewHref(space)} className="space__review">
               {space.reviewLabel} <span className="space__review-count">{spaceDue.total}</span>
@@ -53,8 +44,6 @@ export async function SpacePage({ space }: { space: Space }) {
 
       {items.length === 0 ? (
         <p className="space__empty">{space.emptyText}</p>
-      ) : space.type === 'Vocabulary' ? (
-        <VocabularyTable items={items as VocabularyItem[]} now={now.toISOString()} />
       ) : (
         <ul className="items__list">
           {items.map((item) => (
@@ -73,13 +62,6 @@ export async function SpacePage({ space }: { space: Space }) {
       )}
     </main>
   );
-}
-
-/** Shown instead of the review button when no card of this subject is due. */
-function nothingDueLabel(due: DueReviews, now: Date): string {
-  return due.nextDueAt
-    ? `Rien à réviser pour le moment · prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}`
-    : 'Rien à réviser pour le moment';
 }
 
 function ItemContent({ item }: { item: Item }) {
