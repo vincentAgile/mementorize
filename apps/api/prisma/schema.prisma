@@ -42,6 +42,15 @@ enum ItemType {
   MindMap
 }
 
+/// Learning state of an item (MEM-15): a new vocabulary word is `ToLearn`
+/// until the learning process (MEM-21) moves it to `Learning`, the only
+/// state that is reviewed; `Learned` takes it out of the review (MEM-22).
+enum LearningStatus {
+  ToLearn
+  Learning
+  Learned
+}
+
 /// Something to memorize. Every type shares this table; what differs from
 /// one type to another lives in `content` (a jsonb column), whose shape is
 /// checked by the API (see src/items/item-content.ts):
@@ -52,6 +61,10 @@ model Item {
   id        String   @id @default(uuid())
   type      ItemType
   content   Json
+  /// Where the item stands in its learning (MEM-15). Only vocabulary moves
+  /// between the three states; quotes and mind maps are always `Learning`.
+  /// Only the cards of `Learning` items are reviewed and counted.
+  learningStatus LearningStatus @default(Learning)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   cards     Card[]

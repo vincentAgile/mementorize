@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Card, Item, ItemType, ReviewRating } from '@prisma/client';
 import { ITEM_TYPES } from '../items/item-content.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { IN_REVIEW } from './in-review.js';
 import { type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
 
 export interface DueItem {
@@ -33,7 +34,9 @@ export class ReviewsService {
   async countDue(userId: string, now = new Date()): Promise<DueSummary> {
     const types = Object.values(ITEM_TYPES);
     const counts = await Promise.all(
-      types.map((type) => this.prisma.card.count({ where: { due: { lte: now }, item: { userId, type } } })),
+      types.map((type) =>
+        this.prisma.card.count({ where: { due: { lte: now }, item: { userId, type, ...IN_REVIEW } } }),
+      ),
     );
     const byType = Object.fromEntries(types.map((type, i) => [type, counts[i]])) as Record<ItemType, number>;
     return { total: counts.reduce((sum, count) => sum + count, 0), byType };
@@ -44,7 +47,7 @@ export class ReviewsService {
    * only the cards of that type of item (a subject space, MEM-3).
    */
   async findDue(userId: string, limit = 20, type?: ItemType, now = new Date()): Promise<DueReviews> {
-    const item = type ? { userId, type } : { userId };
+    const item = { userId, ...(type && { type }), ...IN_REVIEW };
     const where = { due: { lte: now }, item };
     const [total, cards, upcoming] = await Promise.all([
       this.prisma.card.count({ where }),

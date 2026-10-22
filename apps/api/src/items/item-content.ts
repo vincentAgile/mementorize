@@ -1,4 +1,4 @@
-import type { CardKind, Item, ItemType } from '@prisma/client';
+import type { CardKind, Item, ItemType, LearningStatus } from '@prisma/client';
 
 // Shape of the jsonb `content` column for each item type. Declared as
 // `type` (not `interface`) so Prisma accepts them as JSON values.
@@ -87,4 +87,12 @@ export function cardSlots<T extends ItemType>(type: T, content: ContentByType[T]
 /** Typed view of an item's content (the database only knows it's JSON). */
 export function contentOf<T extends ItemType>(item: Pick<Item, 'content'> & { type: T }): ContentByType[T] {
   return item.content as unknown as ContentByType[T];
+}
+
+/**
+ * Learning state of a new item (MEM-15): a vocabulary word waits for the
+ * learning process; the other types go straight to the review.
+ */
+export function initialLearningStatus(type: ItemType): LearningStatus {
+  return type === 'Vocabulary' ? 'ToLearn' : 'Learning';
 }

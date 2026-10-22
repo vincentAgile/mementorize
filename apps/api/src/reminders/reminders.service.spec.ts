@@ -49,7 +49,9 @@ describe('RemindersService', () => {
         },
         data: { reminderLastSentOn: '2026-10-13' },
       });
-      expect(prisma.card.count).toHaveBeenCalledWith({ where: { due: { lte: NOW }, item: { userId: 'user-1' } } });
+      expect(prisma.card.count).toHaveBeenCalledWith({
+        where: { due: { lte: NOW }, item: { userId: 'user-1', learningStatus: 'Learning' } },
+      });
       const sentMail = mail.send.mock.calls[0][0];
       expect(sentMail.to).toBe('alice@example.fr');
       expect(sentMail.subject).toContain('3 cartes');

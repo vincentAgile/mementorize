@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getDueReviews, getItems } from '../../lib/api';
 import { formatDelay } from '../../lib/format';
+import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
 import { branchesOf, rootOf } from '../../lib/mind-map';
 import { reviewHref, type Space } from '../../lib/spaces';
 import type { CardSummary, DueReviews, Item } from '../../lib/types';
@@ -46,9 +47,11 @@ export async function SpacePage({ space }: { space: Space }) {
             <li key={item.id}>
               <ItemContent item={item} />
               <p className="items__schedule">
-                {item.cards?.length
-                  ? item.cards.map((card) => scheduleLabel(item, card, now)).join(' · ')
-                  : 'Pas encore de branche : rien à réviser'}
+                {item.learningStatus !== 'Learning'
+                  ? LEARNING_STATUS_LABELS[item.learningStatus] // not reviewed: no schedule to show (MEM-15)
+                  : item.cards?.length
+                    ? item.cards.map((card) => scheduleLabel(item, card, now)).join(' · ')
+                    : 'Pas encore de branche : rien à réviser'}
               </p>
             </li>
           ))}

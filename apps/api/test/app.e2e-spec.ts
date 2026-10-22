@@ -82,6 +82,23 @@ describe('API (e2e)', () => {
     expect(bobItems.body).toEqual([]);
   });
 
+  it('keeps a new vocabulary word out of the review until it is learned (MEM-15)', async () => {
+    const token = await register('gina');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const word = await http()
+      .post('/vocabulary')
+      .set(auth)
+      .send({ word: 'to cherish', translation: 'chérir' })
+      .expect(201);
+    expect(word.body.learningStatus).toBe('ToLearn');
+
+    const due = await http().get('/reviews/due?type=Vocabulary').set(auth).expect(200);
+    expect(due.body.total).toBe(0);
+    const summary = await http().get('/reviews/due/summary').set(auth).expect(200);
+    expect(summary.body.byType.Vocabulary).toBe(0);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };

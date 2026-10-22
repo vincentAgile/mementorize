@@ -46,7 +46,7 @@ describe('ReviewsService', () => {
 
       const result = await service.findDue(userId, 20, undefined, NOW);
 
-      const where = { due: { lte: NOW }, item: { userId } };
+      const where = { due: { lte: NOW }, item: { userId, learningStatus: 'Learning' } };
       expect(prismaMock.card.count).toHaveBeenCalledWith({ where });
       expect(prismaMock.card.findMany).toHaveBeenCalledWith(expect.objectContaining({ where, take: 20 }));
       expect(result.nextDueAt).toBeNull();
@@ -75,7 +75,7 @@ describe('ReviewsService', () => {
 
       await service.findDue(userId, 20, 'Vocabulary', NOW);
 
-      const item = { userId, type: 'Vocabulary' };
+      const item = { userId, type: 'Vocabulary', learningStatus: 'Learning' };
       expect(prismaMock.card.count).toHaveBeenCalledWith({ where: { due: { lte: NOW }, item } });
       expect(prismaMock.card.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({ where: { due: { gt: NOW }, item } }),
@@ -93,7 +93,7 @@ describe('ReviewsService', () => {
 
       expect(summary).toEqual({ total: 4, byType: { Quote: 1, Vocabulary: 3, MindMap: 0 } });
       expect(prismaMock.card.count).toHaveBeenCalledWith({
-        where: { due: { lte: NOW }, item: { userId, type: 'Vocabulary' } },
+        where: { due: { lte: NOW }, item: { userId, type: 'Vocabulary', learningStatus: 'Learning' } },
       });
     });
   });
