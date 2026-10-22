@@ -98,8 +98,12 @@ body {
   gap: 1rem;
 }
 
-.page__topbar h1 {
+/* MEM-28: the name of the app, styled as before but no longer the h1 */
+.page__brand {
   margin: 0;
+  font-size: 2em;
+  font-weight: bold;
+  line-height: 1.2;
 }
 
 .header-actions {
@@ -341,11 +345,6 @@ body {
   padding: 0;
   background: #e3efef;
   color: #147d80;
-}
-
-.space__title {
-  margin: 1.25rem 0 0;
-  font-size: 1.35rem;
 }
 
 .space__due {
@@ -684,6 +683,7 @@ kbd {
 
 .mind-map-page__title {
   margin: 0.25rem 0 1rem;
+  font-size: 1.5em; /* an h1 since MEM-28, the size of the h2 it was */
 }
 
 .mind-map-page__delete {

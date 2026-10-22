@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getDueReviews, getItems } from '../../lib/api';
 import { nothingDueLabel } from '../../lib/format';
 import { reviewHref, spaceOf } from '../../lib/spaces';
+
+export const metadata: Metadata = { title: 'Apprendre · Réviser · Anglais' };
 
 const SPACE = spaceOf('Vocabulary');
 
@@ -52,7 +55,7 @@ export default async function EnglishLearnReviewPage() {
           <>
             <p>{plural(due.total, 'carte à réviser', 'cartes à réviser')} aujourd’hui.</p>
             <Link href={reviewHref(SPACE)} className="space__review">
-              {SPACE.reviewLabel} <span className="space__review-count">{due.total}</span>
+              Réviser <span className="space__review-count">{due.total}</span>
             </Link>
           </>
         ) : (

@@ -11,7 +11,8 @@ export default function EnglishLayout({ children }: { children: React.ReactNode 
   return (
     <main className="page">
       <AppHeader />
-      <h2 className="space__title">Anglais</h2>
+      {/* MEM-28: the active menu entry says where we are; the h1 is for screen readers. */}
+      <h1 className="visually-hidden">Anglais</h1>
       <EnglishTabs />
       {children}
     </main>

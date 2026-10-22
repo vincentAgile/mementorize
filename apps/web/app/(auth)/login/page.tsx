@@ -1,5 +1,8 @@
+import type { Metadata } from 'next';
 import { loginAction } from '../actions';
 import { AuthForm } from '../auth-form';
+
+export const metadata: Metadata = { title: 'Connexion' };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ expired?: string }> }) {
   const { expired } = await searchParams;
