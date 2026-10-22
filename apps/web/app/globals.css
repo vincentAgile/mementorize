@@ -136,6 +136,18 @@ body {
   grid-area: nav;
 }
 
+/* On a phone only (MEM-34) */
+.app-header__title {
+  display: none;
+}
+
+/* Very narrow screens: the monogram alone (MEM-34) */
+@media (max-width: 359px) {
+  .page__brand .logo__rest {
+    display: none;
+  }
+}
+
 /* The thin vertical line between the logo and the menu: only on a single line */
 .app-header__divider {
   display: none;
@@ -481,18 +493,45 @@ body {
     padding: 1.25rem 1rem;
   }
 
-  /* A compact band 1: the name of the app, Settings and the avatar */
+  /* A compact band 1: logo │ name of the space … Settings, avatar (MEM-34) */
   .app-header__top {
-    grid-template-areas: 'brand actions';
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: 'brand divider title actions';
+    column-gap: 0.55rem;
     padding-block: 0.3rem;
   }
 
+  .app-header__divider {
+    display: block;
+    grid-area: divider;
+    height: 1.4rem;
+  }
+
+  /* The name of the space: the page's h1 on a phone, more discreet than the logo */
+  .app-header__title {
+    display: block;
+    grid-area: title;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    color: var(--band-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* It takes over from the hidden h1 of MEM-28 */
+  .page__sr-title {
+    display: none;
+  }
+
   .page__brand {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
   }
 
   .header-actions {
-    gap: 0.25rem;
+    gap: 0;
   }
 
   .header-actions__icon {
