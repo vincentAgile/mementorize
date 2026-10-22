@@ -275,3 +275,12 @@ curl -X POST http://localhost:3000/learning/<itemId>/relearn -H "Authorization: 
 ```
 
 `Learned` est une valeur de l'enum `ReviewRating` réservée à l'historique : la planification (FSRS) ne reçoit que les quatre notes, type `Grade`.
+
+## Prononciation (MEM-39)
+
+`src/pronunciation/` génère la prononciation de chaque élément de vocabulaire avec **Kokoro** (`kokoro.client.ts` : `POST /v1/audio/speech`, API compatible OpenAI) et la stocke dans la table `pronunciations` (MP3, avec le texte et la voix qui l'ont produite).
+
+- **Quand** : à la création d'un élément, et quand son anglais change (`VocabularyController`), en arrière-plan : la requête n'attend pas. Une file traite un élément à la fois ; en cas d'échec, nouvel essai 1, 2, 4, 8, 16 minutes plus tard. Au démarrage de l'API (15 s après), un rattrapage reprend tout ce qui manque ou n'est plus à jour (anglais modifié, voix changée).
+- **Servir** : `GET /vocabulary/:id/pronunciation` renvoie l'audio au propriétaire de l'élément, seulement s'il correspond à l'anglais actuel ; sinon 404, et le web utilise la voix du navigateur. La suppression d'un élément supprime son audio (cascade).
+- **Réglages** : `KOKORO_URL` (sans lui, rien n'est généré) et `KOKORO_VOICE` (`af_heart` par défaut).
+- **Tests** : `pronunciation.service.spec.ts` (file, rattrapage, contrôle d'accès) ; `test/pronunciation.e2e-spec.ts` fait tourner un faux serveur Kokoro à côté de l'API et d'une vraie base.

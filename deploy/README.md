@@ -506,6 +506,16 @@ rclone copy sauvegardes:mementorize-AAAAMMJJ-HHMMSS.sql.gz ~/restauration/
 
 Puis la procédure de _Sauvegarder et restaurer_ ci-dessous, avec ce fichier.
 
+## Prononciation avec Kokoro (MEM-39)
+
+Le conteneur `kokoro` génère la prononciation de chaque élément de vocabulaire, une seule fois, avec le modèle libre Kokoro-82M ; l'audio (MP3, quelques Ko) est stocké dans la base, donc dans les sauvegardes. Il n'est jamais publié : seule l'API l'appelle. `deploy/release.sh` le démarre à chaque déploiement, **sans jamais bloquer** : s'il ne démarre pas, l'application se déploie quand même et utilise les voix du navigateur.
+
+- **Premier déploiement** : l'image pèse environ 1,6 Go compressée. Au démarrage, l'API attend 15 s puis génère, un par un, l'audio de tous les éléments existants. Si Kokoro n'est pas encore prêt, elle réessaie 1, 2, 4, 8 puis 16 minutes plus tard ; les journaux de l'API le disent (`docker compose logs api | grep -i pronunciation`).
+- **Mémoire** : le conteneur est limité à 1,5 Go (`mem_limit`). Pour mesurer pendant la génération : `docker stats kokoro`. S'il dépasse la limite, il est arrêté puis relancé, et les éléments concernés sont repris plus tard.
+- **Changer de voix** : `KOKORO_VOICE=<voix>` dans `.env` (par défaut `af_heart`), puis `docker rollout api`. Au démarrage, l'API régénère tout l'audio qui n'a pas été fait avec cette voix ; en attendant, l'ancien reste servi.
+- **Désactiver** : `KOKORO_URL=` (vide) dans `.env`, puis `docker rollout api` ; l'audio déjà généré n'est plus produit pour les nouveaux éléments, les voix du navigateur prennent le relais. `docker compose stop kokoro` libère la mémoire.
+- **Mettre à jour Kokoro** : changer la version de l'image dans `docker-compose.yml` ; le déploiement suivant la télécharge et recrée le conteneur.
+
 ## Sauvegarder et restaurer
 
 Automatiquement : une chaque nuit dans `~/backups/daily` (et sa copie chiffrée hors serveur, voir ci-dessus), et une avant chaque déploiement dans `~/backups`. À la main :
@@ -547,6 +557,7 @@ Le même `pg_dump`, lancé sur ton PC (`docker compose exec -T postgres pg_dump 
 | _Deploy_ : `denied` ou `unauthorized` au téléchargement       | Le workflow n'a pas accès aux paquets : sur GitHub, chaque paquet → **Package settings → Manage Actions access** → ajouter le dépôt, en lecture.                                                                                                |
 | _Deploy_ : `Files modified on the server`                     | Un fichier suivi par git a été modifié sur le serveur (`git status`) : `git stash`, ou `git checkout -- <fichier>`, puis relancer.                                                                                                              |
 | _Deploy_ : `Only … MB free on /` ou `no space left on device` | Disque plein, même après le nettoyage automatique des images : `df -h /`, `docker system df`, `du -sh ~/backups` ; les sauvegardes locales (10 dernières) et les journaux (`sudo journalctl --vacuum-size=200M`) sont les autres candidats.     |
+| _Deploy_ : `Kokoro could not be started`                      | L'application est déployée, avec les voix du navigateur. `docker compose pull kokoro` montre l'erreur (version d'image introuvable, disque plein) ; `docker compose logs kokoro` si le conteneur s'arrête (mémoire : `docker stats kokoro`).    |
 | _Deploy_ : `New containers are not healthy. Rolling back.`    | La nouvelle version ne démarre pas ; ses journaux sont dans ceux du job. L'ancienne version continue de servir.                                                                                                                                 |
 | Pas d'e-mail de rappel                                        | **Réglages → e-mail de test** : « pas configuré » → `SMTP_*` absents de `.env` ou `docker rollout api` pas relancé ; « refusé » → `docker compose logs api` (mot de passe, `MAIL_FROM` différent de la boîte). Reçu en indésirables : SPF/DKIM. |
 | Sauvegarde en échec (alerte healthchecks.io)                  | `sudo journalctl -u mementorize-backup -n 50 --no-pager` ; tester la copie seule : `rclone lsf sauvegardes:`.                                                                                                                                   |

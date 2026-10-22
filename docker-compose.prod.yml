@@ -26,6 +26,12 @@ services:
     image: ghcr.io/vincentagile/mementorize-api:${IMAGE_TAG:?IMAGE_TAG is missing in .env (written by deploy/release.sh)}
     environment:
       APP_URL: https://${APP_DOMAIN:?APP_DOMAIN is missing in .env (see .env.example)}
+      # MEM-39: Kokoro runs next to the API (KOKORO_URL= in .env turns it off).
+      KOKORO_URL: ${KOKORO_URL-http://kokoro:8880}
+
+  # MEM-39: always started in production (deploy/release.sh).
+  kokoro:
+    profiles: !reset []
 
   web:
     build: !reset null

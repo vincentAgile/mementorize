@@ -278,3 +278,38 @@ export async function isApiHealthy(): Promise<boolean> {
     return false;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Pronunciation (MEM-39)
+// ---------------------------------------------------------------------------
+
+export type PronunciationAudio =
+  | { ok: true; body: ReadableStream<Uint8Array>; mimeType: string; length: string | null }
+  | { ok: false; status: number };
+
+/**
+ * The audio of a vocabulary item, for app/prononciation/[id]/route.ts. Not
+ * through authedFetch: an audio file that is missing (404), or a session
+ * that expired (401), mustn't redirect anywhere, the page just falls back
+ * on the browser's speech synthesis.
+ */
+export async function pronunciationAudio(itemId: string): Promise<PronunciationAudio> {
+  const token = await getSessionToken();
+  if (!token) return { ok: false, status: 401 };
+  try {
+    const res = await fetch(`${API_URL}/vocabulary/${encodeURIComponent(itemId)}/pronunciation`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    });
+    if (!res.ok || !res.body) return { ok: false, status: res.status === 401 ? 401 : 404 };
+    return {
+      ok: true,
+      body: res.body,
+      mimeType: res.headers.get('content-type') ?? 'audio/mpeg',
+      length: res.headers.get('content-length'),
+    };
+  } catch {
+    return { ok: false, status: 502 };
+  }
+}

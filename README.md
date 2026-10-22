@@ -87,12 +87,13 @@ navigateur ──3001──▶ web ──(frontend)──▶ api ──(backend)
                                                   migrate ──┘
 ```
 
-| service    | image                                  | rôle                                                                |
-| ---------- | -------------------------------------- | ------------------------------------------------------------------- |
-| `postgres` | `postgres:16-alpine`                   | la base ; publiée sur `127.0.0.1:5432` seulement, pour `pnpm dev`   |
-| `migrate`  | `apps/api/Dockerfile`, cible `migrate` | applique les migrations (`prisma migrate deploy`) puis s'arrête     |
-| `api`      | `apps/api/Dockerfile`, cible `runtime` | l'API NestJS ; démarre une fois `migrate` terminé avec succès       |
-| `web`      | `apps/web/Dockerfile`                  | le serveur Next.js ; démarre une fois l'API déclarée en bonne santé |
+| service    | image                                  | rôle                                                                                |
+| ---------- | -------------------------------------- | ----------------------------------------------------------------------------------- |
+| `postgres` | `postgres:16-alpine`                   | la base ; publiée sur `127.0.0.1:5432` seulement, pour `pnpm dev`                   |
+| `migrate`  | `apps/api/Dockerfile`, cible `migrate` | applique les migrations (`prisma migrate deploy`) puis s'arrête                     |
+| `api`      | `apps/api/Dockerfile`, cible `runtime` | l'API NestJS ; démarre une fois `migrate` terminé avec succès                       |
+| `web`      | `apps/web/Dockerfile`                  | le serveur Next.js ; démarre une fois l'API déclarée en bonne santé                 |
+| `kokoro`   | image `kokoro-fastapi-cpu`             | la synthèse vocale (MEM-39) ; en local avec `--profile tts`, toujours en production |
 
 **Ordre de démarrage.** `depends_on` avec conditions : `postgres` _healthy_ (`pg_isready`) → `migrate` _completed successfully_ → `api` _healthy_ (`GET /health`, qui interroge aussi la base) → `web`. Sans ces conditions, les services démarreraient en même temps et l'API tenterait de se connecter à une base pas encore prête.
 

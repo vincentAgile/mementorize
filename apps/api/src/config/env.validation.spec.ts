@@ -33,6 +33,12 @@ describe('validateEnv', () => {
     ).toThrow(/SMTP_PORT/);
   });
 
+  it('needs no Kokoro, but checks its address once KOKORO_URL is set (MEM-39)', () => {
+    expect(() => validateEnv({ ...valid, KOKORO_URL: '' })).not.toThrow();
+    expect(() => validateEnv({ ...valid, KOKORO_URL: 'http://kokoro:8880' })).not.toThrow();
+    expect(() => validateEnv({ ...valid, KOKORO_URL: 'kokoro:8880' })).toThrow(/KOKORO_URL/);
+  });
+
   it('lists every problem at once', () => {
     expect(() => validateEnv({ JWT_EXPIRES_IN: 'soon' })).toThrow(/DATABASE_URL[\s\S]*JWT_SECRET[\s\S]*JWT_EXPIRES_IN/);
   });
