@@ -3,7 +3,7 @@ import {
   type Card as FsrsCard,
   type FSRS,
   type FSRSParameters,
-  type Grade,
+  type Grade as FsrsGrade,
   createEmptyCard,
   fsrs,
   Rating,
@@ -15,6 +15,9 @@ export type CardSchedule = Pick<
   Card,
   'due' | 'stability' | 'difficulty' | 'scheduledDays' | 'learningSteps' | 'reps' | 'lapses' | 'state' | 'lastReview'
 >;
+
+/** The four self-assessments FSRS knows; `Learned` is not one of them (MEM-22). */
+export type Grade = Exclude<ReviewRating, 'Learned'>;
 
 /** What gets written to review_logs after a self-assessment. */
 export interface ReviewLogData {
@@ -29,9 +32,9 @@ export interface ReviewLogData {
 }
 
 /** When the card would next be due, for each possible answer. */
-export type NextDueByRating = Record<ReviewRating, Date>;
+export type NextDueByRating = Record<Grade, Date>;
 
-const RATINGS: readonly ReviewRating[] = ['Again', 'Hard', 'Good', 'Easy'];
+const RATINGS: readonly Grade[] = ['Again', 'Hard', 'Good', 'Easy'];
 
 /**
  * Thin wrapper around ts-fsrs. It's the only place in the app that knows
@@ -57,13 +60,13 @@ export class SchedulerService {
   preview(card: CardSchedule, now: Date): NextDueByRating {
     const outcomes = this.fsrs.repeat(toFsrsCard(card), now);
     return Object.fromEntries(
-      RATINGS.map((rating) => [rating, outcomes[Rating[rating] as Grade].card.due]),
+      RATINGS.map((rating) => [rating, outcomes[Rating[rating] as FsrsGrade].card.due]),
     ) as NextDueByRating;
   }
 
   /** Applies a self-assessment: returns the new card state and the log entry. */
-  review(card: CardSchedule, rating: ReviewRating, now: Date): { card: CardSchedule; log: ReviewLogData } {
-    const { card: next, log } = this.fsrs.next(toFsrsCard(card), now, Rating[rating] as Grade);
+  review(card: CardSchedule, rating: Grade, now: Date): { card: CardSchedule; log: ReviewLogData } {
+    const { card: next, log } = this.fsrs.next(toFsrsCard(card), now, Rating[rating] as FsrsGrade);
     return {
       card: fromFsrsCard(next),
       log: {

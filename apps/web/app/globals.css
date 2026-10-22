@@ -521,6 +521,29 @@ kbd {
   color: #2f6fb5;
 }
 
+/* MEM-22: a fifth button for the vocabulary, set apart from the four grades */
+.review-card__ratings--five {
+  grid-template-columns: repeat(4, 1fr) 1.15fr;
+}
+
+.rating--learned {
+  border-style: dashed;
+}
+
+.rating--learned .rating__label {
+  color: #6b4fa0;
+}
+
+@media (max-width: 480px) {
+  .review-card__ratings--five {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .review-card__ratings--five .rating--learned {
+    grid-column: 1 / -1;
+  }
+}
+
 .review-empty {
   margin-top: 2rem;
 }

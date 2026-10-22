@@ -133,6 +133,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
             key={`${next.card.id}-${next.card.due}`} // fresh (hidden) card after each answer
             cardId={next.card.id}
             {...facesOf(next)}
+            learnedItemId={next.item.type === 'Vocabulary' ? next.item.id : undefined}
             options={(Object.keys(LABELS) as ReviewRating[]).map((rating): RatingOption => ({
               rating,
               label: LABELS[rating],

@@ -16,6 +16,18 @@ export class LearningController {
     return this.learning.session(user.id);
   }
 
+  /** POST /learning/:itemId/learned — "Appris" in a review: the item leaves the review (MEM-22). */
+  @Post(':itemId/learned')
+  markLearned(@CurrentUser() user: AuthUser, @Param('itemId') itemId: string) {
+    return this.learning.markLearned(user.id, itemId);
+  }
+
+  /** POST /learning/:itemId/relearn — a learned item goes back to the review, same schedule (MEM-22). */
+  @Post(':itemId/relearn')
+  relearn(@CurrentUser() user: AuthUser, @Param('itemId') itemId: string) {
+    return this.learning.relearn(user.id, itemId);
+  }
+
   /** POST /learning/:itemId { rating } — step 2: first review, the item moves to `Learning`. */
   @Post(':itemId')
   learn(@CurrentUser() user: AuthUser, @Param('itemId') itemId: string, @Body() dto: ReviewDto) {

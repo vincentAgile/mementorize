@@ -206,6 +206,16 @@ export function learnVocabulary(itemId: string, rating: ReviewRating): Promise<u
   });
 }
 
+/** "Appris" in a review (MEM-22): the item leaves the review. */
+export function markVocabularyLearned(itemId: string): Promise<unknown> {
+  return authedFetch(`/learning/${encodeURIComponent(itemId)}/learned`, { method: 'POST' });
+}
+
+/** "Remettre en apprentissage" (MEM-22): a learned item goes back to the review. */
+export function relearnVocabulary(itemId: string): Promise<unknown> {
+  return authedFetch(`/learning/${encodeURIComponent(itemId)}/relearn`, { method: 'POST' });
+}
+
 /** How many cards are due, in all and per subject (the menu's counters, MEM-5). */
 export function getDueSummary(): Promise<DueSummary> {
   return authedFetch<DueSummary>('/reviews/due/summary');

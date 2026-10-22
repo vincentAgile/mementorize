@@ -93,12 +93,16 @@ enum CardState {
   Relearning
 }
 
-// ts-fsrs's Rating enum, minus "Manual" (not used by the app).
+// ts-fsrs's Rating enum, minus "Manual" (not used by the app), plus
+// `Learned`: not a grade, it records in the history that a vocabulary item
+// was marked as learned during a review (MEM-22). The scheduler only ever
+// takes the four grades (type `Grade`).
 enum ReviewRating {
   Again
   Hard
   Good
   Easy
+  Learned
 }
 
 /// Spaced-repetition state (FSRS) of one side of an item: when to review it

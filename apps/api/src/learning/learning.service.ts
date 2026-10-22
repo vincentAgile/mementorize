@@ -1,8 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { ReviewRating } from '@prisma/client';
 import { contentOf } from '../items/item-content.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
+import { type Grade, type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
 
 /** Number of vocabulary items in a learning session (MEM-21). */
 export const SESSION_SIZE = 5;
@@ -63,7 +62,7 @@ export class LearningService {
    * French → English card, the item moves to `Learning`, and its English →
    * French card, not rated yet, becomes due at once, as a new card.
    */
-  async learn(userId: string, itemId: string, rating: ReviewRating, now = new Date()) {
+  async learn(userId: string, itemId: string, rating: Grade, now = new Date()) {
     const item = await this.prisma.item.findFirst({
       where: { id: itemId, userId, type: 'Vocabulary' },
       include: { cards: true },
@@ -94,5 +93,57 @@ export class LearningService {
     ]);
 
     return { id: item.id, learningStatus: 'Learning' as const, nextDue: next.due };
+  }
+
+  /**
+   * "Appris" in a review (MEM-22): the item leaves the review, both its cards
+   * with it. Each card gets a `Learned` entry in its history, with its
+   * schedule as it stands: nothing is rescheduled, so that putting the item
+   * back in learning finds the same schedule.
+   */
+  async markLearned(userId: string, itemId: string, now = new Date()) {
+    const item = await this.vocabulary(userId, itemId, 'Learning');
+
+    await this.prisma.$transaction([
+      ...item.cards.map((card) =>
+        this.prisma.reviewLog.create({
+          data: {
+            cardId: card.id,
+            rating: 'Learned',
+            state: card.state,
+            due: card.due,
+            stability: card.stability,
+            difficulty: card.difficulty,
+            scheduledDays: card.scheduledDays,
+            learningSteps: card.learningSteps,
+            reviewedAt: now,
+          },
+        }),
+      ),
+      this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learned' } }),
+    ]);
+    return { id: item.id, learningStatus: 'Learned' as const };
+  }
+
+  /** "Remettre en apprentissage" (MEM-22): back in the review, with the schedule it had. */
+  async relearn(userId: string, itemId: string) {
+    const item = await this.vocabulary(userId, itemId, 'Learned');
+    await this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learning' } });
+    return { id: item.id, learningStatus: 'Learning' as const };
+  }
+
+  /** The user's vocabulary item, in the expected state: 404 or 409 otherwise. */
+  private async vocabulary(userId: string, itemId: string, expected: 'Learning' | 'Learned') {
+    const item = await this.prisma.item.findFirst({
+      where: { id: itemId, userId, type: 'Vocabulary' },
+      include: { cards: true },
+    });
+    if (!item) {
+      throw new NotFoundException(`Vocabulary item ${itemId} not found`);
+    }
+    if (item.learningStatus !== expected) {
+      throw new ConflictException(`Vocabulary item ${itemId} is not ${expected}`);
+    }
+    return item;
   }
 }

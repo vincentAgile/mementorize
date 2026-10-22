@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Card, Item, ItemType, ReviewRating } from '@prisma/client';
+import type { Card, Item, ItemType } from '@prisma/client';
 import { ITEM_TYPES } from '../items/item-content.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { IN_REVIEW } from './in-review.js';
-import { type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
+import { type Grade, type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
 
 export interface DueItem {
   item: Item;
@@ -71,7 +71,7 @@ export class ReviewsService {
   }
 
   /** Records a self-assessment and reschedules the card. */
-  async review(userId: string, cardId: string, rating: ReviewRating, now = new Date()): Promise<Card> {
+  async review(userId: string, cardId: string, rating: Grade, now = new Date()): Promise<Card> {
     const card = await this.prisma.card.findFirst({ where: { id: cardId, item: { userId } } });
     if (!card) {
       throw new NotFoundException(`Card ${cardId} not found`);

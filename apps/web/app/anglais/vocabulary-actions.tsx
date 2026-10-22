@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { VocabularyRow } from '../../lib/vocabulary-table';
-import { deleteVocabularyAction, updateVocabularyAction } from './actions';
+import { deleteVocabularyAction, relearnAction, updateVocabularyAction } from './actions';
 
 /**
  * The actions of a row of the vocabulary table: modify (MEM-19) and delete
@@ -18,6 +18,12 @@ export function VocabularyActions({ row }: { row: VocabularyRow }) {
 
   return (
     <div className="row-actions">
+      {row.status === 'Learned' && (
+        // MEM-22: back in the review, with its previous schedule.
+        <form action={relearnAction.bind(null, row.id)}>
+          <RelearnButton english={row.english} />
+        </form>
+      )}
       <button
         type="button"
         className="row-actions__icon"
@@ -120,6 +126,30 @@ const ICON = {
   strokeLinejoin: 'round',
   'aria-hidden': true,
 } as const;
+
+function RelearnButton({ english }: { english: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      className="row-actions__icon"
+      aria-label={`Remettre « ${english} » en apprentissage`}
+      title="Remettre en apprentissage"
+      disabled={pending}
+    >
+      <RelearnIcon />
+    </button>
+  );
+}
+
+function RelearnIcon() {
+  return (
+    <svg {...ICON}>
+      <path d="M4 12a8 8 0 1 0 2.4-5.7" />
+      <path d="M4 4v4h4" />
+    </svg>
+  );
+}
 
 function PencilIcon() {
   return (

@@ -96,4 +96,44 @@ describe('LearningService', () => {
       expect(prismaMock.$transaction).not.toHaveBeenCalled();
     });
   });
+
+  describe('markLearned', () => {
+    it('logs "Learned" on both cards without rescheduling them, and takes the item out of the review', async () => {
+      prismaMock.item.findFirst.mockResolvedValue(word('Learning'));
+
+      await service.markLearned(userId, 'item-1', NOW);
+
+      expect(prismaMock.reviewLog.create).toHaveBeenCalledTimes(2);
+      expect(prismaMock.reviewLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ cardId: 'fr-en', rating: 'Learned', due: LATER, reviewedAt: NOW }),
+      });
+      expect(prismaMock.card.update).not.toHaveBeenCalled();
+      expect(prismaMock.item.update).toHaveBeenCalledWith({
+        where: { id: 'item-1' },
+        data: { learningStatus: 'Learned' },
+      });
+    });
+
+    it('refuses an item that is not being learned', async () => {
+      prismaMock.item.findFirst.mockResolvedValue(word('ToLearn'));
+      await expect(service.markLearned(userId, 'item-1', NOW)).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe('relearn', () => {
+    it('puts a learned item back in the review', async () => {
+      prismaMock.item.findFirst.mockResolvedValue(word('Learned'));
+      await service.relearn(userId, 'item-1');
+      expect(prismaMock.item.update).toHaveBeenCalledWith({
+        where: { id: 'item-1' },
+        data: { learningStatus: 'Learning' },
+      });
+      expect(prismaMock.card.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses an item that is not learned', async () => {
+      prismaMock.item.findFirst.mockResolvedValue(word('Learning'));
+      await expect(service.relearn(userId, 'item-1')).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
 });
