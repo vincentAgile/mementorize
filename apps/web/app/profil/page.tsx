@@ -14,7 +14,7 @@ export default async function ProfilePage() {
     <>
       <AppHeader />
       <main className="page page--reading">
-        <h1 className="visually-hidden">Profil</h1>
+        <h1 className="visually-hidden page__sr-title">Profil</h1>
         <ProfileForm profile={profile} />
       </main>
     </>
