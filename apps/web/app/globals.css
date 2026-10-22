@@ -521,6 +521,29 @@ kbd {
   color: #2f6fb5;
 }
 
+/* MEM-22: a fifth button for the vocabulary, set apart from the four grades */
+.review-card__ratings--five {
+  grid-template-columns: repeat(4, 1fr) 1.15fr;
+}
+
+.rating--learned {
+  border-style: dashed;
+}
+
+.rating--learned .rating__label {
+  color: #6b4fa0;
+}
+
+@media (max-width: 480px) {
+  .review-card__ratings--five {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .review-card__ratings--five .rating--learned {
+    grid-column: 1 / -1;
+  }
+}
+
 .review-empty {
   margin-top: 2rem;
 }
@@ -756,7 +779,356 @@ kbd {
   opacity: 0; /* anchors for the edges, not meant to be dragged */
 }
 
+/* --- v0.3: the vocabulary table (MEM-16 to MEM-18) --- */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.vocabulary {
+  margin-top: 1.5rem;
+}
+
+.vocabulary__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.vocabulary__filters input,
+.vocabulary__filters select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.vocabulary__filters input {
+  flex: 1 1 14rem;
+}
+
+.vocabulary__count,
+.vocabulary__none {
+  margin: 0.6rem 0;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Narrow screens: the table scrolls sideways instead of squeezing its columns */
+.vocabulary__scroll {
+  overflow-x: auto;
+}
+
+.vocabulary__table {
+  width: 100%;
+  min-width: 36rem;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.vocabulary__table th,
+.vocabulary__table td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid #e3e3e3;
+  text-align: left;
+  vertical-align: top;
+}
+
+.vocabulary__table td {
+  overflow-wrap: break-word; /* a long sentence wraps between words inside its cell */
+}
+
+.vocabulary__table th {
+  padding: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vocabulary__table th button {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vocabulary__table th button:hover,
+.vocabulary__table th[aria-sort] button {
+  color: #147d80;
+}
+
+.vocabulary__arrow {
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+.vocabulary__table th[aria-sort] .vocabulary__arrow {
+  opacity: 1;
+}
+
+.vocabulary__english {
+  display: block;
+  font-weight: 600;
+}
+
+.vocabulary__example {
+  display: block;
+  margin-top: 0.15rem;
+  color: #666;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.vocabulary__review {
+  color: #666;
+  white-space: nowrap;
+}
+
+.status {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.status--ToLearn {
+  background: #fff4e0;
+  color: #9a5b00;
+}
+
+.status--Learning {
+  background: rgba(20, 125, 128, 0.12);
+  color: #0f6366;
+}
+
+.status--Learned {
+  background: rgba(127, 127, 127, 0.15);
+  color: #555;
+}
+
+/* MEM-19, MEM-20: the actions of a row and their dialogs */
+.row-actions {
+  display: flex;
+  gap: 0.15rem;
+}
+
+.row-actions__icon {
+  display: inline-flex;
+  padding: 0.3rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: #666;
+  cursor: pointer;
+}
+
+.row-actions__icon:hover {
+  background: rgba(20, 125, 128, 0.1);
+  color: #147d80;
+}
+
+.row-actions__danger:hover {
+  background: rgba(179, 38, 30, 0.1);
+  color: #b3261e;
+}
+
+.dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1.25rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  color: inherit;
+  background: white;
+}
+
+.dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.dialog h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.dialog__hint {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dialog__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.dialog__form input {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.dialog__buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.dialog .button--primary,
+.dialog .button--secondary {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.dialog .button--primary {
+  background: #147d80;
+  color: white;
+}
+
+.dialog .button--secondary {
+  background: none;
+  color: #147d80;
+}
+
+.dialog button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- v0.3: learning the vocabulary (MEM-21) --- */
+
+.space__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.space__actions .space__review,
+.space__actions .space__due {
+  margin: 0;
+}
+
+.space__review--learn {
+  background: #c77700;
+}
+
+.space__review--learn:hover {
+  background: #a86400;
+}
+
+.review-card__answer + .review-card__reveal,
+.review-card__note + .review-card__reveal {
+  margin-top: 1.25rem;
+}
+
+.learning-steps {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.learning-steps li {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(127, 127, 127, 0.25);
+}
+
+.learning-steps li.is-done {
+  background: #147d80;
+}
+
+.learning-steps li.is-current {
+  background: rgba(20, 125, 128, 0.5);
+}
+
+.review-card__answer {
+  margin: 1rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.learning-done {
+  margin-top: 2rem;
+}
+
+.learning-done__list {
+  padding-left: 1.2rem;
+}
+
+.learning-done__links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+
+.learning-done__next {
+  color: #147d80;
+}
+
 @media (prefers-color-scheme: dark) {
+  .dialog {
+    border-color: #444;
+    background: #1e1e1e;
+  }
+
+  .row-actions__icon {
+    color: #aaa;
+  }
+
+  .row-actions__danger:hover {
+    color: #f28b82;
+  }
+
+  .vocabulary__table th,
+  .vocabulary__table td {
+    border-bottom-color: #333;
+  }
+
+  .status--ToLearn {
+    background: #3a2c14;
+    color: #f0b45c;
+  }
+
+  .status--Learning {
+    background: #203334;
+    color: #7fd3d6;
+  }
+
+  .status--Learned {
+    background: #2a2a2a;
+    color: #aaa;
+  }
+
   .account-menu__popup {
     border-color: #444;
     background: #1e1e1e;

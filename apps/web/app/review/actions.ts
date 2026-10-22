@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { submitReview } from '../../lib/api';
+import { markVocabularyLearned, submitReview } from '../../lib/api';
 import type { ReviewRating } from '../../lib/types';
 
 const RATINGS: readonly ReviewRating[] = ['Again', 'Hard', 'Good', 'Easy'];
@@ -16,4 +16,14 @@ export async function reviewAction(cardId: string, rating: ReviewRating): Promis
   await submitReview(cardId, rating);
   revalidatePath('/review'); // show the next due card
   revalidatePath('/', 'layout'); // due counter in the header, schedules in the spaces
+}
+
+/** "Appris" (MEM-22): the vocabulary item and its two cards leave the review. */
+export async function learnedAction(itemId: string): Promise<void> {
+  if (typeof itemId !== 'string') {
+    throw new Error('Invalid item');
+  }
+  await markVocabularyLearned(itemId);
+  revalidatePath('/review'); // show the next due card
+  revalidatePath('/', 'layout'); // counters, and the state in the Anglais table
 }

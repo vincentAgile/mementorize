@@ -33,11 +33,18 @@ export class VocabularyController {
     return toVocabularyView(await this.items.findOne(user.id, id, 'Vocabulary'));
   }
 
+  /**
+   * Changes the English, the French or the example (MEM-19). The cards, the
+   * learning state and the review history stay as they are; an empty
+   * example removes it.
+   */
   @Patch(':id')
   async update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateVocabularyDto) {
-    return toVocabularyView(await this.items.update(user.id, id, 'Vocabulary', dto));
+    const changes = { ...dto, ...(dto.example !== undefined && { example: dto.example.trim() || null }) };
+    return toVocabularyView(await this.items.update(user.id, id, 'Vocabulary', changes));
   }
 
+  /** Deletes the item with its two cards and their history (MEM-20). */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {

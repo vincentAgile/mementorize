@@ -51,7 +51,9 @@ describe('ItemsService', () => {
       await service.create(userId, 'Quote', content, NOW);
 
       expect(prismaMock.item.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ userId, type: 'Quote', content }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ userId, type: 'Quote', content, learningStatus: 'Learning' }),
+        }),
       );
       expect(createdCards()).toEqual([{ kind: 'QuoteRecall', nodeId: null, ...scheduler.newCard(NOW) }]);
     });
@@ -59,6 +61,8 @@ describe('ItemsService', () => {
     it('gives a vocabulary word one card per direction, the reverse one starting a day later', async () => {
       await service.create(userId, 'Vocabulary', { word: 'to cherish', translation: 'chérir', example: null }, NOW);
 
+      // MEM-15: a new word waits for the learning process before being reviewed.
+      expect(prismaMock.item.create.mock.calls[0][0].data.learningStatus).toBe('ToLearn');
       expect(createdCards()).toEqual([
         { kind: 'EnglishToFrench', nodeId: null, ...scheduler.newCard(NOW) },
         { kind: 'FrenchToEnglish', nodeId: null, ...scheduler.newCard(TOMORROW) },

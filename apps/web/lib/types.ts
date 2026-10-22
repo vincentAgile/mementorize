@@ -1,6 +1,8 @@
 export type ItemType = 'Quote' | 'Vocabulary' | 'MindMap';
 export type CardKind = 'QuoteRecall' | 'EnglishToFrench' | 'FrenchToEnglish' | 'BranchRecall';
 export type CardState = 'New' | 'Learning' | 'Review' | 'Relearning';
+/** Learning state of an item (MEM-15); only vocabulary leaves `Learning`. */
+export type LearningStatus = 'ToLearn' | 'Learning' | 'Learned';
 export type ReviewRating = 'Again' | 'Hard' | 'Good' | 'Easy';
 
 export interface QuoteContent {
@@ -40,6 +42,7 @@ interface ItemBase {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  learningStatus: LearningStatus;
   cards?: CardSummary[]; // included by GET /items
 }
 
@@ -91,6 +94,21 @@ export interface DueItem {
 export interface DueSummary {
   total: number;
   byType: Record<ItemType, number>;
+}
+
+/** A vocabulary item of a learning session (MEM-21). */
+export interface LearningItem {
+  id: string;
+  word: string;
+  translation: string;
+  example: string | null;
+  /** When the French → English card comes back, for each rating of step 2. */
+  nextDue: Record<ReviewRating, string>;
+}
+
+export interface LearningSession {
+  total: number; // all the items still to learn
+  items: LearningItem[]; // up to five, the oldest first
 }
 
 export interface DueReviews {

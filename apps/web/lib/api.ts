@@ -8,6 +8,7 @@ import type {
   Credentials,
   DueReviews,
   DueSummary,
+  LearningSession,
   Item,
   ItemType,
   MindMap,
@@ -119,6 +120,20 @@ export function createQuote(input: CreateQuoteInput): Promise<unknown> {
   });
 }
 
+/** Changes a vocabulary item (MEM-19); an empty example removes it. */
+export function updateVocabulary(id: string, input: CreateVocabularyInput): Promise<unknown> {
+  return authedFetch(`/vocabulary/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+/** Deletes a vocabulary item with its cards and history (MEM-20). */
+export function deleteVocabulary(id: string): Promise<void> {
+  return authedFetch<void>(`/vocabulary/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
 export function createVocabulary(input: CreateVocabularyInput): Promise<unknown> {
   return authedFetch('/vocabulary', {
     method: 'POST',
@@ -175,6 +190,30 @@ export function savePreferences(input: Preferences): Promise<Preferences> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
+}
+
+/** Up to five vocabulary items to learn, the oldest first (MEM-21). */
+export function getLearningSession(): Promise<LearningSession> {
+  return authedFetch<LearningSession>('/learning/session');
+}
+
+/** Step 2 of a learning session: the first review of the French → English card. */
+export function learnVocabulary(itemId: string, rating: ReviewRating): Promise<unknown> {
+  return authedFetch(`/learning/${encodeURIComponent(itemId)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating }),
+  });
+}
+
+/** "Appris" in a review (MEM-22): the item leaves the review. */
+export function markVocabularyLearned(itemId: string): Promise<unknown> {
+  return authedFetch(`/learning/${encodeURIComponent(itemId)}/learned`, { method: 'POST' });
+}
+
+/** "Remettre en apprentissage" (MEM-22): a learned item goes back to the review. */
+export function relearnVocabulary(itemId: string): Promise<unknown> {
+  return authedFetch(`/learning/${encodeURIComponent(itemId)}/relearn`, { method: 'POST' });
 }
 
 /** How many cards are due, in all and per subject (the menu's counters, MEM-5). */

@@ -8,6 +8,7 @@ export function toVocabularyView(item: ItemWithCards) {
     word,
     translation,
     example,
+    learningStatus: item.learningStatus,
     userId: item.userId,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,

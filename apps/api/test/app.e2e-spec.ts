@@ -82,6 +82,109 @@ describe('API (e2e)', () => {
     expect(bobItems.body).toEqual([]);
   });
 
+  it('keeps a new vocabulary word out of the review until it is learned (MEM-15)', async () => {
+    const token = await register('gina');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const word = await http()
+      .post('/vocabulary')
+      .set(auth)
+      .send({ word: 'to cherish', translation: 'chérir' })
+      .expect(201);
+    expect(word.body.learningStatus).toBe('ToLearn');
+
+    const due = await http().get('/reviews/due?type=Vocabulary').set(auth).expect(200);
+    expect(due.body.total).toBe(0);
+    const summary = await http().get('/reviews/due/summary').set(auth).expect(200);
+    expect(summary.body.byType.Vocabulary).toBe(0);
+  });
+
+  it('edits a vocabulary word without touching its state or cards, and deletes it (MEM-19, MEM-20)', async () => {
+    const owner = await register('hugo');
+    const other = await register('ines');
+    const auth = { Authorization: `Bearer ${owner}` };
+
+    const created = await http()
+      .post('/vocabulary')
+      .set(auth)
+      .send({ word: 'snag', translation: 'acroc', example: 'We hit a snag.' })
+      .expect(201);
+    const id = created.body.id;
+
+    const edited = await http()
+      .patch(`/vocabulary/${id}`)
+      .set(auth)
+      .send({ translation: 'accroc', example: '  ' })
+      .expect(200);
+    expect(edited.body).toMatchObject({
+      word: 'snag',
+      translation: 'accroc',
+      example: null,
+      learningStatus: 'ToLearn',
+    });
+    expect(edited.body.cards).toEqual(created.body.cards);
+
+    await http().patch(`/vocabulary/${id}`).set(auth).send({ word: '' }).expect(400);
+    await http().patch(`/vocabulary/${id}`).set('Authorization', `Bearer ${other}`).send({ word: 'x' }).expect(404);
+    await http().delete(`/vocabulary/${id}`).set('Authorization', `Bearer ${other}`).expect(404);
+
+    await http().delete(`/vocabulary/${id}`).set(auth).expect(204);
+    await http().get(`/vocabulary/${id}`).set(auth).expect(404);
+  });
+
+  it('learns new vocabulary by sessions of five, the oldest first (MEM-21)', async () => {
+    const token = await register('jade');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const words = [];
+    for (const [word, translation] of [
+      ['snag', 'accroc'],
+      ['to cherish', 'chérir'],
+    ]) {
+      words.push((await http().post('/vocabulary').set(auth).send({ word, translation }).expect(201)).body);
+    }
+
+    const session = await http().get('/learning/session').set(auth).expect(200);
+    expect(session.body.total).toBe(2);
+    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['snag', 'to cherish']);
+
+    const learned = await http().post(`/learning/${words[0].id}`).set(auth).send({ rating: 'Good' }).expect(201);
+    expect(learned.body.learningStatus).toBe('Learning');
+
+    // Its English → French card is due at once; the French → English one, just rated, comes back later.
+    const due = await http().get('/reviews/due?type=Vocabulary').set(auth).expect(200);
+    expect(due.body.total).toBe(1);
+    expect(due.body.items[0].card.kind).toBe('EnglishToFrench');
+
+    const after = await http().get('/learning/session').set(auth).expect(200);
+    expect(after.body.total).toBe(1);
+    await http().post(`/learning/${words[0].id}`).set(auth).send({ rating: 'Good' }).expect(409);
+    await http().post(`/learning/${words[1].id}`).set(auth).send({ rating: 'Nope' }).expect(400);
+  });
+
+  it('takes a learned word out of the review, and puts it back with the same schedule (MEM-22)', async () => {
+    const token = await register('karl');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const word = (
+      await http().post('/vocabulary').set(auth).send({ word: 'thrifty', translation: 'économe' }).expect(201)
+    ).body;
+    await http().post(`/learning/${word.id}/learned`).set(auth).expect(409); // still to learn
+    await http().post(`/learning/${word.id}`).set(auth).send({ rating: 'Good' }).expect(201);
+    const before = await http().get(`/vocabulary/${word.id}`).set(auth).expect(200);
+
+    const learned = await http().post(`/learning/${word.id}/learned`).set(auth).expect(201);
+    expect(learned.body.learningStatus).toBe('Learned');
+    const due = await http().get('/reviews/due/summary').set(auth).expect(200);
+    expect(due.body.byType.Vocabulary).toBe(0);
+
+    const back = await http().post(`/learning/${word.id}/relearn`).set(auth).expect(201);
+    expect(back.body.learningStatus).toBe('Learning');
+    const after = await http().get(`/vocabulary/${word.id}`).set(auth).expect(200);
+    expect(after.body.cards).toEqual(before.body.cards);
+    await http().post(`/learning/${word.id}/relearn`).set(auth).expect(409);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };

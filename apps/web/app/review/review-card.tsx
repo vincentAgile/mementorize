@@ -3,7 +3,7 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { ReviewRating } from '../../lib/types';
-import { reviewAction } from './actions';
+import { learnedAction, reviewAction } from './actions';
 
 export interface RatingOption {
   rating: ReviewRating;
@@ -29,9 +29,11 @@ interface ReviewCardProps {
   /** Keep the question visible above the answer (vocabulary: word -> translation). */
   repeatFront?: boolean;
   options: RatingOption[];
+  /** Vocabulary only (MEM-22): the item behind the card, for a fifth button "Appris". */
+  learnedItemId?: string;
 }
 
-export function ReviewCard({ cardId, front, back, repeatFront = false, options }: ReviewCardProps) {
+export function ReviewCard({ cardId, front, back, repeatFront = false, options, learnedItemId }: ReviewCardProps) {
   const [revealed, setRevealed] = useState(false);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   // Set as soon as an answer is sent. `disabled={pending}` isn't enough on
@@ -49,7 +51,13 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options }
     };
   }
 
-  // Keyboard shortcuts: space reveals the answer, 1-4 pick a rating.
+  async function markLearned() {
+    if (answered.current || !learnedItemId) return;
+    answered.current = true;
+    await learnedAction(learnedItemId);
+  }
+
+  // Keyboard shortcuts: space reveals the answer, 1-4 pick a rating, 5 "Appris" (vocabulary).
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       // Held key (auto-repeat) or browser shortcut such as Ctrl+1: ignored.
@@ -57,7 +65,7 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options }
       if (!revealed && (event.key === ' ' || event.key === 'Enter')) {
         event.preventDefault();
         setRevealed(true);
-      } else if (revealed && ['1', '2', '3', '4'].includes(event.key)) {
+      } else if (revealed && ['1', '2', '3', '4', '5'].includes(event.key)) {
         buttons.current[Number(event.key) - 1]?.click();
       }
     }
@@ -92,7 +100,7 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options }
             </p>
           )}
           <p className="review-card__question">Tu t&apos;en souvenais bien ?</p>
-          <form className="review-card__ratings">
+          <form className={`review-card__ratings${learnedItemId ? ' review-card__ratings--five' : ''}`}>
             {options.map((option, index) => (
               <RatingButton
                 key={option.rating}
@@ -104,6 +112,14 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options }
                 action={answer(option.rating)}
               />
             ))}
+            {learnedItemId && (
+              <LearnedButton
+                ref={(el) => {
+                  buttons.current[4] = el;
+                }}
+                action={markLearned}
+              />
+            )}
           </form>
         </>
       ) : (
@@ -145,6 +161,18 @@ function RatingButton({ option, shortcut, action, ref }: RatingButtonProps) {
       <span className="rating__label">{option.label}</span>
       <span className="rating__delay">{option.delay}</span>
       <kbd>{shortcut}</kbd>
+    </button>
+  );
+}
+
+/** "Appris" (MEM-22): not a rating, the item leaves the review for good (until put back). */
+function LearnedButton({ action, ref }: { action: () => Promise<void>; ref: (el: HTMLButtonElement | null) => void }) {
+  const { pending } = useFormStatus();
+  return (
+    <button ref={ref} type="submit" formAction={action} disabled={pending} className="rating rating--learned">
+      <span className="rating__label">Appris</span>
+      <span className="rating__delay">ne plus réviser</span>
+      <kbd>5</kbd>
     </button>
   );
 }

@@ -1,10 +1,13 @@
 import Link from 'next/link';
 import { getDueReviews, getItems } from '../../lib/api';
 import { formatDelay } from '../../lib/format';
+import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
 import { branchesOf, rootOf } from '../../lib/mind-map';
 import { reviewHref, type Space } from '../../lib/spaces';
 import type { CardSummary, DueReviews, Item } from '../../lib/types';
+import type { VocabularyItem } from '../../lib/vocabulary-table';
 import { AppHeader } from '../app-header';
+import { VocabularyTable } from '../anglais/vocabulary-table';
 import { ItemForm } from '../items/item-form';
 
 /**
@@ -21,34 +24,48 @@ export async function SpacePage({ space }: { space: Space }) {
     getDueReviews(1, space.type), // this subject only
   ]);
   const now = new Date();
+  // MEM-21: the vocabulary waiting for the learning process.
+  const toLearn = items.filter((item) => item.learningStatus === 'ToLearn').length;
 
   return (
     <main className="page">
       <AppHeader />
 
       <h2 className="space__title">{space.label}</h2>
-      {items.length > 0 &&
-        (spaceDue.total > 0 ? (
-          <Link href={reviewHref(space)} className="space__review">
-            {space.reviewLabel} <span className="space__review-count">{spaceDue.total}</span>
-          </Link>
-        ) : (
-          <p className="space__due">{nothingDueLabel(spaceDue, now)}</p>
-        ))}
+      {items.length > 0 && (
+        <div className="space__actions">
+          {toLearn > 0 && (
+            <Link href="/apprendre" className="space__review space__review--learn">
+              Apprendre <span className="space__review-count">{toLearn}</span>
+            </Link>
+          )}
+          {spaceDue.total > 0 ? (
+            <Link href={reviewHref(space)} className="space__review">
+              {space.reviewLabel} <span className="space__review-count">{spaceDue.total}</span>
+            </Link>
+          ) : (
+            <p className="space__due">{nothingDueLabel(spaceDue, now)}</p>
+          )}
+        </div>
+      )}
 
       <ItemForm type={space.type} />
 
       {items.length === 0 ? (
         <p className="space__empty">{space.emptyText}</p>
+      ) : space.type === 'Vocabulary' ? (
+        <VocabularyTable items={items as VocabularyItem[]} now={now.toISOString()} />
       ) : (
         <ul className="items__list">
           {items.map((item) => (
             <li key={item.id}>
               <ItemContent item={item} />
               <p className="items__schedule">
-                {item.cards?.length
-                  ? item.cards.map((card) => scheduleLabel(item, card, now)).join(' · ')
-                  : 'Pas encore de branche : rien à réviser'}
+                {item.learningStatus !== 'Learning'
+                  ? LEARNING_STATUS_LABELS[item.learningStatus] // not reviewed: no schedule to show (MEM-15)
+                  : item.cards?.length
+                    ? item.cards.map((card) => scheduleLabel(item, card, now)).join(' · ')
+                    : 'Pas encore de branche : rien à réviser'}
               </p>
             </li>
           ))}
