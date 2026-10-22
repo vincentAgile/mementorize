@@ -76,6 +76,8 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
   const english = { main: word, lang: 'en', speak: true, audioUrl: pronunciationUrl(item.id, word) };
   const french = { main: translation, lang: 'fr' };
 
+  // MEM-40: the API only serves French → English cards; the English → French
+  // side stays here for when that direction comes back (a setting, later).
   return card.kind === 'EnglishToFrench'
     ? {
         front: { heading: 'Anglais → français', ...english, prompt: 'Quelle est la traduction ?' },

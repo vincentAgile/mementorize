@@ -17,12 +17,14 @@ export interface VocabularyRow {
   example: string | null;
   status: LearningStatus;
   createdAt: number;
-  /** Earliest due date of the two cards, for an item being learned; null otherwise. */
+  /** Due date of the French → English card (MEM-40: the only one reviewed), for an item being learned; null otherwise. */
   nextDue: number | null;
 }
 
 export function toRow(item: VocabularyItem): VocabularyRow {
-  const dues = (item.cards ?? []).map((card) => new Date(card.due).getTime());
+  const dues = (item.cards ?? [])
+    .filter((card) => card.kind !== 'EnglishToFrench') // MEM-40: not reviewed
+    .map((card) => new Date(card.due).getTime());
   return {
     id: item.id,
     english: item.content.word,

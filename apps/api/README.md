@@ -284,3 +284,7 @@ curl -X POST http://localhost:3000/learning/<itemId>/relearn -H "Authorization: 
 - **Servir** : `GET /vocabulary/:id/pronunciation` renvoie l'audio au propriétaire de l'élément, seulement s'il correspond à l'anglais actuel ; sinon 404, et le web utilise la voix du navigateur. La suppression d'un élément supprime son audio (cascade).
 - **Réglages** : `KOKORO_URL` (sans lui, rien n'est généré) et `KOKORO_VOICE` (`af_heart` par défaut).
 - **Tests** : `pronunciation.service.spec.ts` (file, rattrapage, contrôle d'accès) ; `test/pronunciation.e2e-spec.ts` fait tourner un faux serveur Kokoro à côté de l'API et d'une vraie base.
+
+## Sens de révision du vocabulaire (MEM-40)
+
+Un élément de vocabulaire garde ses deux cartes (`EnglishToFrench`, `FrenchToEnglish`), chacune avec son calendrier, mais **seule la carte français → anglais est révisée et comptée** : `REVIEWED_CARD` (`src/reviews/in-review.ts`) s'ajoute à `IN_REVIEW` dans toutes les requêtes sur les cartes dues (révision, compteurs, e-mail de rappel, prochaine révision). Les cartes anglais → français et leur historique restent en base, ignorés : un futur réglage du sens pourra les réactiver.
