@@ -18,17 +18,19 @@ export default async function MindMapPage({ params }: { params: Promise<{ id: st
   const map = await getMindMap(id).catch(notFoundOn404);
 
   return (
-    <main className="page">
+    <>
       <AppHeader />
-      <p className="mind-map-page__back">
-        <Link href="/cartes-mentales">← Mes cartes mentales</Link>
-      </p>
-      <h1 className="mind-map-page__title">{map.title}</h1>
-      {/* initialNodes is only read on mount: after a save, the editor keeps
+      <main className="page">
+        <p className="mind-map-page__back">
+          <Link href="/cartes-mentales">← Mes cartes mentales</Link>
+        </p>
+        <h1 className="mind-map-page__title">{map.title}</h1>
+        {/* initialNodes is only read on mount: after a save, the editor keeps
           its own state (selection, zoom), which already matches the API. */}
-      <MindMapEditor mapId={map.id} initialNodes={map.nodes} />
-      <DeleteMindMapButton mapId={map.id} />
-    </main>
+        <MindMapEditor mapId={map.id} initialNodes={map.nodes} />
+        <DeleteMindMapButton mapId={map.id} />
+      </main>
+    </>
   );
 }
 

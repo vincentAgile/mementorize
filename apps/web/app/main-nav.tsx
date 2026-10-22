@@ -2,39 +2,35 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { SPACES } from '../lib/spaces';
+import { activeSpace, SPACES } from '../lib/spaces';
 import type { DueSummary } from '../lib/types';
 
 interface NavLink {
   href: string;
   label: string;
-  /** Whether this section is the one shown at this URL. */
-  isActive: (pathname: string, type: string | null) => boolean;
-  /** Number of due cards of this section; undefined: no counter. */
-  count?: number;
+  /** Number of due cards of this section. */
+  count: number;
+  active: boolean;
+  /** A subject space: when active, its entry joins the band of its sub-menu (MEM-29). */
+  isSpace: boolean;
 }
 
-const startsWith = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`);
-
-function navLinks(due: DueSummary): NavLink[] {
+function navLinks(due: DueSummary, pathname: string, type: string | null): NavLink[] {
+  const current = activeSpace(pathname, type);
   return [
     ...SPACES.map((space) => ({
       href: space.href,
       label: space.label,
       count: due.byType[space.type],
-      isActive: (pathname: string, type: string | null) =>
-        startsWith(pathname, space.href) ||
-        // The review of this subject only (MEM-4), and the mind map editor.
-        (pathname === '/review' && type === space.type) ||
-        (space.type === 'MindMap' && startsWith(pathname, '/mind-maps')) ||
-        // The learning process of the vocabulary (MEM-21).
-        (space.type === 'Vocabulary' && startsWith(pathname, '/apprendre')),
+      active: space === current,
+      isSpace: true,
     })),
     {
       href: '/review',
       label: 'Tout réviser',
       count: due.total,
-      isActive: (pathname, type) => pathname === '/review' && !SPACES.some((space) => space.type === type),
+      active: pathname === '/review' && !current,
+      isSpace: false,
     },
   ];
 }
@@ -67,6 +63,8 @@ function DueBadge({ count }: { count: number }) {
 /**
  * The menu (MEM-5): the three subject spaces and "Tout réviser", each with
  * its number of due cards. Settings moved to an icon of the header (MEM-9).
+ * The entry of the active space looks like the tab of a binder: it joins
+ * the band of the sub-menu below (MEM-29).
  * A Client Component: only the browser knows the current URL, to highlight
  * the section we are in.
  */
@@ -76,20 +74,17 @@ export function MainNav({ due }: { due: DueSummary }) {
 
   return (
     <nav className="page__nav" aria-label="Navigation principale">
-      {navLinks(due).map((link) => {
-        const active = link.isActive(pathname, type);
-        return (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={active ? 'is-active' : undefined}
-            aria-current={active ? 'page' : undefined}
-          >
-            <span className="page__nav-label">{link.label}</span>
-            {link.count !== undefined && <DueBadge count={link.count} />}
-          </Link>
-        );
-      })}
+      {navLinks(due, pathname, type).map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className={[link.active && 'is-active', link.isSpace && 'page__nav-space'].filter(Boolean).join(' ')}
+          aria-current={link.active ? 'page' : undefined}
+        >
+          <span className="page__nav-label">{link.label}</span>
+          <DueBadge count={link.count} />
+        </Link>
+      ))}
     </nav>
   );
 }
