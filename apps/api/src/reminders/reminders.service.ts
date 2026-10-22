@@ -12,6 +12,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { IN_REVIEW } from '../reviews/in-review.js';
 import type { ReminderSettingsDto } from './dto/reminder-settings.dto.js';
 import { localDateAndHour } from './local-time.js';
 import { type ReminderLinks, reminderEmail } from './reminder-email.js';
@@ -179,7 +180,7 @@ export class RemindersService {
   }
 
   private dueCount(userId: string, now: Date): Promise<number> {
-    return this.prisma.card.count({ where: { due: { lte: now }, item: { userId } } });
+    return this.prisma.card.count({ where: { due: { lte: now }, item: { userId, ...IN_REVIEW } } });
   }
 
   private toSettings(user: { reminderEnabled: boolean; reminderHour: number; reminderTimeZone: string }) {

@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Card, Item, ItemType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SchedulerService } from '../scheduling/scheduler.service.js';
-import { type CardSlot, cardSlots, type ContentByType, slotKey } from './item-content.js';
+import { type CardSlot, cardSlots, type ContentByType, initialLearningStatus, slotKey } from './item-content.js';
 
 export type CardSummary = Pick<Card, 'id' | 'kind' | 'nodeId' | 'due' | 'state'>;
 export type ItemWithCards = Item & { cards: CardSummary[] };
@@ -38,7 +38,13 @@ export class ItemsService {
     const cards = cardSlots(type, content).map((slot) => this.newCard(slot, now));
 
     return this.prisma.item.create({
-      data: { userId, type, content: content as Prisma.InputJsonValue, cards: { create: cards } },
+      data: {
+        userId,
+        type,
+        content: content as Prisma.InputJsonValue,
+        learningStatus: initialLearningStatus(type),
+        cards: { create: cards },
+      },
       include: WITH_CARDS,
     });
   }

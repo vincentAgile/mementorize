@@ -1,6 +1,8 @@
 export type ItemType = 'Quote' | 'Vocabulary' | 'MindMap';
 export type CardKind = 'QuoteRecall' | 'EnglishToFrench' | 'FrenchToEnglish' | 'BranchRecall';
 export type CardState = 'New' | 'Learning' | 'Review' | 'Relearning';
+/** Learning state of an item (MEM-15); only vocabulary leaves `Learning`. */
+export type LearningStatus = 'ToLearn' | 'Learning' | 'Learned';
 export type ReviewRating = 'Again' | 'Hard' | 'Good' | 'Easy';
 
 export interface QuoteContent {
@@ -40,6 +42,7 @@ interface ItemBase {
   userId: string;
   createdAt: string;
   updatedAt: string;
+  learningStatus: LearningStatus;
   cards?: CardSummary[]; // included by GET /items
 }
 
