@@ -26,7 +26,7 @@ export async function SpacePage({ space }: { space: Space }) {
   return (
     <>
       <AppHeader />
-      <main className="page">
+      <main className="page page--reading">
         {/* MEM-28: the active menu entry says where we are; the h1 is for screen readers. */}
         <h1 className="visually-hidden">{space.label}</h1>
         {items.length > 0 && (

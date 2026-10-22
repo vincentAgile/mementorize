@@ -22,9 +22,10 @@ body {
   line-height: 1.5;
 }
 
-/* The column of the page. The header's bands span the whole window (MEM-29). */
+/* The column of the page, 960 px since MEM-33. The header's bands span the
+   whole window (MEM-29), their content on the same column. */
 .page {
-  max-width: 640px;
+  max-width: 960px;
   margin-inline: auto;
   padding: 2rem;
 }
@@ -94,9 +95,14 @@ body {
   max-width: calc(380px + 4rem);
 }
 
+/* MEM-33: pages that read better narrow (review, learning, forms), centred in the column */
+.page--reading {
+  max-width: 640px;
+}
+
 /* MEM-29: the header in two bands across the window; their content stays on the page's column */
 .app-header__inner {
-  max-width: 640px;
+  max-width: 960px;
   margin-inline: auto;
   padding-inline: 2rem;
 }
@@ -128,6 +134,41 @@ body {
 
 .app-header__top .page__nav {
   grid-area: nav;
+}
+
+/* The thin vertical line between the logo and the menu: only on a single line */
+.app-header__divider {
+  display: none;
+  width: 1px;
+  height: 1.6rem;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* MEM-33: on a single line when there is room: logo │ menu … Settings, avatar.
+   The menu stays along the bottom edge, to join band 2; the rest is centred on it. */
+@media (min-width: 920px) {
+  .app-header__top {
+    grid-template-columns: auto auto 1fr auto;
+    grid-template-areas: 'brand divider nav actions';
+    align-items: end;
+    column-gap: 1rem;
+    padding-top: 0.6rem;
+  }
+
+  .app-header__top .page__brand,
+  .app-header__top .header-actions,
+  .app-header__divider {
+    align-self: center;
+  }
+
+  .app-header__divider {
+    display: block;
+    grid-area: divider;
+  }
+
+  .app-header__top .page__nav {
+    margin-inline-start: -0.4rem;
+  }
 }
 
 /* Band 2: the sub-menu of the active space, at a constant height */
@@ -425,17 +466,9 @@ body {
 }
 
 /* The icons and short labels are for the bar at the bottom of a phone (MEM-30) */
-.page__nav-icon {
-  display: contents;
-}
-
-.page__nav-icon > svg,
+.page__nav-icon,
 .page__nav-short {
   display: none;
-}
-
-.page__nav-icon .badge {
-  order: 1; /* after the label on a computer */
 }
 
 /* MEM-30: on a phone, the spaces move to a bar fixed at the bottom of the screen */
@@ -524,7 +557,6 @@ body {
 
   /* The icon, with its counter at the top right, on a pill when the entry is active */
   .page__nav-icon {
-    position: relative;
     display: inline-flex;
     padding: 0.15rem 0.95rem;
     border-radius: 99px;
@@ -538,9 +570,14 @@ body {
     display: block;
   }
 
-  .page__nav-icon .badge {
+  /* The counter at the top right of the icon */
+  .page__nav a {
+    position: relative;
+  }
+
+  .page__nav .badge {
     position: absolute;
-    top: -0.25rem;
+    top: 0.1rem;
     left: calc(50% + 0.35rem);
     font-size: 0.65rem;
   }
@@ -852,7 +889,7 @@ kbd {
   outline: none;
 }
 
-/* The page is 640px wide; the editor breaks out of it to use the screen. */
+/* The editor breaks out of the page's column to use the screen. */
 .mind-map-editor {
   width: min(1100px, 100vw - 2rem);
   margin-inline: calc(50% - min(550px, 50vw - 1rem));
@@ -1439,7 +1476,8 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  max-width: 34rem;
+  max-width: 36rem;
+  margin-inline: auto; /* MEM-33: a reading width, centred in the column */
 }
 
 .add-form label {
@@ -1495,6 +1533,10 @@ kbd {
 }
 
 @media (prefers-color-scheme: dark) {
+  .app-header__divider {
+    background: rgba(255, 255, 255, 0.18);
+  }
+
   .learn-review__card {
     border-color: #444;
   }
