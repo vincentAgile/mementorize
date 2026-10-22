@@ -117,8 +117,8 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <AppHeader />
-      <main className="page">
-        <h1 className="visually-hidden">{space ? `Réviser · ${space.label}` : 'Tout réviser'}</h1>
+      <main className="page page--reading">
+        <h1 className="visually-hidden page__sr-title">{space ? `Réviser · ${space.label}` : 'Tout réviser'}</h1>
 
         {!next ? (
           <section className="review-empty">

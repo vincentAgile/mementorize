@@ -14,8 +14,8 @@ export default async function LearningPage() {
   return (
     <>
       <AppHeader />
-      <main className="page">
-        <h1 className="visually-hidden">Apprendre</h1>
+      <main className="page page--reading">
+        <h1 className="visually-hidden page__sr-title">Apprendre</h1>
         {session.items.length === 0 ? (
           <section className="review-empty">
             <h2>Rien à apprendre pour le moment</h2>

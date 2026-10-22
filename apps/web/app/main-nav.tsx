@@ -91,10 +91,7 @@ export function MainNav({ due }: { due: DueSummary }) {
           className={[link.active && 'is-active', link.isSpace && 'page__nav-space'].filter(Boolean).join(' ')}
           aria-current={link.active ? 'page' : undefined}
         >
-          <span className="page__nav-icon">
-            {link.icon}
-            <DueBadge count={link.count} />
-          </span>
+          <span className="page__nav-icon">{link.icon}</span>
           <span
             className={link.shortLabel === link.label ? 'page__nav-label' : 'page__nav-label page__nav-label--long'}
           >
@@ -105,6 +102,8 @@ export function MainNav({ due }: { due: DueSummary }) {
               {link.shortLabel}
             </span>
           )}
+          {/* After the label: screen readers say « Anglais, 2 cartes à réviser ». */}
+          <DueBadge count={link.count} />
         </Link>
       ))}
     </nav>

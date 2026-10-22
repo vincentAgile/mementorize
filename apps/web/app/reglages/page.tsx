@@ -12,8 +12,8 @@ export default async function SettingsPage() {
   return (
     <>
       <AppHeader />
-      <main className="page">
-        <h1 className="visually-hidden">Réglages</h1>
+      <main className="page page--reading">
+        <h1 className="visually-hidden page__sr-title">Réglages</h1>
         <HomeSpaceForm homeSpace={preferences.homeSpace} />
         <ReminderForm settings={settings} />
       </main>
