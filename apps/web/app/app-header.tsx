@@ -30,8 +30,9 @@ export async function AppHeader() {
           <Logo className="page__brand" />
           <span className="app-header__divider" aria-hidden="true" />
           <HeaderTitle />
-          <HeaderActions profile={profile} />
+          {/* In reading order (MEM-33): the menu before the icons; the grid places them. */}
           <MainNav due={due} />
+          <HeaderActions profile={profile} />
         </div>
       </div>
       <SubNav />
