@@ -514,6 +514,7 @@ Le conteneur `kokoro` génère la prononciation de chaque élément de vocabulai
 - **Mémoire** : le conteneur est limité à 1,5 Go (`mem_limit`). Pour mesurer pendant la génération : `docker stats kokoro`. S'il dépasse la limite, il est arrêté puis relancé, et les éléments concernés sont repris plus tard.
 - **Changer de voix** : `KOKORO_VOICE=<voix>` dans `.env` (par défaut `af_heart`), puis `docker rollout api`. Au démarrage, l'API régénère tout l'audio qui n'a pas été fait avec cette voix ; en attendant, l'ancien reste servi.
 - **Désactiver** : `KOKORO_URL=` (vide) dans `.env`, puis `docker rollout api` ; l'audio déjà généré n'est plus produit pour les nouveaux éléments, les voix du navigateur prennent le relais. `docker compose stop kokoro` libère la mémoire.
+- **Journaux** : avertissements et erreurs seulement (`API_LOG_LEVEL: WARNING`), plus une ligne par requête ; au plus 3 × 10 Mo sur le disque. Pour tout voir le temps d'un diagnostic, `API_LOG_LEVEL: DEBUG` dans `docker-compose.yml`.
 - **Mettre à jour Kokoro** : changer la version de l'image dans `docker-compose.yml` ; le déploiement suivant la télécharge et recrée le conteneur.
 
 ## Sauvegarder et restaurer
