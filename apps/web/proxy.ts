@@ -22,6 +22,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Everything except Next.js internals and static files.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // Everything except Next.js internals and static files, the icons
+  // included (MEM-13): the login page shows them before any session.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png).*)'],
 };
