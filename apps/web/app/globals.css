@@ -119,6 +119,7 @@ body {
 
 .app-header__top .page__brand {
   grid-area: brand;
+  justify-self: start; /* the link is as wide as the logo, not the column */
 }
 
 .app-header__top .header-actions {
@@ -135,12 +136,38 @@ body {
   background: var(--band-2);
 }
 
-/* MEM-28: the name of the app, no longer the h1 */
-.page__brand {
-  margin: 0;
-  font-size: 1.75rem;
-  font-weight: bold;
+/* MEM-32: the logo, [M]ementorize. The monogram, a bit taller than the
+   capitals, sits on the baseline against the letters: one word. */
+.logo {
+  display: inline-flex;
+  color: inherit;
+  font-family: var(--font-logo), system-ui, sans-serif;
+  font-size: 1.6rem;
+  font-weight: 600;
   line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.logo__word {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.logo__mark {
+  width: 0.8em;
+  height: 0.8em;
+  margin-inline-end: 0.035em;
+}
+
+.logo:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.auth__logo {
+  font-size: 1.9rem;
 }
 
 .header-actions {
