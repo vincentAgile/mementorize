@@ -7,3 +7,12 @@ import type { Prisma } from '@prisma/client';
  * goes through it.
  */
 export const IN_REVIEW = { learningStatus: 'Learning' } as const satisfies Prisma.ItemWhereInput;
+
+/**
+ * The cards that are reviewed and counted (MEM-40): vocabulary is reviewed
+ * French → English only, the French as the question, the English as the
+ * answer. The English → French cards are kept, with their schedule and
+ * history, but ignored: they can come back (a setting, later). Used with
+ * IN_REVIEW by every query on due cards.
+ */
+export const REVIEWED_CARD = { kind: { not: 'EnglishToFrench' } } as const satisfies Prisma.CardWhereInput;

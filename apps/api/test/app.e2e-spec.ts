@@ -151,10 +151,11 @@ describe('API (e2e)', () => {
     const learned = await http().post(`/learning/${words[0].id}`).set(auth).send({ rating: 'Good' }).expect(201);
     expect(learned.body.learningStatus).toBe('Learning');
 
-    // Its English → French card is due at once; the French → English one, just rated, comes back later.
+    // MEM-40: vocabulary is reviewed French → English only. That card, just
+    // rated, comes back later; the English → French one is not reviewed.
     const due = await http().get('/reviews/due?type=Vocabulary').set(auth).expect(200);
-    expect(due.body.total).toBe(1);
-    expect(due.body.items[0].card.kind).toBe('EnglishToFrench');
+    expect(due.body.total).toBe(0);
+    expect(due.body.nextDueAt).not.toBeNull();
 
     const after = await http().get('/learning/session').set(auth).expect(200);
     expect(after.body.total).toBe(1);
