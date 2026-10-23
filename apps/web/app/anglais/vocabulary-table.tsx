@@ -20,6 +20,8 @@ import {
   topicsOf,
   type VocabularyItem,
 } from '../../lib/vocabulary-table';
+import { savePageSizeAction } from './actions';
+import { Pagination } from './pagination';
 import { VocabularyActions } from './vocabulary-actions';
 
 const COLUMNS: { key: SortKey; label: string }[] = [
@@ -38,21 +40,46 @@ interface VocabularyTableProps {
   now: string;
   /** The service of the translate buttons of the edit form (MEM-44). */
   translator: Translator;
+  /** Items per page (MEM-58), from the account's preferences. */
+  pageSize: number;
 }
 
 /**
  * The vocabulary of the Anglais space as a table (MEM-16), sorted by a
  * click on a column (MEM-17) and filtered by a search, a state (MEM-18)
- * and a topic (MEM-56). Everything happens in the browser: the list is already loaded.
+ * and a topic (MEM-56), then shown by pages (MEM-58). Everything happens
+ * in the browser: the list is already loaded; only the rows of the page
+ * are rendered. The state survives the refresh after an edit or a
+ * deletion (same component): same page, same search, filters and sort.
  */
-export function VocabularyTable({ items, now, translator }: VocabularyTableProps) {
-  const [sort, setSort] = useState<Sort | null>(null);
-  const [filter, setFilter] = useState<Filter>(NO_FILTER);
+export function VocabularyTable({ items, now, translator, pageSize: initialPageSize }: VocabularyTableProps) {
+  const [sort, setSortState] = useState<Sort | null>(null);
+  const [filter, setFilterState] = useState<Filter>(NO_FILTER);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSizeState] = useState(initialPageSize);
+  // A new search, filter, sort or page size: back to the first page.
+  const setFilter = (next: Filter) => {
+    setFilterState(next);
+    setPage(1);
+  };
+  const setSort = (next: Sort) => {
+    setSortState(next);
+    setPage(1);
+  };
+  const setPageSize = (size: number) => {
+    setPageSizeState(size);
+    setPage(1);
+    void savePageSizeAction(size);
+  };
   const searchId = useId();
 
   const rows = useMemo(() => items.map(toRow), [items]);
   const topics = useMemo(() => topicsOf(rows.map((row) => row.topic)), [rows]); // MEM-51
   const shown = useMemo(() => sortRows(filterRows(rows, filter), sort), [rows, filter, sort]);
+  // After a deletion, the last page may be empty: the one before it.
+  const pageCount = Math.max(1, Math.ceil(shown.length / pageSize));
+  const current = Math.min(page, pageCount);
+  const pageRows = shown.slice((current - 1) * pageSize, current * pageSize);
   const date = new Date(now);
   const filtered = isFiltered(filter);
   // The chosen topic stays in the list even when no item has it any more (deleted, edited).
@@ -153,7 +180,7 @@ export function VocabularyTable({ items, now, translator }: VocabularyTableProps
               </tr>
             </thead>
             <tbody>
-              {shown.map((row) => (
+              {pageRows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <span lang="en" className="vocabulary__english">
@@ -186,6 +213,16 @@ export function VocabularyTable({ items, now, translator }: VocabularyTableProps
             </tbody>
           </table>
         </div>
+      )}
+
+      {shown.length > 0 && (
+        <Pagination
+          page={current}
+          pageCount={pageCount}
+          pageSize={pageSize}
+          onPage={setPage}
+          onPageSize={setPageSize}
+        />
       )}
     </section>
   );

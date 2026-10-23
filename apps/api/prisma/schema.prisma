@@ -40,6 +40,8 @@ model User {
   /// Separator of the CSV files, export and import (MEM-55): a semicolon
   /// for Excel in French, by default; a comma for most other tools.
   csvSeparator CsvSeparator @default(Semicolon)
+  /// Number of items per page of the vocabulary list (MEM-58): 20, 50 or 100.
+  vocabularyPageSize Int @default(20)
 
   @@map("users")
 }

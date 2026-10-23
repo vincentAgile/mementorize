@@ -147,3 +147,25 @@ export function topicsOf(topics: (string | null | undefined)[]): string[] {
   }
   return [...unique.values()].sort(collator.compare);
 }
+
+// --- Pages (MEM-58) ---
+
+export const PAGE_SIZES = [20, 50, 100] as const;
+
+/**
+ * The page numbers to offer, with an ellipsis (null) for the gaps: always
+ * the first and the last page, and the pages around the current one.
+ * 1 … 4 5 6 … 12
+ */
+export function pageNumbers(current: number, count: number): (number | null)[] {
+  const pages = new Set([1, count, current - 1, current, current + 1]);
+  const sorted = [...pages].filter((page) => page >= 1 && page <= count).sort((a, b) => a - b);
+  const result: (number | null)[] = [];
+  for (const page of sorted) {
+    const previous = result.at(-1);
+    if (typeof previous === 'number' && page - previous === 2) result.push(previous + 1);
+    else if (typeof previous === 'number' && page - previous > 2) result.push(null);
+    result.push(page);
+  }
+  return result;
+}

@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'Liste · Anglais' };
 // and row actions. After an edit or a deletion the page is refreshed in
 // place: the table component keeps its sort and filter.
 export default async function EnglishListPage() {
-  const [all, { translator }] = await Promise.all([getItems('Vocabulary'), getPreferences()]);
+  const [all, { translator, vocabularyPageSize }] = await Promise.all([getItems('Vocabulary'), getPreferences()]);
   const items = all as VocabularyItem[];
 
   if (items.length === 0) {
@@ -20,5 +20,12 @@ export default async function EnglishListPage() {
       </p>
     );
   }
-  return <VocabularyTable items={items} now={new Date().toISOString()} translator={translator} />;
+  return (
+    <VocabularyTable
+      items={items}
+      now={new Date().toISOString()}
+      translator={translator}
+      pageSize={vocabularyPageSize}
+    />
+  );
 }
