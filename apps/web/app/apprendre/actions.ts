@@ -1,6 +1,6 @@
 'use server';
 
-import { ApiError, learnVocabulary } from '../../lib/api';
+import { ApiError, learnVocabulary, markVocabularyLearned } from '../../lib/api';
 import type { ReviewRating } from '../../lib/types';
 
 const RATINGS: readonly ReviewRating[] = ['Again', 'Hard', 'Good', 'Easy'];
@@ -26,5 +26,23 @@ export async function learnAction(itemId: string, rating: ReviewRating): Promise
   // replace the summary of the session. The pages are dynamic (rendered on
   // each visit, the client cache keeps them 0 s): the counters are up to
   // date as soon as the user leaves the session.
+  return true;
+}
+
+/**
+ * « Appris » at step 2 (MEM-46): the item goes straight from "À apprendre"
+ * to "Appris", without entering the review. Returns false when the API
+ * refused it. No revalidatePath, for the same reason as above.
+ */
+export async function learnedAction(itemId: string): Promise<boolean> {
+  if (typeof itemId !== 'string') {
+    throw new Error('Invalid item');
+  }
+  try {
+    await markVocabularyLearned(itemId);
+  } catch (error) {
+    if (error instanceof ApiError) return false;
+    throw error;
+  }
   return true;
 }

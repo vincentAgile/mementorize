@@ -1,17 +1,10 @@
 'use client';
 
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { type ReactNode, useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { pronounce, stopPronouncing } from '../../lib/speech';
-import type { ReviewRating } from '../../lib/types';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
 import { learnedAction, reviewAction } from './actions';
-
-export interface RatingOption {
-  rating: ReviewRating;
-  label: string; // "Correct"
-  delay: string; // "10 min": when the card comes back with this answer
-}
+import { type Answer, answerOfKey, RatingButtons } from './rating-buttons';
 
 /** One side of a card: built by the page, depending on the card's kind. */
 export interface CardFace {
@@ -33,14 +26,16 @@ interface ReviewCardProps {
   back: CardFace;
   /** Keep the question visible above the answer (vocabulary: word -> translation). */
   repeatFront?: boolean;
-  options: RatingOption[];
-  /** Vocabulary only (MEM-22): the item behind the card, for a fifth button "Appris". */
+  /** When the card comes back with each rating ("10 min"). */
+  delays: Partial<Record<Answer, string>>;
+  /** Vocabulary only (MEM-22): the item behind the card, for the button "Appris". */
   learnedItemId?: string;
 }
 
-export function ReviewCard({ cardId, front, back, repeatFront = false, options, learnedItemId }: ReviewCardProps) {
+export function ReviewCard({ cardId, front, back, repeatFront = false, delays, learnedItemId }: ReviewCardProps) {
   const [revealed, setRevealed] = useState(false);
-  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  // While an answer is being sent, and the page revalidated: buttons disabled.
+  const [pending, startTransition] = useTransition();
   // Set as soon as an answer is sent. `disabled={pending}` isn't enough on
   // its own: two clicks or key presses within the same frame both get
   // through before React re-renders, and the card would be rated twice.
@@ -48,13 +43,18 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
   // which resets it.
   const answered = useRef(false);
 
-  function answer(rating: ReviewRating) {
-    return async () => {
-      if (answered.current) return;
+  const answer = useCallback(
+    (choice: Answer) => {
+      if (answered.current || (choice === 'Learned' && !learnedItemId)) return;
       answered.current = true;
-      await reviewAction(cardId, rating);
-    };
-  }
+      stopPronouncing();
+      startTransition(async () => {
+        if (choice === 'Learned') await learnedAction(learnedItemId!);
+        else await reviewAction(cardId, choice);
+      });
+    },
+    [cardId, learnedItemId],
+  );
 
   // A new card mounts a new component: the reading of the previous one stops (MEM-37).
   useEffect(() => stopPronouncing, []);
@@ -70,13 +70,7 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
   // The English of the answer is loaded in advance: read at once on reveal (MEM-38, MEM-39).
   usePronunciationAudio(back.speak ? back.audioUrl : undefined);
 
-  async function markLearned() {
-    if (answered.current || !learnedItemId) return;
-    answered.current = true;
-    await learnedAction(learnedItemId);
-  }
-
-  // Keyboard shortcuts: space reveals the answer, 1-4 pick a rating, 5 "Appris" (vocabulary).
+  // Keyboard shortcuts: space reveals the answer, 1-3 pick a rating, 4 "Appris" (MEM-46).
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       // Held key (auto-repeat) or browser shortcut such as Ctrl+1: ignored.
@@ -86,13 +80,14 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
         if (event.target instanceof HTMLButtonElement || event.target instanceof HTMLAnchorElement) return;
         event.preventDefault();
         reveal();
-      } else if (revealed && ['1', '2', '3', '4', '5'].includes(event.key)) {
-        buttons.current[Number(event.key) - 1]?.click();
+      } else if (revealed) {
+        const choice = answerOfKey(event.key, Boolean(learnedItemId));
+        if (choice) answer(choice);
       }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [revealed, reveal]);
+  }, [revealed, reveal, answer, learnedItemId]);
 
   const face = revealed ? back : front;
 
@@ -130,27 +125,7 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
             </p>
           )}
           <p className="review-card__question">Tu t&apos;en souvenais bien ?</p>
-          <form className={`review-card__ratings${learnedItemId ? ' review-card__ratings--five' : ''}`}>
-            {options.map((option, index) => (
-              <RatingButton
-                key={option.rating}
-                ref={(el) => {
-                  buttons.current[index] = el;
-                }}
-                option={option}
-                shortcut={index + 1}
-                action={answer(option.rating)}
-              />
-            ))}
-            {learnedItemId && (
-              <LearnedButton
-                ref={(el) => {
-                  buttons.current[4] = el;
-                }}
-                action={markLearned}
-              />
-            )}
-          </form>
+          <RatingButtons onAnswer={answer} withLearned={Boolean(learnedItemId)} delays={delays} disabled={pending} />
         </>
       ) : (
         <>
@@ -168,44 +143,6 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, options, 
         </>
       )}
     </article>
-  );
-}
-
-interface RatingButtonProps {
-  option: RatingOption;
-  shortcut: number;
-  action: () => Promise<void>;
-  ref: (el: HTMLButtonElement | null) => void;
-}
-
-function RatingButton({ option, shortcut, action, ref }: RatingButtonProps) {
-  // useFormStatus reads the state of the parent <form>: all four buttons
-  // are disabled while one answer is being sent.
-  const { pending } = useFormStatus();
-  return (
-    <button
-      ref={ref}
-      type="submit"
-      formAction={action}
-      disabled={pending}
-      className={`rating rating--${option.rating.toLowerCase()}`}
-    >
-      <span className="rating__label">{option.label}</span>
-      <span className="rating__delay">{option.delay}</span>
-      <kbd>{shortcut}</kbd>
-    </button>
-  );
-}
-
-/** "Appris" (MEM-22): not a rating, the item leaves the review for good (until put back). */
-function LearnedButton({ action, ref }: { action: () => Promise<void>; ref: (el: HTMLButtonElement | null) => void }) {
-  const { pending } = useFormStatus();
-  return (
-    <button ref={ref} type="submit" formAction={action} disabled={pending} className="rating rating--learned">
-      <span className="rating__label">Appris</span>
-      <span className="rating__delay">ne plus réviser</span>
-      <kbd>5</kbd>
-    </button>
   );
 }
 
