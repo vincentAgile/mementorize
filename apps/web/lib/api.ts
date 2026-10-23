@@ -8,6 +8,8 @@ import type {
   Credentials,
   DueReviews,
   DueSummary,
+  ImportAnalysis,
+  ImportResult,
   LearningSession,
   Item,
   ItemType,
@@ -289,6 +291,51 @@ export async function isApiHealthy(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Import / export of the vocabulary as CSV (MEM-50)
+// ---------------------------------------------------------------------------
+
+export type CsvExport =
+  { ok: true; body: ReadableStream<Uint8Array>; disposition: string } | { ok: false; status: number };
+
+/**
+ * The vocabulary as a CSV file (MEM-52), for app/anglais/import-export/export/route.ts.
+ * Not through authedFetch, which reads JSON: the file is passed on as it is.
+ */
+export async function exportVocabularyCsv(): Promise<CsvExport> {
+  const token = await getSessionToken();
+  if (!token) return { ok: false, status: 401 };
+  const res = await fetch(`${API_URL}/vocabulary-csv/export`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+  });
+  if (!res.ok || !res.body) return { ok: false, status: res.status };
+  return {
+    ok: true,
+    body: res.body,
+    disposition: res.headers.get('content-disposition') ?? 'attachment; filename="mementorize-anglais.csv"',
+  };
+}
+
+/** What importing this CSV file would do, line by line (MEM-53). Nothing is saved. */
+export function previewVocabularyImport(content: string): Promise<ImportAnalysis> {
+  return authedFetch<ImportAnalysis>('/vocabulary-csv/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+}
+
+/** Imports the lines "to import" of this CSV file, all or none (MEM-54). */
+export function importVocabularyCsv(content: string): Promise<ImportResult> {
+  return authedFetch<ImportResult>('/vocabulary-csv/import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
 }
 
 // ---------------------------------------------------------------------------

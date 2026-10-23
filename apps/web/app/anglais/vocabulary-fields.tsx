@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import { type Language, TRANSLATOR_NAMES, translateUrl } from '../../lib/translate-url';
 import type { Translator } from '../../lib/types';
 
-export type VocabularyField = 'word' | 'example' | 'translation' | 'frenchExample';
+export type VocabularyField = 'word' | 'example' | 'translation' | 'frenchExample' | 'topic';
 
 export type VocabularyValues = Record<VocabularyField, string>;
 
 interface FieldSpec {
-  name: VocabularyField;
+  name: Exclude<VocabularyField, 'topic'>;
   label: string;
   required: boolean;
   lang: 'en' | 'fr';
@@ -81,15 +81,26 @@ interface VocabularyFieldsProps {
   autoFocus?: boolean;
   /** The service of the translate buttons (MEM-44), chosen in the settings. */
   translator: Translator;
+  /** The topics already in use, suggested by the topic field (MEM-51). */
+  topics: string[];
 }
 
 /**
  * The fields of a vocabulary item, in two blocks side by side on a
  * computer, one under the other on a phone. Shared by the "Ajouter" tab
  * (MEM-27) and the edit form of the list (MEM-19). Each field has its
- * translate button (MEM-44).
+ * translate button (MEM-44). Under both blocks, the topic of the pair (MEM-51).
  */
-export function VocabularyFields({ values, errors, idPrefix, autoFocus = false, translator }: VocabularyFieldsProps) {
+export function VocabularyFields({
+  values,
+  errors,
+  idPrefix,
+  autoFocus = false,
+  translator,
+  topics,
+}: VocabularyFieldsProps) {
+  const topicError = errors?.topic;
+  const topicErrorId = `${idPrefix}-topic-error`;
   return (
     <div className="vocab-fields">
       {BLOCKS.map((block) => (
@@ -132,6 +143,33 @@ export function VocabularyFields({ values, errors, idPrefix, autoFocus = false, 
           })}
         </fieldset>
       ))}
+      <label className="vocab-fields__topic">
+        <span>
+          Thématique <span className="add-form__optional">(facultatif)</span>
+        </span>
+        <input
+          name="topic"
+          lang="fr"
+          // The topics already in use, as suggestions: "Voyage" rather than a new "voyages".
+          list={`${idPrefix}-topics`}
+          autoComplete="off"
+          placeholder="Voyage, Cuisine, Travail…"
+          defaultValue={values.topic}
+          maxLength={50}
+          aria-invalid={topicError ? true : undefined}
+          aria-describedby={topicError ? topicErrorId : undefined}
+        />
+        <datalist id={`${idPrefix}-topics`}>
+          {topics.map((topic) => (
+            <option key={topic} value={topic} />
+          ))}
+        </datalist>
+        {topicError && (
+          <span id={topicErrorId} className="field-error">
+            {topicError}
+          </span>
+        )}
+      </label>
     </div>
   );
 }

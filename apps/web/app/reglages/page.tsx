@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { getPreferences, getReminderSettings } from '../../lib/api';
 import { AppHeader } from '../app-header';
+import { CsvForm } from './csv-form';
 import { HomeSpaceForm } from './home-space-form';
 import { ReminderForm } from './reminder-form';
 import { ReviewForm } from './review-form';
@@ -19,6 +20,7 @@ export default async function SettingsPage() {
         <HomeSpaceForm homeSpace={preferences.homeSpace} />
         <ReviewForm showReviewDelays={preferences.showReviewDelays} />
         <TranslatorForm translator={preferences.translator} />
+        <CsvForm csvSeparator={preferences.csvSeparator} />
         <ReminderForm settings={settings} />
       </main>
     </>

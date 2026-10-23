@@ -289,6 +289,26 @@ curl -X POST http://localhost:3000/reviews/<cardId>/learned -H "Authorization: B
 curl -X POST http://localhost:3000/reviews/<cardId>/relearn -H "Authorization: Bearer $TOKEN"
 ```
 
+## Import / export CSV du vocabulaire (MEM-50)
+
+`src/items/vocabulary/csv/` : `csv.ts` lit et écrit le CSV (RFC 4180 : guillemets pour les valeurs qui contiennent le séparateur, un guillemet ou un retour à la ligne ; BOM UTF-8 à l'écriture, avec ou sans BOM à la lecture). Le séparateur est celui des Réglages (`users.csvSeparator`, MEM-55 : point-virgule par défaut, ou virgule). Cinq colonnes, après une ligne d'en-têtes : expression française, expression anglaise, thématique, phrase d'exemple en français, phrase d'exemple en anglais.
+
+```bash
+# Tout le vocabulaire, quel que soit son état (MEM-52) : mementorize-anglais-AAAA-MM-JJ.csv
+curl http://localhost:3000/vocabulary-csv/export -H "Authorization: Bearer $TOKEN"
+```
+
+L'import se fait en deux temps. `POST /vocabulary-csv/preview { content }` (MEM-53) analyse le fichier sans rien enregistrer (`vocabulary-import.ts`) :
+
+- la ligne d'en-têtes est reconnue et ignorée ; 2 000 lignes au plus ;
+- chaque ligne a un statut : `new` (à importer), `duplicate` ou `error` (motif) ;
+- un doublon est une expression anglaise **ou** française déjà présente, dans le vocabulaire ou plus haut dans le fichier, sans tenir compte des majuscules ni des espaces en début et fin ; les accents comptent ;
+- un fichier illisible renvoie `{ ok: false, problem }` (`empty`, `tooManyLines`, `syntax`, ou `wrongSeparator` quand les lignes n'ont de sens qu'avec l'autre séparateur).
+
+Puis `POST /vocabulary-csv/import { content }` (MEM-54) analyse le fichier à nouveau (le vocabulaire a pu changer depuis l'aperçu) et crée les lignes `new` en une seule transaction (`ItemsService.createMany`, tout ou rien) : éléments « À apprendre », avec leur thématique et leurs exemples, dans l'ordre du fichier ; leur prononciation est générée en arrière-plan. Réponse : `{ ok: true, imported, duplicate, error }`.
+
+Le JSON des requêtes peut atteindre 3 Mo (`main.ts`), pour un fichier de 1 Mo.
+
 ## Prononciation (MEM-39)
 
 `src/pronunciation/` génère la prononciation de chaque élément de vocabulaire avec **Kokoro** (`kokoro.client.ts` : `POST /v1/audio/speech`, API compatible OpenAI) et la stocke dans la table `pronunciations` (MP3, avec le texte et la voix qui l'ont produite).

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { activeSpace, inSession } from '../lib/spaces';
 
 /**
@@ -20,12 +21,19 @@ export function SubNav() {
   const tabs = space?.tabs;
   // A learning or review session belongs to the first tab ("Apprendre · Réviser").
   const session = space !== undefined && inSession(space, pathname, type);
+  const nav = useRef<HTMLElement>(null);
+
+  // Narrow screens, where the tabs scroll (MEM-24): the active one in view,
+  // even the last one ("Import / export", MEM-52).
+  useEffect(() => {
+    nav.current?.querySelector('.is-active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [pathname]);
 
   return (
     <div className={tabs ? 'app-header__sub' : 'app-header__sub app-header__sub--empty'}>
       <div className="app-header__inner">
         {space && tabs && (
-          <nav className="tabs" aria-label={`Espace ${space.label}`}>
+          <nav ref={nav} className="tabs" aria-label={`Espace ${space.label}`}>
             {tabs.map((tab, index) => {
               const open = pathname === tab.href;
               const active = open || (session && index === 0);

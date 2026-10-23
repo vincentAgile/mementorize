@@ -1,4 +1,5 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -11,7 +12,7 @@ import { AppModule } from '../src/app.module.js';
  * unique users, so it doesn't depend on what's already in the database.
  */
 describe('API (e2e)', () => {
-  let app: INestApplication;
+  let app: NestExpressApplication;
   const http = () => request(app.getHttpServer());
   const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -25,7 +26,8 @@ describe('API (e2e)', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
+    app = moduleRef.createNestApplication<NestExpressApplication>();
+    app.useBodyParser('json', { limit: '3mb' }); // as in main.ts
     // Same global pipe as main.ts, so that validation behaves as in production.
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
@@ -139,6 +141,18 @@ describe('API (e2e)', () => {
       .patch(`/vocabulary/${id}`)
       .set(auth)
       .send({ frenchExample: 'x'.repeat(501) })
+      .expect(400);
+
+    // MEM-51: the topic, trimmed, removed when empty, 50 characters at most.
+    expect(created.body.topic).toBeNull();
+    const topic = await http().patch(`/vocabulary/${id}`).set(auth).send({ topic: '  Voyage ' }).expect(200);
+    expect(topic.body.topic).toBe('Voyage');
+    const noTopic = await http().patch(`/vocabulary/${id}`).set(auth).send({ topic: ' ' }).expect(200);
+    expect(noTopic.body.topic).toBeNull();
+    await http()
+      .patch(`/vocabulary/${id}`)
+      .set(auth)
+      .send({ topic: 'x'.repeat(51) })
       .expect(400);
 
     await http().patch(`/vocabulary/${id}`).set(auth).send({ word: '' }).expect(400);
@@ -271,6 +285,121 @@ describe('API (e2e)', () => {
     await http().post(`/learning/${word.id}/learned`).set(auth).expect(409);
   });
 
+  it('exports the vocabulary as CSV, with the separator of the settings (MEM-52, MEM-55)', async () => {
+    const token = await register('nora');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const empty = await http().get('/vocabulary-csv/export').set(auth).expect(200);
+    expect(empty.text).toBe(
+      '\uFEFFExpression française;Expression anglaise;Thématique;Phrase exemple français;Phrase exemple anglais\r\n',
+    );
+
+    await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201);
+    await http()
+      .post('/vocabulary')
+      .set(auth)
+      .send({
+        word: 'boarding pass',
+        translation: 'carte d’embarquement',
+        topic: 'Voyage',
+        example: 'Show your "boarding pass"; please.',
+        frenchExample: 'Montrez votre carte.',
+      })
+      .expect(201);
+
+    const res = await http().get('/vocabulary-csv/export').set(auth).expect(200);
+    expect(res.headers['content-type']).toContain('text/csv');
+    expect(res.headers['content-disposition']).toMatch(
+      /^attachment; filename="mementorize-anglais-\d{4}-\d{2}-\d{2}\.csv"$/,
+    );
+    expect(res.text.split('\r\n').slice(1)).toEqual([
+      'accroc;snag;;;',
+      'carte d’embarquement;boarding pass;Voyage;Montrez votre carte.;"Show your ""boarding pass""; please."',
+      '',
+    ]);
+
+    await http().put('/preferences').set(auth).send({ csvSeparator: 'Comma' }).expect(200);
+    const comma = await http().get('/vocabulary-csv/export').set(auth).expect(200);
+    expect(comma.text.split('\r\n')[2]).toBe(
+      'carte d’embarquement,boarding pass,Voyage,Montrez votre carte.,"Show your ""boarding pass""; please."',
+    );
+    await http().get('/vocabulary-csv/export').expect(401);
+  });
+
+  it('previews a CSV file to import, with its duplicates and errors, without saving anything (MEM-53)', async () => {
+    const token = await register('oscar');
+    const auth = { Authorization: `Bearer ${token}` };
+    await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201);
+
+    const content =
+      '\uFEFFExpression française;Expression anglaise;Thématique;Phrase exemple français;Phrase exemple anglais\r\n' +
+      'Accroc;hitch\r\nchérir;to cherish;Émotions\r\n;orphan\r\n';
+    const preview = await http().post('/vocabulary-csv/preview').set(auth).send({ content }).expect(200);
+    expect(preview.body.summary).toEqual({ total: 3, new: 1, duplicate: 1, error: 1 });
+    expect(preview.body.rows[0]).toMatchObject({
+      line: 2,
+      status: 'duplicate',
+      languages: ['fr'],
+      of: { existing: 'snag → accroc' },
+    });
+    expect(preview.body.rows[1]).toMatchObject({ line: 3, status: 'new', topic: 'Émotions' });
+
+    // Nothing saved; the other separator is spotted; a large file goes through.
+    const items = await http().get('/vocabulary').set(auth).expect(200);
+    expect(items.body).toHaveLength(1);
+    const wrong = await http()
+      .post('/vocabulary-csv/preview')
+      .set(auth)
+      .send({ content: 'chérir,to cherish\r\n' })
+      .expect(200);
+    expect(wrong.body).toEqual({ ok: false, problem: 'wrongSeparator' });
+    const big = 'un;one;' + 'x'.repeat(40) + ';' + 'phrase '.repeat(70) + '\r\n';
+    const large = await http()
+      .post('/vocabulary-csv/preview')
+      .set(auth)
+      .send({ content: big.repeat(1500) })
+      .expect(200);
+    expect(large.body.summary.total).toBe(1500);
+    await http().post('/vocabulary-csv/preview').set(auth).send({}).expect(400);
+  });
+
+  it('imports the new lines of a CSV file, all at once, as items to learn, and round-trips the export (MEM-54)', async () => {
+    const token = await register('pia');
+    const auth = { Authorization: `Bearer ${token}` };
+    await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201);
+
+    const content =
+      'Expression française;Expression anglaise;Thématique;Phrase exemple français;Phrase exemple anglais\r\n' +
+      'chérir;to cherish;Émotions;Je chéris.;I cherish.\r\naccroc;hitch\r\nbagages;luggage;Voyage\r\n;orphan\r\n';
+    const result = await http().post('/vocabulary-csv/import').set(auth).send({ content }).expect(200);
+    expect(result.body).toEqual({ ok: true, imported: 2, duplicate: 1, error: 1 });
+
+    const items = await http().get('/vocabulary').set(auth).expect(200);
+    const cherish = items.body.find((item: { word: string }) => item.word === 'to cherish');
+    expect(cherish).toMatchObject({
+      translation: 'chérir',
+      topic: 'Émotions',
+      frenchExample: 'Je chéris.',
+      example: 'I cherish.',
+      learningStatus: 'ToLearn',
+    });
+    expect(cherish.cards).toHaveLength(2);
+    const session = await http().get('/learning/session').set(auth).expect(200);
+    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['snag', 'to cherish', 'luggage']);
+
+    // Imported again: everything is a duplicate now.
+    const again = await http().post('/vocabulary-csv/import').set(auth).send({ content }).expect(200);
+    expect(again.body).toEqual({ ok: true, imported: 0, duplicate: 3, error: 1 });
+
+    // Round trip: the export of this account, imported on another one, gives the same items.
+    const exported = await http().get('/vocabulary-csv/export').set(auth).expect(200);
+    const other = { Authorization: `Bearer ${await register('quentin')}` };
+    const copy = await http().post('/vocabulary-csv/import').set(other).send({ content: exported.text }).expect(200);
+    expect(copy.body).toEqual({ ok: true, imported: 3, duplicate: 0, error: 0 });
+    const copied = await http().get('/vocabulary-csv/export').set(other).expect(200);
+    expect(copied.text).toBe(exported.text);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };
@@ -294,25 +423,50 @@ describe('API (e2e)', () => {
     expect(cleared.body).toMatchObject({ firstName: null, lastName: null });
   });
 
-  it('saves the home space (Anglais by default), the translation service (DeepL by default) and the delays (hidden by default), each on its own', async () => {
+  it('saves the home space (Anglais by default), the translation service (DeepL by default), the delays (hidden by default) and the CSV separator (semicolon by default), each on its own', async () => {
     const token = await register('erin');
     const auth = { Authorization: `Bearer ${token}` };
 
     const initial = await http().get('/preferences').set(auth).expect(200);
-    expect(initial.body).toEqual({ homeSpace: 'Vocabulary', translator: 'DeepL', showReviewDelays: false });
+    expect(initial.body).toEqual({
+      homeSpace: 'Vocabulary',
+      translator: 'DeepL',
+      showReviewDelays: false,
+      csvSeparator: 'Semicolon',
+    });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
     const saved = await http().get('/preferences').set(auth).expect(200);
-    expect(saved.body).toEqual({ homeSpace: 'Quote', translator: 'DeepL', showReviewDelays: false });
+    expect(saved.body).toEqual({
+      homeSpace: 'Quote',
+      translator: 'DeepL',
+      showReviewDelays: false,
+      csvSeparator: 'Semicolon',
+    });
 
     // MEM-44: the translator alone, the home space untouched.
     const translator = await http().put('/preferences').set(auth).send({ translator: 'Google' }).expect(200);
-    expect(translator.body).toEqual({ homeSpace: 'Quote', translator: 'Google', showReviewDelays: false });
+    expect(translator.body).toEqual({
+      homeSpace: 'Quote',
+      translator: 'Google',
+      showReviewDelays: false,
+      csvSeparator: 'Semicolon',
+    });
 
     // MEM-49: the delays on the rating buttons, off by default.
     const delays = await http().put('/preferences').set(auth).send({ showReviewDelays: true }).expect(200);
-    expect(delays.body).toEqual({ homeSpace: 'Quote', translator: 'Google', showReviewDelays: true });
+    expect(delays.body).toEqual({
+      homeSpace: 'Quote',
+      translator: 'Google',
+      showReviewDelays: true,
+      csvSeparator: 'Semicolon',
+    });
     await http().put('/preferences').set(auth).send({ showReviewDelays: 'yes' }).expect(400);
+
+    // MEM-55: the CSV separator, a semicolon by default.
+    const csv = await http().put('/preferences').set(auth).send({ csvSeparator: 'Comma' }).expect(200);
+    expect(csv.body).toMatchObject({ csvSeparator: 'Comma', showReviewDelays: true });
+    await http().put('/preferences').set(auth).send({ csvSeparator: 'Tab' }).expect(400);
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);

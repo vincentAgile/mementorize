@@ -17,6 +17,8 @@ export interface VocabularyRow {
   example: string | null;
   /** MEM-42 */
   frenchExample: string | null;
+  /** MEM-51 */
+  topic: string | null;
   status: LearningStatus;
   createdAt: number;
   /** Due date of the French → English card (MEM-40: the only one reviewed), for an item being learned; null otherwise. */
@@ -33,6 +35,7 @@ export function toRow(item: VocabularyItem): VocabularyRow {
     french: item.content.translation,
     example: item.content.example,
     frenchExample: item.content.frenchExample ?? null,
+    topic: item.content.topic ?? null,
     status: item.learningStatus,
     createdAt: new Date(item.createdAt).getTime(),
     nextDue: item.learningStatus === 'Learning' && dues.length > 0 ? Math.min(...dues) : null,
@@ -49,7 +52,7 @@ export const statusLabel = (status: LearningStatus) => LEARNING_STATUS_LABELS[st
 
 // --- Sorting (MEM-17) ---
 
-export type SortKey = 'english' | 'french' | 'status' | 'review';
+export type SortKey = 'english' | 'french' | 'topic' | 'status' | 'review';
 export interface Sort {
   key: SortKey;
   direction: 'asc' | 'desc';
@@ -62,14 +65,15 @@ const STATUS_ORDER: Record<LearningStatus, number> = { ToLearn: 0, Learning: 1, 
 const COMPARE: Record<SortKey, (a: VocabularyRow, b: VocabularyRow) => number> = {
   english: (a, b) => collator.compare(a.english, b.english),
   french: (a, b) => collator.compare(a.french, b.french),
+  topic: (a, b) => collator.compare(a.topic ?? '', b.topic ?? ''),
   status: (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status],
   review: (a, b) => (a.nextDue ?? Infinity) - (b.nextDue ?? Infinity),
 };
 
 /**
  * Sorted copy of the rows. Without a sort, the most recently added first.
- * Rows without a review stay last in both directions; ties keep the
- * default order.
+ * Rows without a review, or without a topic (MEM-51), stay last in both
+ * directions; ties keep the default order.
  */
 export function sortRows(rows: VocabularyRow[], sort: Sort | null): VocabularyRow[] {
   const byDate = (a: VocabularyRow, b: VocabularyRow) => b.createdAt - a.createdAt;
@@ -79,6 +83,9 @@ export function sortRows(rows: VocabularyRow[], sort: Sort | null): VocabularyRo
   return [...rows].sort((a, b) => {
     if (sort.key === 'review' && (a.nextDue === null) !== (b.nextDue === null)) {
       return a.nextDue === null ? 1 : -1;
+    }
+    if (sort.key === 'topic' && (a.topic === null) !== (b.topic === null)) {
+      return a.topic === null ? 1 : -1;
     }
     return sign * COMPARE[sort.key](a, b) || byDate(a, b);
   });
@@ -102,16 +109,41 @@ export function normalize(text: string): string {
 export interface Filter {
   search: string;
   status: LearningStatus | 'all';
+  /** MEM-56: a topic (as shown in the list of topics), or none, or all. */
+  topic: string | typeof ALL_TOPICS | typeof NO_TOPIC;
 }
 
-export const NO_FILTER: Filter = { search: '', status: 'all' };
+// Values of the topic filter that can't be a topic (a topic is trimmed).
+export const ALL_TOPICS = ' all';
+export const NO_TOPIC = ' none';
 
-/** The rows whose English or French contains the search, in the chosen state. */
-export function filterRows(rows: VocabularyRow[], { search, status }: Filter): VocabularyRow[] {
+export const NO_FILTER: Filter = { search: '', status: 'all', topic: ALL_TOPICS };
+
+const sameTopic = (a: string, b: string) => a.toLocaleLowerCase('fr') === b.toLocaleLowerCase('fr');
+
+/** The rows whose English or French contains the search, in the chosen state and topic. */
+export function filterRows(rows: VocabularyRow[], { search, status, topic }: Filter): VocabularyRow[] {
   const needle = normalize(search.trim());
   return rows.filter(
     (row) =>
       (status === 'all' || row.status === status) &&
+      (topic === ALL_TOPICS ||
+        (topic === NO_TOPIC ? row.topic === null : row.topic !== null && sameTopic(row.topic, topic))) &&
       (!needle || normalize(row.english).includes(needle) || normalize(row.french).includes(needle)),
   );
+}
+
+/** Some filter is on: the count says "12 éléments sur 85", and "Effacer les filtres" is offered. */
+export const isFiltered = (filter: Filter) =>
+  filter.search !== '' || filter.status !== 'all' || filter.topic !== ALL_TOPICS;
+
+// --- Topics (MEM-51) ---
+
+/** The topics in use, once each (ignoring case), in alphabetical order: the suggestions of the topic field. */
+export function topicsOf(topics: (string | null | undefined)[]): string[] {
+  const unique = new Map<string, string>();
+  for (const topic of topics) {
+    if (topic && !unique.has(topic.toLocaleLowerCase('fr'))) unique.set(topic.toLocaleLowerCase('fr'), topic);
+  }
+  return [...unique.values()].sort(collator.compare);
 }

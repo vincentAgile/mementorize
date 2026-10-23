@@ -17,6 +17,8 @@ export interface VocabularyContent {
   example: string | null; // in English
   /** In French (MEM-42); absent from the items created before it. */
   frenchExample?: string | null;
+  /** The topic of the pair (MEM-51): "Voyage", "Cuisine"…; absent before it. */
+  topic?: string | null;
 }
 
 /** A node of a mind map, as stored by the API (each node knows its parent). */
@@ -69,6 +71,7 @@ export interface CreateVocabularyInput {
   translation: string;
   example?: string;
   frenchExample?: string; // MEM-42
+  topic?: string; // MEM-51
 }
 
 /** A mind map as returned by /mind-maps (title = label of the root). */
@@ -161,8 +164,35 @@ export interface Preferences {
   homeSpace: ItemType;
   translator: Translator;
   showReviewDelays: boolean; // MEM-49: the delays under the rating buttons
+  csvSeparator: CsvSeparator; // MEM-55
 }
+
+/** The separator of the CSV files, export and import (MEM-55). */
+export type CsvSeparator = 'Semicolon' | 'Comma';
 
 export interface ReminderSettings extends ReminderSettingsInput {
   emailAvailable: boolean; // false: the server can't send e-mails
 }
+
+/** A line of a CSV file to import, and what importing it would do (MEM-53). */
+export type ImportRow = {
+  line: number;
+  french: string;
+  english: string;
+  topic: string;
+  frenchExample: string;
+  example: string;
+} & (
+  | { status: 'new' }
+  | { status: 'duplicate'; languages: ('en' | 'fr')[]; of: { existing: string } | { line: number } }
+  | { status: 'error'; error: string }
+);
+
+/** Answer of POST /vocabulary-csv/preview: the lines, or why the file can't be read. */
+export type ImportAnalysis =
+  | { ok: true; rows: ImportRow[]; summary: { total: number; new: number; duplicate: number; error: number } }
+  | { ok: false; problem: 'empty' | 'tooManyLines' | 'syntax' | 'wrongSeparator'; line?: number };
+
+/** Answer of POST /vocabulary-csv/import (MEM-54). */
+export type ImportResult =
+  { ok: true; imported: number; duplicate: number; error: number } | Extract<ImportAnalysis, { ok: false }>;

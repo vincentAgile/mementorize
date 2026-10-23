@@ -4,8 +4,11 @@ import { useId, useMemo, useState } from 'react';
 import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
 import type { LearningStatus, Translator } from '../../lib/types';
 import {
+  ALL_TOPICS,
   type Filter,
   filterRows,
+  isFiltered,
+  NO_TOPIC,
   NO_FILTER,
   nextSort,
   reviewLabel,
@@ -14,6 +17,7 @@ import {
   sortRows,
   statusLabel,
   toRow,
+  topicsOf,
   type VocabularyItem,
 } from '../../lib/vocabulary-table';
 import { VocabularyActions } from './vocabulary-actions';
@@ -21,6 +25,7 @@ import { VocabularyActions } from './vocabulary-actions';
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: 'english', label: 'Anglais' },
   { key: 'french', label: 'Français' },
+  { key: 'topic', label: 'Thématique' },
   { key: 'status', label: 'État' },
   { key: 'review', label: 'Révision' },
 ];
@@ -37,8 +42,8 @@ interface VocabularyTableProps {
 
 /**
  * The vocabulary of the Anglais space as a table (MEM-16), sorted by a
- * click on a column (MEM-17) and filtered by a search and a state
- * (MEM-18). Everything happens in the browser: the list is already loaded.
+ * click on a column (MEM-17) and filtered by a search, a state (MEM-18)
+ * and a topic (MEM-56). Everything happens in the browser: the list is already loaded.
  */
 export function VocabularyTable({ items, now, translator }: VocabularyTableProps) {
   const [sort, setSort] = useState<Sort | null>(null);
@@ -46,9 +51,15 @@ export function VocabularyTable({ items, now, translator }: VocabularyTableProps
   const searchId = useId();
 
   const rows = useMemo(() => items.map(toRow), [items]);
+  const topics = useMemo(() => topicsOf(rows.map((row) => row.topic)), [rows]); // MEM-51
   const shown = useMemo(() => sortRows(filterRows(rows, filter), sort), [rows, filter, sort]);
   const date = new Date(now);
-  const filtered = filter.search !== '' || filter.status !== 'all';
+  const filtered = isFiltered(filter);
+  // The chosen topic stays in the list even when no item has it any more (deleted, edited).
+  const topicChoices =
+    filter.topic === ALL_TOPICS || filter.topic === NO_TOPIC || topics.includes(filter.topic)
+      ? topics
+      : [...topics, filter.topic];
 
   return (
     <section className="vocabulary" aria-label="Mon vocabulaire">
@@ -75,12 +86,36 @@ export function VocabularyTable({ items, now, translator }: VocabularyTableProps
             </option>
           ))}
         </select>
+        {/* MEM-56 */}
+        <select
+          aria-label="Filtrer par thématique"
+          value={filter.topic}
+          onChange={(event) => setFilter({ ...filter, topic: event.target.value })}
+        >
+          <option value={ALL_TOPICS}>Toutes les thématiques</option>
+          {topicChoices.map((topic) => (
+            <option key={topic} value={topic}>
+              {topic}
+            </option>
+          ))}
+          <option value={NO_TOPIC}>Sans thématique</option>
+        </select>
       </div>
 
-      <p className="vocabulary__count" aria-live="polite">
-        {filtered
-          ? `${shown.length}\u00a0élément${shown.length > 1 ? 's' : ''} sur\u00a0${rows.length}`
-          : `${rows.length}\u00a0élément${rows.length > 1 ? 's' : ''}`}
+      <p className="vocabulary__count">
+        <span aria-live="polite">
+          {filtered
+            ? `${shown.length}\u00a0élément${shown.length > 1 ? 's' : ''} sur\u00a0${rows.length}`
+            : `${rows.length}\u00a0élément${rows.length > 1 ? 's' : ''}`}
+        </span>
+        {filtered && shown.length > 0 && (
+          <>
+            {' · '}
+            <button type="button" className="link-button" onClick={() => setFilter(NO_FILTER)}>
+              Effacer les filtres
+            </button>
+          </>
+        )}
       </p>
 
       {shown.length === 0 ? (
@@ -138,12 +173,13 @@ export function VocabularyTable({ items, now, translator }: VocabularyTableProps
                       </span>
                     )}
                   </td>
+                  <td className="vocabulary__topic">{row.topic}</td>
                   <td>
                     <span className={`status status--${row.status}`}>{statusLabel(row.status)}</span>
                   </td>
                   <td className="vocabulary__review">{reviewLabel(row, date)}</td>
                   <td>
-                    <VocabularyActions row={row} translator={translator} />
+                    <VocabularyActions row={row} translator={translator} topics={topics} />
                   </td>
                 </tr>
               ))}

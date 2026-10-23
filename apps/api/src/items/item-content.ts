@@ -14,6 +14,8 @@ export type VocabularyContent = {
   example: string | null; // example sentence, in English
   /** Example sentence in French (MEM-42); absent from the items created before it. */
   frenchExample?: string | null;
+  /** Topic of the English / French pair (MEM-51): "Voyage", "Cuisine"… Absent before it. */
+  topic?: string | null;
 };
 
 export type MindMapNode = {

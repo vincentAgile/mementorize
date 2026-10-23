@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { ApiError, savePreferences, saveReminderSettings, sendTestReminder } from '../../lib/api';
 import { TRANSLATOR_NAMES } from '../../lib/translate-url';
-import type { Translator } from '../../lib/types';
+import { CSV_SEPARATORS, SEPARATOR_NAMES } from '../../lib/csv-separator';
+import type { CsvSeparator, Translator } from '../../lib/types';
 import { findSpace } from '../../lib/spaces';
 
 export interface SettingsFormState {
@@ -102,4 +103,22 @@ export async function saveReviewDelaysAction(
       ? 'Les boutons de révision affichent le délai avant la prochaine révision.'
       : 'Les boutons de révision n’affichent plus que leur libellé.',
   };
+}
+
+/** The separator of the CSV files, export and import (MEM-55). */
+export async function saveCsvSeparatorAction(
+  _previous: SettingsFormState,
+  formData: FormData,
+): Promise<SettingsFormState> {
+  const csvSeparator = String(formData.get('csvSeparator') ?? '') as CsvSeparator;
+  if (!CSV_SEPARATORS.includes(csvSeparator)) return { error: 'Séparateur invalide.' };
+
+  try {
+    await savePreferences({ csvSeparator });
+  } catch (error) {
+    if (error instanceof ApiError) return { error: "Impossible d'enregistrer le séparateur." };
+    throw error;
+  }
+  revalidatePath('/', 'layout'); // the Import / export tab uses it
+  return { message: `Séparateur enregistré : ${SEPARATOR_NAMES[csvSeparator]}.` };
 }

@@ -12,7 +12,15 @@ import { deleteVocabularyAction, relearnAction, updateVocabularyAction } from '.
  * (MEM-20). Each one opens a modal <dialog>: Escape or "Annuler" close it,
  * and the browser keeps the focus inside while it is open.
  */
-export function VocabularyActions({ row, translator }: { row: VocabularyRow; translator: Translator }) {
+export function VocabularyActions({
+  row,
+  translator,
+  topics,
+}: {
+  row: VocabularyRow;
+  translator: Translator;
+  topics: string[];
+}) {
   const editRef = useRef<HTMLDialogElement>(null);
   const deleteRef = useRef<HTMLDialogElement>(null);
   // A new key each time the edit dialog opens: the form starts again from the saved values.
@@ -50,7 +58,13 @@ export function VocabularyActions({ row, translator }: { row: VocabularyRow; tra
 
       <dialog ref={editRef} className="dialog dialog--wide" aria-labelledby={`edit-${row.id}`}>
         <h3 id={`edit-${row.id}`}>Modifier l’élément</h3>
-        <EditForm key={editKey} row={row} close={() => editRef.current?.close()} translator={translator} />
+        <EditForm
+          key={editKey}
+          row={row}
+          close={() => editRef.current?.close()}
+          translator={translator}
+          topics={topics}
+        />
       </dialog>
 
       <dialog ref={deleteRef} className="dialog" aria-labelledby={`delete-${row.id}`}>
@@ -70,7 +84,17 @@ export function VocabularyActions({ row, translator }: { row: VocabularyRow; tra
   );
 }
 
-function EditForm({ row, close, translator }: { row: VocabularyRow; close: () => void; translator: Translator }) {
+function EditForm({
+  row,
+  close,
+  translator,
+  topics,
+}: {
+  row: VocabularyRow;
+  close: () => void;
+  translator: Translator;
+  topics: string[];
+}) {
   const [state, action] = useActionState(updateVocabularyAction.bind(null, row.id), {});
 
   useEffect(() => {
@@ -82,11 +106,12 @@ function EditForm({ row, close, translator }: { row: VocabularyRow; close: () =>
     translation: row.french,
     example: row.example ?? '',
     frenchExample: row.frenchExample ?? '',
+    topic: row.topic ?? '',
   };
 
   return (
     <form action={action} className="dialog__form">
-      <VocabularyFields values={values} idPrefix={`edit-${row.id}`} translator={translator} />
+      <VocabularyFields values={values} idPrefix={`edit-${row.id}`} translator={translator} topics={topics} />
       {state.error && (
         <p role="alert" className="form-error">
           {state.error}
