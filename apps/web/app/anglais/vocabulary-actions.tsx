@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { VocabularyRow } from '../../lib/vocabulary-table';
+import { VocabularyFields } from './vocabulary-fields';
 import { deleteVocabularyAction, relearnAction, updateVocabularyAction } from './actions';
 
 /**
@@ -46,7 +47,7 @@ export function VocabularyActions({ row }: { row: VocabularyRow }) {
         <TrashIcon />
       </button>
 
-      <dialog ref={editRef} className="dialog" aria-labelledby={`edit-${row.id}`}>
+      <dialog ref={editRef} className="dialog dialog--wide" aria-labelledby={`edit-${row.id}`}>
         <h3 id={`edit-${row.id}`}>Modifier l’élément</h3>
         <EditForm key={editKey} row={row} close={() => editRef.current?.close()} />
       </dialog>
@@ -84,22 +85,7 @@ function EditForm({ row, close }: { row: VocabularyRow; close: () => void }) {
 
   return (
     <form action={action} className="dialog__form">
-      <label>
-        Anglais
-        <input name="word" defaultValue={values.word} maxLength={200} required lang="en" />
-      </label>
-      <label>
-        Français
-        <input name="translation" defaultValue={values.translation} maxLength={200} required />
-      </label>
-      <label>
-        Phrase d’exemple (optionnel)
-        <input name="example" defaultValue={values.example} maxLength={500} lang="en" />
-      </label>
-      <label>
-        Phrase d’exemple en français (optionnel)
-        <input name="frenchExample" defaultValue={values.frenchExample} maxLength={500} lang="fr" />
-      </label>
+      <VocabularyFields values={values} idPrefix={`edit-${row.id}`} />
       {state.error && (
         <p role="alert" className="form-error">
           {state.error}
