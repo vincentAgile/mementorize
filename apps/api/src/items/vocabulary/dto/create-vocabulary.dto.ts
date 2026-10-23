@@ -18,4 +18,10 @@ export class CreateVocabularyDto {
   @IsString()
   @MaxLength(500)
   example?: string;
+
+  /** Example sentence in French (MEM-42), independent of the English one. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  frenchExample?: string;
 }

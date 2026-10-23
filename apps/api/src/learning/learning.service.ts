@@ -11,6 +11,7 @@ export interface LearningItem {
   word: string;
   translation: string;
   example: string | null;
+  frenchExample: string | null; // MEM-42
   /** When the French → English card comes back, for each of the four ratings of step 2. */
   nextDue: NextDueByRating;
 }
@@ -51,8 +52,15 @@ export class LearningService {
       items: items
         .filter((item) => item.cards.length > 0)
         .map((item) => {
-          const { word, translation, example } = contentOf({ ...item, type: 'Vocabulary' as const });
-          return { id: item.id, word, translation, example, nextDue: this.scheduler.preview(item.cards[0], now) };
+          const { word, translation, example, frenchExample } = contentOf({ ...item, type: 'Vocabulary' as const });
+          return {
+            id: item.id,
+            word,
+            translation,
+            example,
+            frenchExample: frenchExample ?? null,
+            nextDue: this.scheduler.preview(item.cards[0], now),
+          };
         }),
     };
   }

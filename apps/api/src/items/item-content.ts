@@ -12,6 +12,8 @@ export type VocabularyContent = {
   word: string; // English
   translation: string; // French
   example: string | null; // example sentence, in English
+  /** Example sentence in French (MEM-42); absent from the items created before it. */
+  frenchExample?: string | null;
 };
 
 export type MindMapNode = {

@@ -107,9 +107,10 @@ describe('API (e2e)', () => {
     const created = await http()
       .post('/vocabulary')
       .set(auth)
-      .send({ word: 'snag', translation: 'acroc', example: 'We hit a snag.' })
+      .send({ word: 'snag', translation: 'acroc', example: 'We hit a snag.', frenchExample: ' On a eu un accroc. ' })
       .expect(201);
     const id = created.body.id;
+    expect(created.body.frenchExample).toBe('On a eu un accroc.'); // MEM-42, trimmed
 
     const edited = await http()
       .patch(`/vocabulary/${id}`)
@@ -123,6 +124,22 @@ describe('API (e2e)', () => {
       learningStatus: 'ToLearn',
     });
     expect(edited.body.cards).toEqual(created.body.cards);
+    expect(edited.body.frenchExample).toBe('On a eu un accroc.'); // untouched when not sent
+
+    // MEM-42: the French example is edited, and removed when empty, on its own.
+    const french = await http()
+      .patch(`/vocabulary/${id}`)
+      .set(auth)
+      .send({ frenchExample: 'Petit accroc.' })
+      .expect(200);
+    expect(french.body).toMatchObject({ example: null, frenchExample: 'Petit accroc.' });
+    const cleared = await http().patch(`/vocabulary/${id}`).set(auth).send({ frenchExample: '' }).expect(200);
+    expect(cleared.body.frenchExample).toBeNull();
+    await http()
+      .patch(`/vocabulary/${id}`)
+      .set(auth)
+      .send({ frenchExample: 'x'.repeat(501) })
+      .expect(400);
 
     await http().patch(`/vocabulary/${id}`).set(auth).send({ word: '' }).expect(400);
     await http().patch(`/vocabulary/${id}`).set('Authorization', `Bearer ${other}`).send({ word: 'x' }).expect(404);
@@ -209,18 +226,23 @@ describe('API (e2e)', () => {
     expect(cleared.body).toMatchObject({ firstName: null, lastName: null });
   });
 
-  it('saves the home space, Anglais by default, and validates it', async () => {
+  it('saves the home space (Anglais by default) and the translation service (DeepL by default), each on its own', async () => {
     const token = await register('erin');
     const auth = { Authorization: `Bearer ${token}` };
 
     const initial = await http().get('/preferences').set(auth).expect(200);
-    expect(initial.body).toEqual({ homeSpace: 'Vocabulary' });
+    expect(initial.body).toEqual({ homeSpace: 'Vocabulary', translator: 'DeepL' });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
     const saved = await http().get('/preferences').set(auth).expect(200);
-    expect(saved.body).toEqual({ homeSpace: 'Quote' });
+    expect(saved.body).toEqual({ homeSpace: 'Quote', translator: 'DeepL' });
+
+    // MEM-44: the translator alone, the home space untouched.
+    const translator = await http().put('/preferences').set(auth).send({ translator: 'Google' }).expect(200);
+    expect(translator.body).toEqual({ homeSpace: 'Quote', translator: 'Google' });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
+    await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);
     await http().get('/preferences').expect(401);
   });
 

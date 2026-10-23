@@ -227,7 +227,9 @@ Pour explorer la base visuellement :
 pnpm --filter api prisma:studio
 ```
 
-## Préférences (MEM-6)
+## Préférences (MEM-6, MEM-44)
+
+`translator` (`DeepL` par défaut, ou `Google`) : le service des boutons de traduction du vocabulaire. `PUT /preferences` ne change que les préférences envoyées.
 
 L'espace ouvert à l'arrivée (`/`, après la connexion, depuis l'e-mail de rappel) est enregistré sur le compte, colonne `users.homeSpace` (Anglais par défaut, y compris pour les comptes existants).
 

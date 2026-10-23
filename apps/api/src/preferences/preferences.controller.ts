@@ -16,7 +16,7 @@ export class PreferencesController {
     return this.preferences.get(user.id);
   }
 
-  /** PUT /preferences { homeSpace: Quote | Vocabulary | MindMap } */
+  /** PUT /preferences { homeSpace?: Quote | Vocabulary | MindMap, translator?: DeepL | Google }: only what is sent changes. */
   @Put()
   update(@CurrentUser() user: AuthUser, @Body() dto: PreferencesDto) {
     return this.preferences.update(user.id, dto);

@@ -2,17 +2,20 @@
 
 import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
+import type { Translator } from '../../../lib/types';
 import { addVocabularyAction, type VocabularyAddState } from '../actions';
+import { VocabularyFields, type VocabularyValues } from '../vocabulary-fields';
 
-type Field = 'word' | 'translation' | 'example';
+const EMPTY: VocabularyValues = { word: '', example: '', translation: '', frenchExample: '' };
 
 /**
- * The form of the "Ajouter" tab (MEM-27), made to add several items in a
- * row: the cursor starts in the first field and comes back to it after each
- * item, a message recalls the item just added, and errors show next to
- * their field (aria-invalid, aria-describedby).
+ * The form of the "Ajouter" tab (MEM-27), in two blocks, Anglais and
+ * Français (MEM-43), made to add several items in a row: the cursor starts
+ * in the first field and comes back to it after each item, a message
+ * recalls the item just added, and errors show next to their field
+ * (aria-invalid, aria-describedby).
  */
-export function AddVocabularyForm() {
+export function AddVocabularyForm({ translator }: { translator: Translator }) {
   const [state, action] = useActionState<VocabularyAddState, FormData>(addVocabularyAction, {});
   const form = useRef<HTMLFormElement>(null);
 
@@ -26,15 +29,7 @@ export function AddVocabularyForm() {
     (target as HTMLInputElement | null)?.focus();
   }, [state]);
 
-  const value = (name: Field) => state.values?.[name] ?? '';
-  const invalid = (name: Field) => (state.fieldErrors?.[name] ? true : undefined);
-  const errorId = (name: Field) => (state.fieldErrors?.[name] ? `${name}-error` : undefined);
-  const error = (name: Field) =>
-    state.fieldErrors?.[name] && (
-      <span id={`${name}-error`} className="field-error">
-        {state.fieldErrors[name]}
-      </span>
-    );
+  const values = state.values ?? EMPTY;
 
   return (
     <form ref={form} action={action} className="add-form" noValidate>
@@ -49,48 +44,10 @@ export function AddVocabularyForm() {
         </p>
       )}
 
-      <label>
-        Anglais
-        <input
-          name="word"
-          lang="en"
-          placeholder="Mot, expression ou phrase"
-          defaultValue={value('word')}
-          maxLength={200}
-          autoFocus
-          aria-invalid={invalid('word')}
-          aria-describedby={errorId('word')}
-        />
-        {error('word')}
-      </label>
-      <label>
-        Français
-        <input
-          name="translation"
-          placeholder="Traduction"
-          defaultValue={value('translation')}
-          maxLength={200}
-          aria-invalid={invalid('translation')}
-          aria-describedby={errorId('translation')}
-        />
-        {error('translation')}
-      </label>
-      <label>
-        <span>
-          Phrase d’exemple <span className="add-form__optional">(optionnel)</span>
-        </span>
-        <input
-          name="example"
-          lang="en"
-          placeholder="Une phrase qui l’emploie"
-          defaultValue={value('example')}
-          maxLength={500}
-          aria-invalid={invalid('example')}
-          aria-describedby={errorId('example')}
-        />
-        {error('example')}
-      </label>
-      <AddButton />
+      <VocabularyFields values={values} errors={state.fieldErrors} idPrefix="add" autoFocus translator={translator} />
+      <div className="add-form__actions">
+        <AddButton />
+      </div>
     </form>
   );
 }

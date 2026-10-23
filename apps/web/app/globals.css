@@ -954,6 +954,13 @@ kbd {
   font-style: italic;
 }
 
+/* MEM-42: the French example, under the English one, a step back */
+.review-card__note--fr {
+  margin-top: 0.25rem;
+  font-style: normal;
+  opacity: 0.85;
+}
+
 /* --- Phase 6: mind maps --- */
 
 .mind-map {
@@ -1570,7 +1577,115 @@ kbd {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
-  max-width: 36rem; /* a reading width, on the left of the column */
+  max-width: 52rem; /* two blocks side by side (MEM-43), on the left of the column */
+}
+
+/* MEM-43: the Ajouter button under the Français block, on the right */
+.add-form__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* MEM-43: the two blocks of a vocabulary item, Anglais and Français */
+.vocab-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.25rem;
+}
+
+.vocab-fields__block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.6rem 1rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.vocab-fields__block legend {
+  padding: 0 0.35rem;
+  font-weight: 600;
+}
+
+.vocab-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.vocab-fields input {
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 400;
+}
+
+.vocab-fields input[aria-invalid='true'] {
+  border-color: #c1543a;
+}
+
+/* MEM-44: a field and its translate button */
+.vocab-fields__control {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.vocab-fields__control input {
+  flex: 1;
+}
+
+.translate-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  border: 1px solid #c9dcdc;
+  border-radius: 4px;
+  background: rgba(20, 125, 128, 0.08);
+  color: #147d80;
+}
+
+.translate-button:hover {
+  background: rgba(20, 125, 128, 0.18);
+}
+
+.translate-button:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
+}
+
+.translate-button--off {
+  border-color: #e3e3e3;
+  background: none;
+  color: #bbb;
+}
+
+@media (max-width: 639px) {
+  .translate-button {
+    width: 2.75rem; /* 44 px: a touch target */
+  }
+}
+
+.vocab-fields__required {
+  color: #c1543a;
+}
+
+@media (max-width: 639px) {
+  .vocab-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The edit dialog holds the two blocks too */
+.dialog--wide {
+  width: min(48rem, calc(100vw - 2rem));
 }
 
 .add-form label {
@@ -1605,7 +1720,6 @@ kbd {
 }
 
 .add-form button {
-  align-self: flex-start;
   padding: 0.55rem 1.2rem;
   border: none;
   border-radius: 4px;
@@ -1635,8 +1749,21 @@ kbd {
     background: rgba(255, 255, 255, 0.18);
   }
 
-  .learn-review__card {
+  .learn-review__card,
+  .vocab-fields__block {
     border-color: #444;
+  }
+
+  .translate-button {
+    border-color: #2f4a4b;
+    background: rgba(127, 211, 214, 0.1);
+    color: #7fd3d6;
+  }
+
+  .translate-button--off {
+    border-color: #333;
+    background: none;
+    color: #555;
   }
 
   .learn-review__card p,

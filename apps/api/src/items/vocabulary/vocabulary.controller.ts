@@ -37,6 +37,7 @@ export class VocabularyController {
       word: dto.word,
       translation: dto.translation,
       example: dto.example ?? null,
+      frenchExample: dto.frenchExample?.trim() || null,
     });
     this.pronunciations.request(item.id); // MEM-39, in the background
     return toVocabularyView(item);
@@ -53,13 +54,17 @@ export class VocabularyController {
   }
 
   /**
-   * Changes the English, the French or the example (MEM-19). The cards, the
-   * learning state and the review history stay as they are; an empty
-   * example removes it.
+   * Changes the English, the French or the examples (MEM-19, MEM-42). The
+   * cards, the learning state and the review history stay as they are; an
+   * empty example removes it.
    */
   @Patch(':id')
   async update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateVocabularyDto) {
-    const changes = { ...dto, ...(dto.example !== undefined && { example: dto.example.trim() || null }) };
+    const changes = {
+      ...dto,
+      ...(dto.example !== undefined && { example: dto.example.trim() || null }),
+      ...(dto.frenchExample !== undefined && { frenchExample: dto.frenchExample.trim() || null }),
+    };
     const item = await this.items.update(user.id, id, 'Vocabulary', changes);
     if (dto.word !== undefined) this.pronunciations.request(id); // new English, new audio (MEM-39)
     return toVocabularyView(item);

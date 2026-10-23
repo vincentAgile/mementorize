@@ -2,7 +2,9 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
+import type { Translator } from '../../lib/types';
 import type { VocabularyRow } from '../../lib/vocabulary-table';
+import { VocabularyFields } from './vocabulary-fields';
 import { deleteVocabularyAction, relearnAction, updateVocabularyAction } from './actions';
 
 /**
@@ -10,7 +12,7 @@ import { deleteVocabularyAction, relearnAction, updateVocabularyAction } from '.
  * (MEM-20). Each one opens a modal <dialog>: Escape or "Annuler" close it,
  * and the browser keeps the focus inside while it is open.
  */
-export function VocabularyActions({ row }: { row: VocabularyRow }) {
+export function VocabularyActions({ row, translator }: { row: VocabularyRow; translator: Translator }) {
   const editRef = useRef<HTMLDialogElement>(null);
   const deleteRef = useRef<HTMLDialogElement>(null);
   // A new key each time the edit dialog opens: the form starts again from the saved values.
@@ -46,9 +48,9 @@ export function VocabularyActions({ row }: { row: VocabularyRow }) {
         <TrashIcon />
       </button>
 
-      <dialog ref={editRef} className="dialog" aria-labelledby={`edit-${row.id}`}>
+      <dialog ref={editRef} className="dialog dialog--wide" aria-labelledby={`edit-${row.id}`}>
         <h3 id={`edit-${row.id}`}>Modifier l’élément</h3>
-        <EditForm key={editKey} row={row} close={() => editRef.current?.close()} />
+        <EditForm key={editKey} row={row} close={() => editRef.current?.close()} translator={translator} />
       </dialog>
 
       <dialog ref={deleteRef} className="dialog" aria-labelledby={`delete-${row.id}`}>
@@ -68,29 +70,23 @@ export function VocabularyActions({ row }: { row: VocabularyRow }) {
   );
 }
 
-function EditForm({ row, close }: { row: VocabularyRow; close: () => void }) {
+function EditForm({ row, close, translator }: { row: VocabularyRow; close: () => void; translator: Translator }) {
   const [state, action] = useActionState(updateVocabularyAction.bind(null, row.id), {});
 
   useEffect(() => {
     if (state.saved) close();
   }, [state, close]);
 
-  const values = state.values ?? { word: row.english, translation: row.french, example: row.example ?? '' };
+  const values = state.values ?? {
+    word: row.english,
+    translation: row.french,
+    example: row.example ?? '',
+    frenchExample: row.frenchExample ?? '',
+  };
 
   return (
     <form action={action} className="dialog__form">
-      <label>
-        Anglais
-        <input name="word" defaultValue={values.word} maxLength={200} required lang="en" />
-      </label>
-      <label>
-        Français
-        <input name="translation" defaultValue={values.translation} maxLength={200} required />
-      </label>
-      <label>
-        Phrase d’exemple (optionnel)
-        <input name="example" defaultValue={values.example} maxLength={500} lang="en" />
-      </label>
+      <VocabularyFields values={values} idPrefix={`edit-${row.id}`} translator={translator} />
       {state.error && (
         <p role="alert" className="form-error">
           {state.error}
