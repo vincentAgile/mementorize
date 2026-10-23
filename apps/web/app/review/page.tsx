@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -9,10 +10,8 @@ import { findSpace } from '../../lib/spaces';
 import type { DueItem } from '../../lib/types';
 import { AppHeader } from '../app-header';
 import { MindMapViewer } from '../mind-maps/mind-map-viewer';
-import { type CardFace, ReviewCard } from './review-card';
-
-/** The ratings shown on the buttons (MEM-46): « Facile » is gone. */
-const RATINGS = ['Again', 'Hard', 'Good'] as const;
+import type { CardFace } from './review-card';
+import { ReviewSession, type SessionCard } from './review-session';
 
 /**
  * What each side of a card shows, depending on its kind. This is the only
@@ -88,10 +87,9 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
       };
 }
 
-// "À réviser aujourd'hui": one card at a time. After each answer, the
-// Server Action revalidates this page, which then shows the next due card.
-// With ?type=…, only the cards of one subject space (MEM-4); the query
-// string stays in the URL across answers.
+// "À réviser aujourd'hui": a session over the cards due now (MEM-47), one at
+// a time, its pile kept in the browser (review-session.tsx). With ?type=…,
+// only the cards of one subject space (MEM-4).
 // MEM-28: « Réviser · Anglais · Mementorize », or « Tout réviser · Mementorize ».
 export async function generateMetadata({
   searchParams,
@@ -102,15 +100,17 @@ export async function generateMetadata({
   return { title: space ? `Réviser · ${space.label}` : 'Tout réviser' };
 }
 
+/** The most cards loaded at once (the API's limit); the rest at the end of the session. */
+const SESSION_LIMIT = 100;
+
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const space = findSpace((await searchParams).type);
-  const due = await getDueReviews(1, space?.type);
-  const next = due.items[0];
+  const due = await getDueReviews(SESSION_LIMIT, space?.type);
   const now = new Date();
 
   // End of a subject's session: back to its space, which says when the
   // next review of that subject is due.
-  if (space && !next) {
+  if (space && due.items.length === 0) {
     redirect(space.href);
   }
 
@@ -120,7 +120,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       <main className="page page--reading">
         <h1 className="visually-hidden page__sr-title">{space ? `Réviser · ${space.label}` : 'Tout réviser'}</h1>
 
-        {!next ? (
+        {due.items.length === 0 ? (
           <section className="review-empty">
             <h2>Rien à réviser pour le moment{'\u202f'}!</h2>
             <p>
@@ -131,28 +131,20 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
             </p>
           </section>
         ) : (
-          <>
-            <p className="review-progress">
-              {space && <strong>{space.label} · </strong>}
-              {due.total}
-              {'\u00a0'}carte{due.total > 1 ? 's' : ''} à réviser
-              {space && (
-                <>
-                  {' · '}
-                  <Link href={space.href}>Arrêter</Link>
-                </>
-              )}
-            </p>
-            <ReviewCard
-              key={`${next.card.id}-${next.card.due}`} // fresh (hidden) card after each answer
-              cardId={next.card.id}
-              {...facesOf(next)}
-              learnedItemId={next.item.type === 'Vocabulary' ? next.item.id : undefined}
-              delays={Object.fromEntries(
-                RATINGS.map((rating) => [rating, formatDelay(now, new Date(next.nextDue[rating]))]),
-              )}
-            />
-          </>
+          <ReviewSession
+            // A new session each time the page is rendered (the end of the
+            // previous one refreshes it): its pile starts from the props.
+            key={randomUUID()}
+            cards={due.items.map((next): SessionCard => ({
+              cardId: next.card.id,
+              ...facesOf(next),
+              learnedItemId: next.item.type === 'Vocabulary' ? next.item.id : undefined,
+              nextDue: next.nextDue,
+            }))}
+            total={due.total}
+            now={now.toISOString()}
+            space={space && { label: space.label, href: space.href }}
+          />
         )}
       </main>
     </>

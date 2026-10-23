@@ -17,6 +17,7 @@ import type {
   Profile,
   ReminderSettings,
   ReminderSettingsInput,
+  RatedCard,
   ReviewRating,
 } from './types';
 
@@ -199,8 +200,8 @@ export function getLearningSession(): Promise<LearningSession> {
 }
 
 /** Step 2 of a learning session: the first review of the French → English card. */
-export function learnVocabulary(itemId: string, rating: ReviewRating): Promise<unknown> {
-  return authedFetch(`/learning/${encodeURIComponent(itemId)}`, {
+export function learnVocabulary(itemId: string, rating: ReviewRating): Promise<RatedCard> {
+  return authedFetch<RatedCard>(`/learning/${encodeURIComponent(itemId)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rating }),
@@ -227,8 +228,8 @@ export function getDueReviews(limit = 20, type?: ItemType): Promise<DueReviews> 
   return authedFetch<DueReviews>(`/reviews/due?limit=${limit}${type ? `&type=${type}` : ''}`);
 }
 
-export function submitReview(cardId: string, rating: ReviewRating): Promise<void> {
-  return authedFetch<void>(`/reviews/${encodeURIComponent(cardId)}`, {
+export function submitReview(cardId: string, rating: ReviewRating): Promise<RatedCard> {
+  return authedFetch<RatedCard>(`/reviews/${encodeURIComponent(cardId)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rating }),

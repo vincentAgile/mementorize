@@ -130,6 +130,8 @@ describe('ReviewsService', () => {
       expect(prismaMock.reviewLog.create).toHaveBeenCalledWith({ data: { ...expected.log, cardId: 'card-1' } });
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
       expect(updated.state).toBe('Learning');
+      // MEM-47: the previews of its next review, for its buttons at the end of the session.
+      expect(updated.nextDueByRating).toEqual(scheduler.preview({ ...card, ...expected.card }, NOW));
     });
   });
 });

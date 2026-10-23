@@ -3,7 +3,6 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { pronounce, stopPronouncing } from '../../lib/speech';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
-import { learnedAction, reviewAction } from './actions';
 import { type Answer, answerOfKey, RatingButtons } from './rating-buttons';
 
 /** One side of a card: built by the page, depending on the card's kind. */
@@ -21,39 +20,37 @@ export interface CardFace {
 }
 
 interface ReviewCardProps {
-  cardId: string;
   front: CardFace;
   back: CardFace;
   /** Keep the question visible above the answer (vocabulary: word -> translation). */
   repeatFront?: boolean;
   /** When the card comes back with each rating ("10 min"). */
   delays: Partial<Record<Answer, string>>;
-  /** Vocabulary only (MEM-22): the item behind the card, for the button "Appris". */
-  learnedItemId?: string;
+  /** Offer the button "Appris" (MEM-22, MEM-48). */
+  withLearned: boolean;
+  /** Sends the answer; the session then shows the next card. */
+  onAnswer: (answer: Answer) => Promise<void>;
 }
 
-export function ReviewCard({ cardId, front, back, repeatFront = false, delays, learnedItemId }: ReviewCardProps) {
+export function ReviewCard({ front, back, repeatFront = false, delays, withLearned, onAnswer }: ReviewCardProps) {
   const [revealed, setRevealed] = useState(false);
-  // While an answer is being sent, and the page revalidated: buttons disabled.
+  // While an answer is being sent: buttons disabled.
   const [pending, startTransition] = useTransition();
   // Set as soon as an answer is sent. `disabled={pending}` isn't enough on
   // its own: two clicks or key presses within the same frame both get
   // through before React re-renders, and the card would be rated twice.
-  // The component is remounted for the next card (see `key` in page.tsx),
-  // which resets it.
+  // The component is remounted for the next card (see `key` in
+  // review-session.tsx), which resets it.
   const answered = useRef(false);
 
   const answer = useCallback(
     (choice: Answer) => {
-      if (answered.current || (choice === 'Learned' && !learnedItemId)) return;
+      if (answered.current || (choice === 'Learned' && !withLearned)) return;
       answered.current = true;
       stopPronouncing();
-      startTransition(async () => {
-        if (choice === 'Learned') await learnedAction(learnedItemId!);
-        else await reviewAction(cardId, choice);
-      });
+      startTransition(() => onAnswer(choice));
     },
-    [cardId, learnedItemId],
+    [withLearned, onAnswer],
   );
 
   // A new card mounts a new component: the reading of the previous one stops (MEM-37).
@@ -81,13 +78,13 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, delays, l
         event.preventDefault();
         reveal();
       } else if (revealed) {
-        const choice = answerOfKey(event.key, Boolean(learnedItemId));
+        const choice = answerOfKey(event.key, withLearned);
         if (choice) answer(choice);
       }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [revealed, reveal, answer, learnedItemId]);
+  }, [revealed, reveal, answer, withLearned]);
 
   const face = revealed ? back : front;
 
@@ -125,7 +122,7 @@ export function ReviewCard({ cardId, front, back, repeatFront = false, delays, l
             </p>
           )}
           <p className="review-card__question">Tu t&apos;en souvenais bien ?</p>
-          <RatingButtons onAnswer={answer} withLearned={Boolean(learnedItemId)} delays={delays} disabled={pending} />
+          <RatingButtons onAnswer={answer} withLearned={withLearned} delays={delays} disabled={pending} />
         </>
       ) : (
         <>

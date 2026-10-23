@@ -9,6 +9,8 @@ export const SESSION_SIZE = 5;
 
 export interface LearningItem {
   id: string;
+  /** Its French → English card: reviewed directly when it comes back in the session (MEM-47). */
+  cardId: string;
   word: string;
   translation: string;
   example: string | null;
@@ -56,6 +58,7 @@ export class LearningService {
           const { word, translation, example, frenchExample } = contentOf({ ...item, type: 'Vocabulary' as const });
           return {
             id: item.id,
+            cardId: item.cards[0].id,
             word,
             translation,
             example,
@@ -101,7 +104,13 @@ export class LearningService {
       this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learning' } }),
     ]);
 
-    return { id: item.id, learningStatus: 'Learning' as const, nextDue: next.due };
+    return {
+      id: item.id,
+      learningStatus: 'Learning' as const,
+      nextDue: next.due,
+      // MEM-47: after « À revoir », the card comes back at the end of the session.
+      nextDueByRating: this.scheduler.preview({ ...frenchToEnglish, ...next }, now),
+    };
   }
 
   /**

@@ -72,8 +72,17 @@ export class ReviewsService {
     };
   }
 
-  /** Records a self-assessment and reschedules the card. */
-  async review(userId: string, cardId: string, rating: Grade, now = new Date()): Promise<Card> {
+  /**
+   * Records a self-assessment and reschedules the card. Returned with its
+   * new previews: a card rated « À revoir » comes back at the end of the
+   * session (MEM-47), with these delays on its buttons.
+   */
+  async review(
+    userId: string,
+    cardId: string,
+    rating: Grade,
+    now = new Date(),
+  ): Promise<Card & { nextDueByRating: NextDueByRating }> {
     const card = await this.prisma.card.findFirst({ where: { id: cardId, item: { userId } } });
     if (!card) {
       throw new NotFoundException(`Card ${cardId} not found`);
@@ -86,6 +95,6 @@ export class ReviewsService {
       this.prisma.card.update({ where: { id: card.id }, data: next }),
       this.prisma.reviewLog.create({ data: { ...log, cardId: card.id } }),
     ]);
-    return updated;
+    return { ...updated, nextDueByRating: this.scheduler.preview(updated, now) };
   }
 }
