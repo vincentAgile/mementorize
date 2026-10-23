@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ItemType, Translator } from '@prisma/client';
+import type { CsvSeparator, ItemType, Translator } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { PreferencesDto } from './dto/preferences.dto.js';
 
@@ -7,11 +7,12 @@ export interface Preferences {
   homeSpace: ItemType;
   translator: Translator;
   showReviewDelays: boolean;
+  csvSeparator: CsvSeparator;
 }
 
-const SELECT = { homeSpace: true, translator: true, showReviewDelays: true } as const;
+const SELECT = { homeSpace: true, translator: true, showReviewDelays: true, csvSeparator: true } as const;
 
-/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49), stored on their account. */
+/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55), stored on their account. */
 @Injectable()
 export class PreferencesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -24,7 +25,12 @@ export class PreferencesService {
   update(userId: string, dto: PreferencesDto): Promise<Preferences> {
     return this.prisma.user.update({
       where: { id: userId },
-      data: { homeSpace: dto.homeSpace, translator: dto.translator, showReviewDelays: dto.showReviewDelays },
+      data: {
+        homeSpace: dto.homeSpace,
+        translator: dto.translator,
+        showReviewDelays: dto.showReviewDelays,
+        csvSeparator: dto.csvSeparator,
+      },
       select: SELECT,
     });
   }

@@ -164,7 +164,11 @@ export interface Preferences {
   homeSpace: ItemType;
   translator: Translator;
   showReviewDelays: boolean; // MEM-49: the delays under the rating buttons
+  csvSeparator: CsvSeparator; // MEM-55
 }
+
+/** The separator of the CSV files, export and import (MEM-55). */
+export type CsvSeparator = 'Semicolon' | 'Comma';
 
 export interface ReminderSettings extends ReminderSettingsInput {
   emailAvailable: boolean; // false: the server can't send e-mails
