@@ -8,11 +8,18 @@ export interface Preferences {
   translator: Translator;
   showReviewDelays: boolean;
   csvSeparator: CsvSeparator;
+  vocabularyPageSize: number;
 }
 
-const SELECT = { homeSpace: true, translator: true, showReviewDelays: true, csvSeparator: true } as const;
+const SELECT = {
+  homeSpace: true,
+  translator: true,
+  showReviewDelays: true,
+  csvSeparator: true,
+  vocabularyPageSize: true,
+} as const;
 
-/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55), stored on their account. */
+/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55, MEM-58), stored on their account. */
 @Injectable()
 export class PreferencesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -30,6 +37,7 @@ export class PreferencesService {
         translator: dto.translator,
         showReviewDelays: dto.showReviewDelays,
         csvSeparator: dto.csvSeparator,
+        vocabularyPageSize: dto.vocabularyPageSize,
       },
       select: SELECT,
     });

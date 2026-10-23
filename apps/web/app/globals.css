@@ -2287,3 +2287,114 @@ kbd {
     color: #5cc3c6;
   }
 }
+
+/* --- MEM-58: pages of the vocabulary list --- */
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.pagination__size {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.pagination__size select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.pagination__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.pagination__nav button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: #147d80;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pagination__nav button:hover:not(:disabled) {
+  background: #e3f1f1;
+}
+
+.pagination__nav button:disabled {
+  color: #aaa;
+  cursor: default;
+}
+
+.pagination__nav button[aria-current='page'] {
+  border-color: #147d80;
+  background: #147d80;
+  color: #fff;
+  font-weight: 600;
+}
+
+.pagination__pages {
+  display: flex;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pagination__gap {
+  align-self: center;
+  padding: 0 0.25rem;
+  color: #888;
+}
+
+.pagination__where {
+  padding: 0 0.4rem;
+  color: #555;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* On a phone: « Précédent », « Page X sur Y », « Suivant » only. */
+@media (max-width: 640px) {
+  .pagination__pages {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .pagination__size,
+  .pagination__where {
+    color: #bbb;
+  }
+
+  .pagination__nav button {
+    color: #5cc3c6;
+  }
+
+  .pagination__nav button:hover:not(:disabled) {
+    background: #16292a;
+  }
+
+  .pagination__nav button[aria-current='page'] {
+    border-color: #147d80;
+    background: #147d80;
+    color: #fff;
+  }
+}

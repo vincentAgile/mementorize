@@ -433,6 +433,7 @@ describe('API (e2e)', () => {
       translator: 'DeepL',
       showReviewDelays: false,
       csvSeparator: 'Semicolon',
+      vocabularyPageSize: 20,
     });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
@@ -442,6 +443,7 @@ describe('API (e2e)', () => {
       translator: 'DeepL',
       showReviewDelays: false,
       csvSeparator: 'Semicolon',
+      vocabularyPageSize: 20,
     });
 
     // MEM-44: the translator alone, the home space untouched.
@@ -451,6 +453,7 @@ describe('API (e2e)', () => {
       translator: 'Google',
       showReviewDelays: false,
       csvSeparator: 'Semicolon',
+      vocabularyPageSize: 20,
     });
 
     // MEM-49: the delays on the rating buttons, off by default.
@@ -460,6 +463,7 @@ describe('API (e2e)', () => {
       translator: 'Google',
       showReviewDelays: true,
       csvSeparator: 'Semicolon',
+      vocabularyPageSize: 20,
     });
     await http().put('/preferences').set(auth).send({ showReviewDelays: 'yes' }).expect(400);
 
@@ -467,6 +471,11 @@ describe('API (e2e)', () => {
     const csv = await http().put('/preferences').set(auth).send({ csvSeparator: 'Comma' }).expect(200);
     expect(csv.body).toMatchObject({ csvSeparator: 'Comma', showReviewDelays: true });
     await http().put('/preferences').set(auth).send({ csvSeparator: 'Tab' }).expect(400);
+
+    // MEM-58: items per page of the vocabulary list, 20 by default.
+    const pages = await http().put('/preferences').set(auth).send({ vocabularyPageSize: 50 }).expect(200);
+    expect(pages.body).toMatchObject({ vocabularyPageSize: 50, csvSeparator: 'Comma' });
+    await http().put('/preferences').set(auth).send({ vocabularyPageSize: 30 }).expect(400);
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);
