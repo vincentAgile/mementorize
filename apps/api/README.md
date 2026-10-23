@@ -289,6 +289,15 @@ curl -X POST http://localhost:3000/reviews/<cardId>/learned -H "Authorization: B
 curl -X POST http://localhost:3000/reviews/<cardId>/relearn -H "Authorization: Bearer $TOKEN"
 ```
 
+## Import / export CSV du vocabulaire (MEM-50)
+
+`src/items/vocabulary/csv/` : `csv.ts` lit et écrit le CSV (RFC 4180 : guillemets pour les valeurs qui contiennent le séparateur, un guillemet ou un retour à la ligne ; BOM UTF-8 à l'écriture, avec ou sans BOM à la lecture). Le séparateur est celui des Réglages (`users.csvSeparator`, MEM-55 : point-virgule par défaut, ou virgule). Cinq colonnes, après une ligne d'en-têtes : expression française, expression anglaise, thématique, phrase d'exemple en français, phrase d'exemple en anglais.
+
+```bash
+# Tout le vocabulaire, quel que soit son état (MEM-52) : mementorize-anglais-AAAA-MM-JJ.csv
+curl http://localhost:3000/vocabulary-csv/export -H "Authorization: Bearer $TOKEN"
+```
+
 ## Prononciation (MEM-39)
 
 `src/pronunciation/` génère la prononciation de chaque élément de vocabulaire avec **Kokoro** (`kokoro.client.ts` : `POST /v1/audio/speech`, API compatible OpenAI) et la stocke dans la table `pronunciations` (MP3, avec le texte et la voix qui l'ont produite).

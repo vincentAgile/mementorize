@@ -2033,3 +2033,58 @@ kbd {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* --- MEM-52: tab Import / export of the Anglais space --- */
+
+.import-export {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 52rem;
+}
+
+.import-export__separator {
+  margin: 0;
+  color: #555;
+}
+
+.import-export__separator a,
+.import-export__section a:not(.button-link) {
+  color: #147d80;
+}
+
+.import-export__section h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.import-export__section p {
+  margin: 0 0 0.9rem;
+  line-height: 1.5;
+}
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 1.1rem;
+  border-radius: 4px;
+  background: #147d80;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.button-link:hover {
+  background: #0f6366;
+}
+
+@media (prefers-color-scheme: dark) {
+  .import-export__separator {
+    color: #bbb;
+  }
+
+  .import-export__separator a,
+  .import-export__section a:not(.button-link) {
+    color: #5cc3c6;
+  }
+}

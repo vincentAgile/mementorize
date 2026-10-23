@@ -37,6 +37,7 @@ export const SPACES: Space[] = [
       { href: '/anglais', label: 'Apprendre · Réviser' },
       { href: '/anglais/liste', label: 'Liste' },
       { href: '/anglais/ajouter', label: 'Ajouter' },
+      { href: '/anglais/import-export', label: 'Import / export' }, // MEM-52
     ],
   },
   {

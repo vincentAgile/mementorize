@@ -283,6 +283,47 @@ describe('API (e2e)', () => {
     await http().post(`/learning/${word.id}/learned`).set(auth).expect(409);
   });
 
+  it('exports the vocabulary as CSV, with the separator of the settings (MEM-52, MEM-55)', async () => {
+    const token = await register('nora');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const empty = await http().get('/vocabulary-csv/export').set(auth).expect(200);
+    expect(empty.text).toBe(
+      '\uFEFFExpression française;Expression anglaise;Thématique;Phrase exemple français;Phrase exemple anglais\r\n',
+    );
+
+    await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201);
+    await http()
+      .post('/vocabulary')
+      .set(auth)
+      .send({
+        word: 'boarding pass',
+        translation: 'carte d’embarquement',
+        topic: 'Voyage',
+        example: 'Show your "boarding pass"; please.',
+        frenchExample: 'Montrez votre carte.',
+      })
+      .expect(201);
+
+    const res = await http().get('/vocabulary-csv/export').set(auth).expect(200);
+    expect(res.headers['content-type']).toContain('text/csv');
+    expect(res.headers['content-disposition']).toMatch(
+      /^attachment; filename="mementorize-anglais-\d{4}-\d{2}-\d{2}\.csv"$/,
+    );
+    expect(res.text.split('\r\n').slice(1)).toEqual([
+      'accroc;snag;;;',
+      'carte d’embarquement;boarding pass;Voyage;Montrez votre carte.;"Show your ""boarding pass""; please."',
+      '',
+    ]);
+
+    await http().put('/preferences').set(auth).send({ csvSeparator: 'Comma' }).expect(200);
+    const comma = await http().get('/vocabulary-csv/export').set(auth).expect(200);
+    expect(comma.text.split('\r\n')[2]).toBe(
+      'carte d’embarquement,boarding pass,Voyage,Montrez votre carte.,"Show your ""boarding pass""; please."',
+    );
+    await http().get('/vocabulary-csv/export').expect(401);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };
