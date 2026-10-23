@@ -37,6 +37,7 @@ describe('SchedulerService', () => {
   it('previews one due date per answer, from soonest (Again) to latest (Easy)', () => {
     const next = scheduler.preview(scheduler.newCard(T0), T0);
 
+    expect(next.Again).toEqual(T0); // due at once (MEM-47)
     expect(next.Again.getTime()).toBeLessThanOrEqual(next.Hard.getTime());
     expect(next.Hard.getTime()).toBeLessThanOrEqual(next.Good.getTime());
     expect(next.Good.getTime()).toBeLessThan(next.Easy.getTime());
@@ -70,7 +71,7 @@ describe('SchedulerService', () => {
     expect(card.state).toBe('Relearning');
     expect(card.lapses).toBe(before.lapses + 1);
     expect(card.stability).toBeLessThan(before.stability); // the memory is weaker than we thought
-    expect(after(now, card.due)).toBeLessThanOrEqual(10 * MINUTE); // shown again shortly
+    expect(card.due).toEqual(now); // due at once: still to review after leaving the session (MEM-47)
   });
 
   it('returns a log entry describing the review', () => {

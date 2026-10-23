@@ -264,7 +264,7 @@ curl -X POST http://localhost:3000/learning/<itemId> -H "Authorization: Bearer $
   -H "Content-Type: application/json" -d '{"rating":"Good"}'
 ```
 
-La carte anglais → français, non notée pendant l'apprentissage, devient due tout de suite. Un élément qui n'est plus `ToLearn` renvoie 409. Chaque élément de la séance porte l'identifiant de sa carte français → anglais (`cardId`) : noté « À revoir », il revient en fin de séance (MEM-47) et ses notes suivantes passent par `POST /reviews/:cardId`. Les deux routes renvoient `nextDueByRating`, les délais à afficher sur ses boutons.
+La carte anglais → français, non notée pendant l'apprentissage, devient due tout de suite. Un élément qui n'est plus `ToLearn` renvoie 409. « À revoir » (Again) rend la carte due tout de suite, au lieu du court délai de FSRS (1 ou 10 minutes) : quitter une séance puis y revenir la retrouve à réviser. Chaque élément de la séance porte l'identifiant de sa carte français → anglais (`cardId`) : noté « À revoir », il revient en fin de séance (MEM-47) et ses notes suivantes passent par `POST /reviews/:cardId`. Les deux routes renvoient `nextDueByRating`, les délais à afficher sur ses boutons.
 
 « Appris » en révision et remise en apprentissage (MEM-22) :
 

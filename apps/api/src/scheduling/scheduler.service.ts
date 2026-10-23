@@ -60,15 +60,21 @@ export class SchedulerService {
   preview(card: CardSchedule, now: Date): NextDueByRating {
     const outcomes = this.fsrs.repeat(toFsrsCard(card), now);
     return Object.fromEntries(
-      RATINGS.map((rating) => [rating, outcomes[Rating[rating] as FsrsGrade].card.due]),
+      RATINGS.map((rating) => [rating, rating === 'Again' ? now : outcomes[Rating[rating] as FsrsGrade].card.due]),
     ) as NextDueByRating;
   }
 
-  /** Applies a self-assessment: returns the new card state and the log entry. */
+  /**
+   * Applies a self-assessment: returns the new card state and the log entry.
+   * « À revoir » (Again) makes the card due at once, instead of FSRS's short
+   * step (1 or 10 minutes): leaving a session and coming back finds it still
+   * to review (MEM-47). The rest of FSRS's state (stability, difficulty,
+   * lapses, step) is kept.
+   */
   review(card: CardSchedule, rating: Grade, now: Date): { card: CardSchedule; log: ReviewLogData } {
     const { card: next, log } = this.fsrs.next(toFsrsCard(card), now, Rating[rating] as FsrsGrade);
     return {
-      card: fromFsrsCard(next),
+      card: { ...fromFsrsCard(next), ...(rating === 'Again' && { due: now }) },
       log: {
         rating,
         state: State[log.state] as CardState,
