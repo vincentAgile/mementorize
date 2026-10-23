@@ -141,6 +141,18 @@ describe('API (e2e)', () => {
       .send({ frenchExample: 'x'.repeat(501) })
       .expect(400);
 
+    // MEM-51: the topic, trimmed, removed when empty, 50 characters at most.
+    expect(created.body.topic).toBeNull();
+    const topic = await http().patch(`/vocabulary/${id}`).set(auth).send({ topic: '  Voyage ' }).expect(200);
+    expect(topic.body.topic).toBe('Voyage');
+    const noTopic = await http().patch(`/vocabulary/${id}`).set(auth).send({ topic: ' ' }).expect(200);
+    expect(noTopic.body.topic).toBeNull();
+    await http()
+      .patch(`/vocabulary/${id}`)
+      .set(auth)
+      .send({ topic: 'x'.repeat(51) })
+      .expect(400);
+
     await http().patch(`/vocabulary/${id}`).set(auth).send({ word: '' }).expect(400);
     await http().patch(`/vocabulary/${id}`).set('Authorization', `Bearer ${other}`).send({ word: 'x' }).expect(404);
     await http().delete(`/vocabulary/${id}`).set('Authorization', `Bearer ${other}`).expect(404);
