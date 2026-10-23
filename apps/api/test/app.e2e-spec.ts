@@ -226,18 +226,23 @@ describe('API (e2e)', () => {
     expect(cleared.body).toMatchObject({ firstName: null, lastName: null });
   });
 
-  it('saves the home space, Anglais by default, and validates it', async () => {
+  it('saves the home space (Anglais by default) and the translation service (DeepL by default), each on its own', async () => {
     const token = await register('erin');
     const auth = { Authorization: `Bearer ${token}` };
 
     const initial = await http().get('/preferences').set(auth).expect(200);
-    expect(initial.body).toEqual({ homeSpace: 'Vocabulary' });
+    expect(initial.body).toEqual({ homeSpace: 'Vocabulary', translator: 'DeepL' });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
     const saved = await http().get('/preferences').set(auth).expect(200);
-    expect(saved.body).toEqual({ homeSpace: 'Quote' });
+    expect(saved.body).toEqual({ homeSpace: 'Quote', translator: 'DeepL' });
+
+    // MEM-44: the translator alone, the home space untouched.
+    const translator = await http().put('/preferences').set(auth).send({ translator: 'Google' }).expect(200);
+    expect(translator.body).toEqual({ homeSpace: 'Quote', translator: 'Google' });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
+    await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);
     await http().get('/preferences').expect(401);
   });
 

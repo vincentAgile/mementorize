@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { ApiError, savePreferences, saveReminderSettings, sendTestReminder } from '../../lib/api';
+import { TRANSLATOR_NAMES } from '../../lib/translate-url';
+import type { Translator } from '../../lib/types';
 import { findSpace } from '../../lib/spaces';
 
 export interface SettingsFormState {
@@ -60,4 +62,24 @@ export async function saveHomeSpaceAction(
   }
   revalidatePath('/reglages');
   return { message: `Page d’accueil enregistrée : ${space.label}.` };
+}
+
+const TRANSLATORS: Translator[] = ['DeepL', 'Google'];
+
+/** The service of the translate buttons of the vocabulary forms (MEM-44). */
+export async function saveTranslatorAction(
+  _previous: SettingsFormState,
+  formData: FormData,
+): Promise<SettingsFormState> {
+  const translator = String(formData.get('translator') ?? '') as Translator;
+  if (!TRANSLATORS.includes(translator)) return { error: 'Service de traduction invalide.' };
+
+  try {
+    await savePreferences({ translator });
+  } catch (error) {
+    if (error instanceof ApiError) return { error: "Impossible d'enregistrer le service de traduction." };
+    throw error;
+  }
+  revalidatePath('/', 'layout'); // the forms of the Anglais space use it
+  return { message: `Service de traduction enregistré : ${TRANSLATOR_NAMES[translator]}.` };
 }

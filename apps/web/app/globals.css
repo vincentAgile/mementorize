@@ -1630,6 +1630,49 @@ kbd {
   border-color: #c1543a;
 }
 
+/* MEM-44: a field and its translate button */
+.vocab-fields__control {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.vocab-fields__control input {
+  flex: 1;
+}
+
+.translate-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  border: 1px solid #c9dcdc;
+  border-radius: 4px;
+  background: rgba(20, 125, 128, 0.08);
+  color: #147d80;
+}
+
+.translate-button:hover {
+  background: rgba(20, 125, 128, 0.18);
+}
+
+.translate-button:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
+}
+
+.translate-button--off {
+  border-color: #e3e3e3;
+  background: none;
+  color: #bbb;
+}
+
+@media (max-width: 639px) {
+  .translate-button {
+    width: 2.75rem; /* 44 px: a touch target */
+  }
+}
+
 .vocab-fields__required {
   color: #c1543a;
 }
@@ -1709,6 +1752,18 @@ kbd {
   .learn-review__card,
   .vocab-fields__block {
     border-color: #444;
+  }
+
+  .translate-button {
+    border-color: #2f4a4b;
+    background: rgba(127, 211, 214, 0.1);
+    color: #7fd3d6;
+  }
+
+  .translate-button--off {
+    border-color: #333;
+    background: none;
+    color: #555;
   }
 
   .learn-review__card p,

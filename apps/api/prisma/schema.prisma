@@ -32,8 +32,16 @@ model User {
   /// The subject space opened on arrival (MEM-6): `/`, after login and from
   /// the reminder e-mail.
   homeSpace ItemType @default(Vocabulary)
+  /// The translation service opened by the translate buttons (MEM-44).
+  translator Translator @default(DeepL)
 
   @@map("users")
+}
+
+/// Services of the translate buttons of the vocabulary forms (MEM-44).
+enum Translator {
+  DeepL
+  Google
 }
 
 enum ItemType {

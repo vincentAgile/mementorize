@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from 'react';
 import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
-import type { LearningStatus } from '../../lib/types';
+import type { LearningStatus, Translator } from '../../lib/types';
 import {
   type Filter,
   filterRows,
@@ -31,6 +31,8 @@ interface VocabularyTableProps {
   items: VocabularyItem[];
   /** The server's clock, so that the server and the browser render the same delays. */
   now: string;
+  /** The service of the translate buttons of the edit form (MEM-44). */
+  translator: Translator;
 }
 
 /**
@@ -38,7 +40,7 @@ interface VocabularyTableProps {
  * click on a column (MEM-17) and filtered by a search and a state
  * (MEM-18). Everything happens in the browser: the list is already loaded.
  */
-export function VocabularyTable({ items, now }: VocabularyTableProps) {
+export function VocabularyTable({ items, now, translator }: VocabularyTableProps) {
   const [sort, setSort] = useState<Sort | null>(null);
   const [filter, setFilter] = useState<Filter>(NO_FILTER);
   const searchId = useId();
@@ -141,7 +143,7 @@ export function VocabularyTable({ items, now }: VocabularyTableProps) {
                   </td>
                   <td className="vocabulary__review">{reviewLabel(row, date)}</td>
                   <td>
-                    <VocabularyActions row={row} />
+                    <VocabularyActions row={row} translator={translator} />
                   </td>
                 </tr>
               ))}

@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
+import type { Translator } from '../../../lib/types';
 import { addVocabularyAction, type VocabularyAddState } from '../actions';
 import { VocabularyFields, type VocabularyValues } from '../vocabulary-fields';
 
@@ -14,7 +15,7 @@ const EMPTY: VocabularyValues = { word: '', example: '', translation: '', french
  * recalls the item just added, and errors show next to their field
  * (aria-invalid, aria-describedby).
  */
-export function AddVocabularyForm() {
+export function AddVocabularyForm({ translator }: { translator: Translator }) {
   const [state, action] = useActionState<VocabularyAddState, FormData>(addVocabularyAction, {});
   const form = useRef<HTMLFormElement>(null);
 
@@ -43,7 +44,7 @@ export function AddVocabularyForm() {
         </p>
       )}
 
-      <VocabularyFields values={values} errors={state.fieldErrors} idPrefix="add" autoFocus />
+      <VocabularyFields values={values} errors={state.fieldErrors} idPrefix="add" autoFocus translator={translator} />
       <div className="add-form__actions">
         <AddButton />
       </div>
