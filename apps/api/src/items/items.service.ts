@@ -147,6 +147,16 @@ export class ItemsService {
     await this.prisma.item.delete({ where: { id } });
   }
 
+  /**
+   * Deletes several items of the user at once (MEM-59), with their cards and
+   * history (cascade), in a single query. The ids of other users' items, of
+   * another type, or unknown, are ignored. Returns how many were deleted.
+   */
+  async removeMany(userId: string, ids: string[], type: ItemType): Promise<number> {
+    const { count } = await this.prisma.item.deleteMany({ where: { id: { in: ids }, userId, type } });
+    return count;
+  }
+
   private newCard({ kind, nodeId, delayDays }: CardSlot, now: Date) {
     return { kind, nodeId, ...this.scheduler.newCard(new Date(now.getTime() + delayDays * DAY)) };
   }

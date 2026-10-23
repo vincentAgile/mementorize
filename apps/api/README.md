@@ -289,6 +289,16 @@ curl -X POST http://localhost:3000/reviews/<cardId>/learned -H "Authorization: B
 curl -X POST http://localhost:3000/reviews/<cardId>/relearn -H "Authorization: Bearer $TOKEN"
 ```
 
+## Suppression en masse du vocabulaire (MEM-59)
+
+```bash
+# Supprime ces éléments, avec leurs cartes et leur historique, en une requête ; réponse : { deleted }
+curl -X POST http://localhost:3000/vocabulary/delete -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"ids":["<id1>","<id2>"]}'
+```
+
+Seuls les éléments de vocabulaire de l'utilisateur sont supprimés (`ItemsService.removeMany`) ; les autres identifiants sont ignorés. 10 000 au plus par requête.
+
 ## Import / export CSV du vocabulaire (MEM-50)
 
 `src/items/vocabulary/csv/` : `csv.ts` lit et écrit le CSV (RFC 4180 : guillemets pour les valeurs qui contiennent le séparateur, un guillemet ou un retour à la ligne ; BOM UTF-8 à l'écriture, avec ou sans BOM à la lecture). Le séparateur est celui des Réglages (`users.csvSeparator`, MEM-55 : point-virgule par défaut, ou virgule). Cinq colonnes, après une ligne d'en-têtes : expression française, expression anglaise, thématique, phrase d'exemple en français, phrase d'exemple en anglais.
