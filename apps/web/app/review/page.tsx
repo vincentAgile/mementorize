@@ -72,7 +72,8 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
     };
   }
 
-  const { word, translation, example } = item.content;
+  const { word, translation, example, frenchExample } = item.content;
+  const notes = { note: example, frenchNote: frenchExample ?? null }; // back only (MEM-42)
   const english = { main: word, lang: 'en', speak: true, audioUrl: pronunciationUrl(item.id, word) };
   const french = { main: translation, lang: 'fr' };
 
@@ -81,12 +82,12 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
   return card.kind === 'EnglishToFrench'
     ? {
         front: { heading: 'Anglais → français', ...english, prompt: 'Quelle est la traduction ?' },
-        back: { heading: 'Anglais → français', ...french, note: example },
+        back: { heading: 'Anglais → français', ...french, ...notes },
         repeatFront: true,
       }
     : {
         front: { heading: 'Français → anglais', ...french, prompt: 'Comment le dit-on en anglais ?' },
-        back: { heading: 'Français → anglais', ...english, note: example },
+        back: { heading: 'Français → anglais', ...english, ...notes },
         repeatFront: true,
       };
 }

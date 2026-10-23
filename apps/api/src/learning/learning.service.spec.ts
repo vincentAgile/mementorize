@@ -63,7 +63,13 @@ describe('LearningService', () => {
         }),
       );
       expect(session.total).toBe(7);
-      expect(session.items[0]).toMatchObject({ id: 'item-1', word: 'snag', translation: 'accroc' });
+      // No French example in a content from before MEM-42: null.
+      expect(session.items[0]).toMatchObject({
+        id: 'item-1',
+        word: 'snag',
+        translation: 'accroc',
+        frenchExample: null,
+      });
       expect(Object.keys(session.items[0].nextDue)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
     });
   });

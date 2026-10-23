@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import { addVocabularyAction, type VocabularyAddState } from '../actions';
 
-type Field = 'word' | 'translation' | 'example';
+type Field = 'word' | 'translation' | 'example' | 'frenchExample';
 
 /**
  * The form of the "Ajouter" tab (MEM-27), made to add several items in a
@@ -89,6 +89,21 @@ export function AddVocabularyForm() {
           aria-describedby={errorId('example')}
         />
         {error('example')}
+      </label>
+      <label>
+        <span>
+          Phrase d’exemple en français <span className="add-form__optional">(optionnel)</span>
+        </span>
+        <input
+          name="frenchExample"
+          lang="fr"
+          placeholder="La même phrase, en français"
+          defaultValue={value('frenchExample')}
+          maxLength={500}
+          aria-invalid={invalid('frenchExample')}
+          aria-describedby={errorId('frenchExample')}
+        />
+        {error('frenchExample')}
       </label>
       <AddButton />
     </form>

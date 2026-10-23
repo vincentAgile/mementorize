@@ -120,7 +120,7 @@ export function createQuote(input: CreateQuoteInput): Promise<unknown> {
   });
 }
 
-/** Changes a vocabulary item (MEM-19); an empty example removes it. */
+/** Changes a vocabulary item (MEM-19); an empty example (English or French) removes it. */
 export function updateVocabulary(id: string, input: CreateVocabularyInput): Promise<unknown> {
   return authedFetch(`/vocabulary/${encodeURIComponent(id)}`, {
     method: 'PATCH',

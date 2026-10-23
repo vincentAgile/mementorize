@@ -107,9 +107,10 @@ describe('API (e2e)', () => {
     const created = await http()
       .post('/vocabulary')
       .set(auth)
-      .send({ word: 'snag', translation: 'acroc', example: 'We hit a snag.' })
+      .send({ word: 'snag', translation: 'acroc', example: 'We hit a snag.', frenchExample: ' On a eu un accroc. ' })
       .expect(201);
     const id = created.body.id;
+    expect(created.body.frenchExample).toBe('On a eu un accroc.'); // MEM-42, trimmed
 
     const edited = await http()
       .patch(`/vocabulary/${id}`)
@@ -123,6 +124,22 @@ describe('API (e2e)', () => {
       learningStatus: 'ToLearn',
     });
     expect(edited.body.cards).toEqual(created.body.cards);
+    expect(edited.body.frenchExample).toBe('On a eu un accroc.'); // untouched when not sent
+
+    // MEM-42: the French example is edited, and removed when empty, on its own.
+    const french = await http()
+      .patch(`/vocabulary/${id}`)
+      .set(auth)
+      .send({ frenchExample: 'Petit accroc.' })
+      .expect(200);
+    expect(french.body).toMatchObject({ example: null, frenchExample: 'Petit accroc.' });
+    const cleared = await http().patch(`/vocabulary/${id}`).set(auth).send({ frenchExample: '' }).expect(200);
+    expect(cleared.body.frenchExample).toBeNull();
+    await http()
+      .patch(`/vocabulary/${id}`)
+      .set(auth)
+      .send({ frenchExample: 'x'.repeat(501) })
+      .expect(400);
 
     await http().patch(`/vocabulary/${id}`).set(auth).send({ word: '' }).expect(400);
     await http().patch(`/vocabulary/${id}`).set('Authorization', `Bearer ${other}`).send({ word: 'x' }).expect(404);
