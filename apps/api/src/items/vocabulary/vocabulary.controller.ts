@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { PronunciationService } from '../../pronunciation/pronunciation.service.js';
 import { ItemsService } from '../items.service.js';
 import { CreateVocabularyDto } from './dto/create-vocabulary.dto.js';
+import { DeleteVocabularyDto } from './dto/delete-vocabulary.dto.js';
 import { UpdateVocabularyDto } from './dto/update-vocabulary.dto.js';
 import { toVocabularyView } from './vocabulary-view.js';
 
@@ -83,6 +84,17 @@ export class VocabularyController {
     const found = await this.pronunciations.find(user.id, id);
     if (!found) throw new NotFoundException('No pronunciation for this item');
     return new StreamableFile(found.audio, { type: found.mimeType, length: found.audio.length });
+  }
+
+  /**
+   * POST /vocabulary/delete { ids } — deletes several items at once, with
+   * their cards and history (MEM-59). Only the user's own vocabulary items
+   * are deleted; the other ids are ignored.
+   */
+  @Post('delete')
+  @HttpCode(HttpStatus.OK)
+  async removeMany(@CurrentUser() user: AuthUser, @Body() dto: DeleteVocabularyDto) {
+    return { deleted: await this.items.removeMany(user.id, dto.ids, 'Vocabulary') };
   }
 
   /** Deletes the item with its two cards and their history (MEM-20). */

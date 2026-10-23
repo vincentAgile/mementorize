@@ -400,6 +400,37 @@ describe('API (e2e)', () => {
     expect(copied.text).toBe(exported.text);
   });
 
+  it("deletes several vocabulary items at once, only the user's own (MEM-59)", async () => {
+    const token = await register('rita');
+    const auth = { Authorization: `Bearer ${token}` };
+    const other = { Authorization: `Bearer ${await register('sam')}` };
+    const ids: string[] = [];
+    for (const word of ['one', 'two', 'three']) {
+      ids.push((await http().post('/vocabulary').set(auth).send({ word, translation: word }).expect(201)).body.id);
+    }
+    const theirs = (
+      await http().post('/vocabulary').set(other).send({ word: 'four', translation: 'quatre' }).expect(201)
+    ).body.id;
+    const quote = (await http().post('/quotes').set(auth).send({ text: 'Une citation.' }).expect(201)).body.id;
+
+    const result = await http()
+      .post('/vocabulary/delete')
+      .set(auth)
+      .send({ ids: [ids[0], ids[1], theirs, quote, 'unknown'] })
+      .expect(200);
+    expect(result.body).toEqual({ deleted: 2 });
+
+    const left = await http().get('/vocabulary').set(auth).expect(200);
+    expect(left.body.map((item: { id: string }) => item.id)).toEqual([ids[2]]);
+    await http().get(`/vocabulary/${theirs}`).set(other).expect(200);
+    await http().get(`/quotes/${quote}`).set(auth).expect(200);
+    await http().post('/vocabulary/delete').set(auth).send({ ids: [] }).expect(400);
+    await http()
+      .post('/vocabulary/delete')
+      .send({ ids: [ids[2]] })
+      .expect(401);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };
