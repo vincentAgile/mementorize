@@ -120,8 +120,21 @@ describe('LearningService', () => {
       });
     });
 
-    it('refuses an item that is not being learned', async () => {
+    it('takes an item still to learn straight to "Learned", at step 2 of a learning session (MEM-46)', async () => {
       prismaMock.item.findFirst.mockResolvedValue(word('ToLearn'));
+
+      await service.markLearned(userId, 'item-1', NOW);
+
+      expect(prismaMock.reviewLog.create).toHaveBeenCalledTimes(2);
+      expect(prismaMock.card.update).not.toHaveBeenCalled();
+      expect(prismaMock.item.update).toHaveBeenCalledWith({
+        where: { id: 'item-1' },
+        data: { learningStatus: 'Learned' },
+      });
+    });
+
+    it('refuses an item already learned', async () => {
+      prismaMock.item.findFirst.mockResolvedValue(word('Learned'));
       await expect(service.markLearned(userId, 'item-1', NOW)).rejects.toBeInstanceOf(ConflictException);
     });
   });

@@ -6,17 +6,13 @@ import { firstWords, formatDelay } from '../../lib/format';
 import { subtreeIds } from '../../lib/mind-map';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { findSpace } from '../../lib/spaces';
-import type { DueItem, ReviewRating } from '../../lib/types';
+import type { DueItem } from '../../lib/types';
 import { AppHeader } from '../app-header';
 import { MindMapViewer } from '../mind-maps/mind-map-viewer';
-import { type CardFace, type RatingOption, ReviewCard } from './review-card';
+import { type CardFace, ReviewCard } from './review-card';
 
-const LABELS: Record<ReviewRating, string> = {
-  Again: 'À revoir',
-  Hard: 'Difficile',
-  Good: 'Correct',
-  Easy: 'Facile',
-};
+/** The ratings shown on the buttons (MEM-46): « Facile » is gone. */
+const RATINGS = ['Again', 'Hard', 'Good'] as const;
 
 /**
  * What each side of a card shows, depending on its kind. This is the only
@@ -152,11 +148,9 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
               cardId={next.card.id}
               {...facesOf(next)}
               learnedItemId={next.item.type === 'Vocabulary' ? next.item.id : undefined}
-              options={(Object.keys(LABELS) as ReviewRating[]).map((rating): RatingOption => ({
-                rating,
-                label: LABELS[rating],
-                delay: formatDelay(now, new Date(next.nextDue[rating])),
-              }))}
+              delays={Object.fromEntries(
+                RATINGS.map((rating) => [rating, formatDelay(now, new Date(next.nextDue[rating]))]),
+              )}
             />
           </>
         )}

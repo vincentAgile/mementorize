@@ -4,17 +4,11 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { formatDelay } from '../../lib/format';
 import { pronounce, stopPronouncing } from '../../lib/speech';
-import type { LearningItem, LearningSession, ReviewRating } from '../../lib/types';
+import type { LearningItem, LearningSession } from '../../lib/types';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
-import { learnAction } from './actions';
-
-const RATINGS: { rating: ReviewRating; label: string }[] = [
-  { rating: 'Again', label: 'À revoir' },
-  { rating: 'Hard', label: 'Difficile' },
-  { rating: 'Good', label: 'Correct' },
-  { rating: 'Easy', label: 'Facile' },
-];
+import { type Answer, answerOfKey, RatingButtons } from '../review/rating-buttons';
+import { learnAction, learnedAction } from './actions';
 
 type Phase = 'discover' | 'rate' | 'done';
 
@@ -28,8 +22,9 @@ interface LearningSessionViewProps {
  * A learning session (MEM-21), in two steps over the same items:
  * 1. discovery: the English, then its French translation, without a rating;
  * 2. as in the review: the French → English card, rated with the four
- *    buttons. That rating moves the item to "En cours d'apprentissage".
- * Same shortcuts as the review: Space reveals (and goes on in step 1), 1-4 rate.
+ *    buttons. That rating moves the item to "En cours d'apprentissage";
+ *    « Appris » straight to "Appris", out of the review (MEM-46).
+ * Same shortcuts as the review: Space reveals (and goes on in step 1), 1-4 answer (4: « Appris »).
  * The items are those loaded with the page: leaving the session keeps the
  * unrated ones "À apprendre".
  */
@@ -38,7 +33,8 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
   const [phase, setPhase] = useState<Phase>('discover');
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
-  const [learned, setLearned] = useState<LearningItem[]>([]);
+  const [learned, setLearned] = useState<LearningItem[]>([]); // now in the review
+  const [known, setKnown] = useState<LearningItem[]>([]); // « Appris »: out of the review
   const [failed, setFailed] = useState(0);
   const [sending, setSending] = useState(false);
   // Set as soon as a rating is sent: two clicks (or keys) in the same frame rate only once.
@@ -74,14 +70,15 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
     }
   }
 
-  async function rate(rating: ReviewRating) {
+  async function rate(answer: Answer) {
     if (answered.current || !item) return;
     answered.current = true;
     stopPronouncing();
     setSending(true);
-    const ok = await learnAction(item.id, rating);
-    if (ok) setLearned((done) => [...done, item]);
-    else setFailed((count) => count + 1);
+    const ok = answer === 'Learned' ? await learnedAction(item.id) : await learnAction(item.id, answer);
+    if (!ok) setFailed((count) => count + 1);
+    else if (answer === 'Learned') setKnown((done) => [...done, item]);
+    else setLearned((done) => [...done, item]);
     setSending(false);
     answered.current = false;
     setRevealed(false);
@@ -89,7 +86,7 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
     else setIndex(index + 1);
   }
 
-  // Keyboard: Space (or Enter) reveals, then goes on in step 1; 1-4 rate in step 2.
+  // Keyboard: Space (or Enter) reveals, then goes on in step 1; 1-4 answer in step 2.
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || phase === 'done') return;
@@ -99,8 +96,9 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
         event.preventDefault();
         if (!revealed) reveal();
         else goOn();
-      } else if (phase === 'rate' && revealed && ['1', '2', '3', '4'].includes(event.key)) {
-        void rate(RATINGS[Number(event.key) - 1].rating);
+      } else if (phase === 'rate' && revealed) {
+        const answer = answerOfKey(event.key, true);
+        if (answer) void rate(answer);
       }
     }
     window.addEventListener('keydown', onKeyDown);
@@ -108,20 +106,29 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
   });
 
   if (phase === 'done') {
-    const remaining = session.total - learned.length;
+    const remaining = session.total - learned.length - known.length;
     return (
       <section className="learning-done">
         <h2>Session terminée</h2>
         <p>
-          {learned.length === 0
-            ? 'Aucun élément n’a pu être enregistré.'
-            : `${learned.length}\u00a0élément${learned.length > 1 ? 's' : ''} passe${learned.length > 1 ? 'nt' : ''} en apprentissage : ${learned.length > 1 ? 'ils entrent' : 'il entre'} en révision.`}
+          {learned.length + known.length === 0 && 'Aucun élément n’a pu être enregistré.'}
+          {learned.length > 0 &&
+            `${learned.length}\u00a0élément${learned.length > 1 ? 's' : ''} passe${learned.length > 1 ? 'nt' : ''} en apprentissage : ${learned.length > 1 ? 'ils entrent' : 'il entre'} en révision.`}
+          {learned.length > 0 && known.length > 0 && ' '}
+          {known.length > 0 &&
+            `${known.length}\u00a0élément${known.length > 1 ? 's' : ''} déjà connu${known.length > 1 ? 's' : ''} : ${known.length > 1 ? 'ils passent' : 'il passe'} directement à « Appris », sans révision.`}
           {failed > 0 && ` ${failed} n’a pas pu être enregistré (déjà appris ou supprimé entre-temps).`}
         </p>
         <ul className="learning-done__list">
           {learned.map((done) => (
             <li key={done.id}>
               <strong lang="en">{done.word}</strong> → {done.translation}
+            </li>
+          ))}
+          {known.map((done) => (
+            <li key={done.id}>
+              <strong lang="en">{done.word}</strong> → {done.translation}{' '}
+              <span className="learning-done__known">· Appris</span>
             </li>
           ))}
         </ul>
@@ -191,21 +198,17 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
             </Speakable>
             <Examples item={item} />
             <p className="review-card__question">Tu t&apos;en souvenais bien ?</p>
-            <div className="review-card__ratings">
-              {RATINGS.map(({ rating, label }, i) => (
-                <button
-                  key={rating}
-                  type="button"
-                  className={`rating rating--${rating.toLowerCase()}`}
-                  disabled={sending}
-                  onClick={() => void rate(rating)}
-                >
-                  <span className="rating__label">{label}</span>
-                  <span className="rating__delay">{formatDelay(new Date(now), new Date(item.nextDue[rating]))}</span>
-                  <kbd>{i + 1}</kbd>
-                </button>
-              ))}
-            </div>
+            <RatingButtons
+              onAnswer={(answer) => void rate(answer)}
+              withLearned
+              delays={Object.fromEntries(
+                (['Again', 'Hard', 'Good'] as const).map((rating) => [
+                  rating,
+                  formatDelay(new Date(now), new Date(item.nextDue[rating])),
+                ]),
+              )}
+              disabled={sending}
+            />
           </>
         ) : (
           <>

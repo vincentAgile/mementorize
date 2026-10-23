@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import type { LearningStatus } from '@prisma/client';
 import { contentOf } from '../items/item-content.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { type Grade, type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
@@ -108,9 +109,11 @@ export class LearningService {
    * with it. Each card gets a `Learned` entry in its history, with its
    * schedule as it stands: nothing is rescheduled, so that putting the item
    * back in learning finds the same schedule.
+   * Also at step 2 of a learning session (MEM-46): an item still to learn
+   * goes straight to `Learned`, without ever entering the review.
    */
   async markLearned(userId: string, itemId: string, now = new Date()) {
-    const item = await this.vocabulary(userId, itemId, 'Learning');
+    const item = await this.vocabulary(userId, itemId, ['ToLearn', 'Learning']);
 
     await this.prisma.$transaction([
       ...item.cards.map((card) =>
@@ -135,13 +138,13 @@ export class LearningService {
 
   /** "Remettre en apprentissage" (MEM-22): back in the review, with the schedule it had. */
   async relearn(userId: string, itemId: string) {
-    const item = await this.vocabulary(userId, itemId, 'Learned');
+    const item = await this.vocabulary(userId, itemId, ['Learned']);
     await this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learning' } });
     return { id: item.id, learningStatus: 'Learning' as const };
   }
 
-  /** The user's vocabulary item, in the expected state: 404 or 409 otherwise. */
-  private async vocabulary(userId: string, itemId: string, expected: 'Learning' | 'Learned') {
+  /** The user's vocabulary item, in one of the expected states: 404 or 409 otherwise. */
+  private async vocabulary(userId: string, itemId: string, expected: LearningStatus[]) {
     const item = await this.prisma.item.findFirst({
       where: { id: itemId, userId, type: 'Vocabulary' },
       include: { cards: true },
@@ -149,8 +152,8 @@ export class LearningService {
     if (!item) {
       throw new NotFoundException(`Vocabulary item ${itemId} not found`);
     }
-    if (item.learningStatus !== expected) {
-      throw new ConflictException(`Vocabulary item ${itemId} is not ${expected}`);
+    if (!expected.includes(item.learningStatus)) {
+      throw new ConflictException(`Vocabulary item ${itemId} is not ${expected.join(' or ')}`);
     }
     return item;
   }
