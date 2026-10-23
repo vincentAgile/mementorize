@@ -75,7 +75,12 @@ function EditForm({ row, close }: { row: VocabularyRow; close: () => void }) {
     if (state.saved) close();
   }, [state, close]);
 
-  const values = state.values ?? { word: row.english, translation: row.french, example: row.example ?? '' };
+  const values = state.values ?? {
+    word: row.english,
+    translation: row.french,
+    example: row.example ?? '',
+    frenchExample: row.frenchExample ?? '',
+  };
 
   return (
     <form action={action} className="dialog__form">
@@ -90,6 +95,10 @@ function EditForm({ row, close }: { row: VocabularyRow; close: () => void }) {
       <label>
         Phrase d’exemple (optionnel)
         <input name="example" defaultValue={values.example} maxLength={500} lang="en" />
+      </label>
+      <label>
+        Phrase d’exemple en français (optionnel)
+        <input name="frenchExample" defaultValue={values.frenchExample} maxLength={500} lang="fr" />
       </label>
       {state.error && (
         <p role="alert" className="form-error">

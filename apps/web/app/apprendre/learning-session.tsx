@@ -167,11 +167,7 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
             {revealed ? (
               <>
                 <p className="review-card__answer">{item.translation}</p>
-                {item.example && (
-                  <p className="review-card__note" lang="en">
-                    {item.example}
-                  </p>
-                )}
+                <Examples item={item} />
                 <button type="button" className="review-card__reveal" onClick={goOn}>
                   {last ? 'Passer à l’étape 2' : 'Suivant'} <kbd>Espace</kbd>
                 </button>
@@ -193,11 +189,7 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
                 {item.word}
               </blockquote>
             </Speakable>
-            {item.example && (
-              <p className="review-card__note" lang="en">
-                {item.example}
-              </p>
-            )}
+            <Examples item={item} />
             <p className="review-card__question">Tu t&apos;en souvenais bien ?</p>
             <div className="review-card__ratings">
               {RATINGS.map(({ rating, label }, i) => (
@@ -226,5 +218,23 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
         )}
       </article>
     </section>
+  );
+}
+
+/** The example sentences of the back of a card: the English, then the French (MEM-42). */
+function Examples({ item }: { item: LearningItem }) {
+  return (
+    <>
+      {item.example && (
+        <p className="review-card__note" lang="en">
+          {item.example}
+        </p>
+      )}
+      {item.frenchExample && (
+        <p className="review-card__note review-card__note--fr" lang="fr">
+          {item.frenchExample}
+        </p>
+      )}
+    </>
   );
 }

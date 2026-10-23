@@ -7,22 +7,22 @@ export interface VocabularyEditState {
   saved?: boolean;
   error?: string;
   /** Sent back with an error: React resets the form after an action, this refills it. */
-  values?: { word: string; translation: string; example: string };
+  values?: { word: string; translation: string; example: string; frenchExample: string };
 }
 
 const field = (formData: FormData, name: string) => String(formData.get(name) ?? '').trim();
 
 // Same limits as the API (CreateVocabularyDto).
-const MAX = { word: 200, translation: 200, example: 500 } as const;
+const MAX = { word: 200, translation: 200, example: 500, frenchExample: 500 } as const;
 
 export interface VocabularyAddState {
   /** The English of the item just added, for the confirmation; a new object each time. */
   added?: { word: string };
   /** One message per field, shown next to it. */
-  fieldErrors?: Partial<Record<'word' | 'translation' | 'example', string>>;
+  fieldErrors?: Partial<Record<'word' | 'translation' | 'example' | 'frenchExample', string>>;
   error?: string;
   /** Sent back with an error: React resets the form after an action, this refills it. */
-  values?: { word: string; translation: string; example: string };
+  values?: { word: string; translation: string; example: string; frenchExample: string };
 }
 
 /**
@@ -37,6 +37,7 @@ export async function addVocabularyAction(
     word: field(formData, 'word'),
     translation: field(formData, 'translation'),
     example: field(formData, 'example'),
+    frenchExample: field(formData, 'frenchExample'),
   };
   const fieldErrors: VocabularyAddState['fieldErrors'] = {};
   if (!values.word) fieldErrors.word = 'Saisis le mot, l’expression ou la phrase en anglais.';
@@ -45,6 +46,8 @@ export async function addVocabularyAction(
   else if (values.translation.length > MAX.translation)
     fieldErrors.translation = `${MAX.translation} caractères au plus.`;
   if (values.example.length > MAX.example) fieldErrors.example = `${MAX.example} caractères au plus.`;
+  if (values.frenchExample.length > MAX.frenchExample)
+    fieldErrors.frenchExample = `${MAX.frenchExample} caractères au plus.`;
   if (Object.keys(fieldErrors).length > 0) {
     return { values, fieldErrors };
   }
@@ -54,6 +57,7 @@ export async function addVocabularyAction(
       word: values.word,
       translation: values.translation,
       example: values.example || undefined,
+      frenchExample: values.frenchExample || undefined,
     });
   } catch (error) {
     if (error instanceof ApiError) return { values, error: 'Impossible d’enregistrer l’élément. Réessaie.' };
@@ -72,14 +76,15 @@ export async function updateVocabularyAction(
   const word = field(formData, 'word');
   const translation = field(formData, 'translation');
   const example = field(formData, 'example');
-  const values = { word, translation, example };
+  const frenchExample = field(formData, 'frenchExample');
+  const values = { word, translation, example, frenchExample };
   if (!word || !translation) {
     return { values, error: 'L’anglais et le français sont requis.' };
   }
 
   try {
     // An empty example is sent as such: the API removes it.
-    await updateVocabulary(id, { word, translation, example });
+    await updateVocabulary(id, { word, translation, example, frenchExample });
   } catch (error) {
     if (error instanceof ApiError) return { values, error: 'Impossible d’enregistrer la modification.' };
     throw error; // e.g. the redirect of an expired session

@@ -128,7 +128,14 @@ export function VocabularyTable({ items, now }: VocabularyTableProps) {
                       </span>
                     )}
                   </td>
-                  <td>{row.french}</td>
+                  <td>
+                    {row.french}
+                    {row.frenchExample && (
+                      <span lang="fr" className="vocabulary__example">
+                        {row.frenchExample}
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <span className={`status status--${row.status}`}>{statusLabel(row.status)}</span>
                   </td>

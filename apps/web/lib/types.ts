@@ -14,7 +14,9 @@ export interface QuoteContent {
 export interface VocabularyContent {
   word: string;
   translation: string;
-  example: string | null;
+  example: string | null; // in English
+  /** In French (MEM-42); absent from the items created before it. */
+  frenchExample?: string | null;
 }
 
 /** A node of a mind map, as stored by the API (each node knows its parent). */
@@ -65,6 +67,7 @@ export interface CreateVocabularyInput {
   word: string;
   translation: string;
   example?: string;
+  frenchExample?: string; // MEM-42
 }
 
 /** A mind map as returned by /mind-maps (title = label of the root). */
@@ -102,6 +105,7 @@ export interface LearningItem {
   word: string;
   translation: string;
   example: string | null;
+  frenchExample?: string | null; // MEM-42
   /** When the French → English card comes back, for each rating of step 2. */
   nextDue: Record<ReviewRating, string>;
 }

@@ -15,6 +15,8 @@ export interface VocabularyRow {
   english: string;
   french: string;
   example: string | null;
+  /** MEM-42 */
+  frenchExample: string | null;
   status: LearningStatus;
   createdAt: number;
   /** Due date of the French → English card (MEM-40: the only one reviewed), for an item being learned; null otherwise. */
@@ -30,6 +32,7 @@ export function toRow(item: VocabularyItem): VocabularyRow {
     english: item.content.word,
     french: item.content.translation,
     example: item.content.example,
+    frenchExample: item.content.frenchExample ?? null,
     status: item.learningStatus,
     createdAt: new Date(item.createdAt).getTime(),
     nextDue: item.learningStatus === 'Learning' && dues.length > 0 ? Math.min(...dues) : null,

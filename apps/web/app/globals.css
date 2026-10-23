@@ -954,6 +954,13 @@ kbd {
   font-style: italic;
 }
 
+/* MEM-42: the French example, under the English one, a step back */
+.review-card__note--fr {
+  margin-top: 0.25rem;
+  font-style: normal;
+  opacity: 0.85;
+}
+
 /* --- Phase 6: mind maps --- */
 
 .mind-map {
