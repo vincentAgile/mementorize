@@ -4,12 +4,12 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { SchedulerService } from '../scheduling/scheduler.service.js';
 import { type CardSlot, cardSlots, type ContentByType, initialLearningStatus, slotKey } from './item-content.js';
 
-export type CardSummary = Pick<Card, 'id' | 'kind' | 'nodeId' | 'due' | 'state'>;
+export type CardSummary = Pick<Card, 'id' | 'kind' | 'nodeId' | 'due' | 'state' | 'learnedAt'>;
 export type ItemWithCards = Item & { cards: CardSummary[] };
 
 const WITH_CARDS = {
   cards: {
-    select: { id: true, kind: true, nodeId: true, due: true, state: true },
+    select: { id: true, kind: true, nodeId: true, due: true, state: true, learnedAt: true },
     orderBy: [{ kind: 'asc' }, { due: 'asc' }],
   },
 } satisfies Prisma.ItemInclude;

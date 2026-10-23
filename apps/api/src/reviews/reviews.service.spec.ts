@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -49,6 +49,7 @@ describe('ReviewsService', () => {
       const where = {
         due: { lte: NOW },
         kind: { not: 'EnglishToFrench' },
+        learnedAt: null,
         item: { userId, learningStatus: 'Learning' },
       };
       expect(prismaMock.card.count).toHaveBeenCalledWith({ where });
@@ -81,10 +82,12 @@ describe('ReviewsService', () => {
 
       const item = { userId, type: 'Vocabulary', learningStatus: 'Learning' };
       expect(prismaMock.card.count).toHaveBeenCalledWith({
-        where: { due: { lte: NOW }, kind: { not: 'EnglishToFrench' }, item },
+        where: { due: { lte: NOW }, kind: { not: 'EnglishToFrench' }, learnedAt: null, item },
       });
       expect(prismaMock.card.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { due: { gt: NOW }, kind: { not: 'EnglishToFrench' }, item } }),
+        expect.objectContaining({
+          where: { due: { gt: NOW }, kind: { not: 'EnglishToFrench' }, learnedAt: null, item },
+        }),
       );
     });
   });
@@ -102,6 +105,7 @@ describe('ReviewsService', () => {
         where: {
           due: { lte: NOW },
           kind: { not: 'EnglishToFrench' },
+          learnedAt: null,
           item: { userId, type: 'Vocabulary', learningStatus: 'Learning' },
         },
       });
@@ -132,6 +136,49 @@ describe('ReviewsService', () => {
       expect(updated.state).toBe('Learning');
       // MEM-47: the previews of its next review, for its buttons at the end of the session.
       expect(updated.nextDueByRating).toEqual(scheduler.preview({ ...card, ...expected.card }, NOW));
+    });
+  });
+
+  describe('markLearned and relearn (MEM-48)', () => {
+    const learnable = (type: string, learnedAt: Date | null = null) => ({
+      ...aCard(),
+      learnedAt,
+      item: { id: 'item-1', userId, type },
+    });
+
+    it('takes a quote card out of the review, logs "Learned" and keeps its schedule', async () => {
+      const card = learnable('Quote');
+      prismaMock.card.findFirst.mockResolvedValue(card);
+
+      await service.markLearned(userId, 'card-1', NOW);
+
+      expect(prismaMock.card.findFirst).toHaveBeenCalledWith({
+        where: { id: 'card-1', item: { userId } },
+        include: { item: true },
+      });
+      expect(prismaMock.card.update).toHaveBeenCalledWith({ where: { id: 'card-1' }, data: { learnedAt: NOW } });
+      expect(prismaMock.reviewLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ cardId: 'card-1', rating: 'Learned', due: card.due, reviewedAt: NOW }),
+      });
+    });
+
+    it('refuses vocabulary (learned per item), a card already learned, or an unknown card', async () => {
+      prismaMock.card.findFirst.mockResolvedValue(learnable('Vocabulary'));
+      await expect(service.markLearned(userId, 'card-1', NOW)).rejects.toBeInstanceOf(ConflictException);
+      prismaMock.card.findFirst.mockResolvedValue(learnable('MindMap', NOW));
+      await expect(service.markLearned(userId, 'card-1', NOW)).rejects.toBeInstanceOf(ConflictException);
+      prismaMock.card.findFirst.mockResolvedValue(null);
+      await expect(service.markLearned(userId, 'card-1', NOW)).rejects.toBeInstanceOf(NotFoundException);
+      expect(prismaMock.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('puts a learned branch back in the review, with the schedule it had', async () => {
+      prismaMock.card.findFirst.mockResolvedValue(learnable('MindMap', NOW));
+      await service.relearn(userId, 'card-1');
+      expect(prismaMock.card.update).toHaveBeenCalledWith({ where: { id: 'card-1' }, data: { learnedAt: null } });
+
+      prismaMock.card.findFirst.mockResolvedValue(learnable('MindMap'));
+      await expect(service.relearn(userId, 'card-1')).rejects.toBeInstanceOf(ConflictException);
     });
   });
 });

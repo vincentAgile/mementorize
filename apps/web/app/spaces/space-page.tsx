@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getDueReviews, getItems } from '../../lib/api';
-import { formatDelay } from '../../lib/format';
+import { formatDelay, NBSP } from '../../lib/format';
 import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
 import { branchesOf, rootOf } from '../../lib/mind-map';
 import { reviewHref, type Space } from '../../lib/spaces';
@@ -8,6 +8,7 @@ import type { CardSummary, Item } from '../../lib/types';
 import { AppHeader } from '../app-header';
 import { NothingDue } from '../nothing-due';
 import { ItemForm } from '../items/item-form';
+import { RelearnCardButton } from '../items/relearn-card-button';
 
 /**
  * The page of a subject space (MEM-2): the items of a single type. Citations
@@ -58,6 +59,9 @@ export async function SpacePage({ space }: { space: Space }) {
                       ? item.cards.map((card) => scheduleLabel(item, card, now)).join(' · ')
                       : 'Pas encore de branche : rien à réviser'}
                 </p>
+                {item.type === 'Quote' && item.cards?.[0]?.learnedAt && (
+                  <RelearnCardButton cardId={item.cards[0].id} what="cette citation" />
+                )}
               </li>
             ))}
           </ul>
@@ -71,11 +75,21 @@ function ItemContent({ item }: { item: Item }) {
   if (item.type === 'MindMap') {
     const { nodes } = item.content;
     const branches = branchesOf(nodes).length;
+    const learned = item.cards?.filter((card) => card.learnedAt).length ?? 0; // MEM-48
     return (
       <p className="mind-map-summary">
         <Link href={`/mind-maps/${item.id}`}>{rootOf(nodes)?.label}</Link>{' '}
         <span className="mind-map-summary__meta">
-          · {branches} branche{branches > 1 ? 's' : ''}, {nodes.length} idée{nodes.length > 1 ? 's' : ''}
+          · {branches}
+          {NBSP}branche{branches > 1 ? 's' : ''}, {nodes.length}
+          {NBSP}idée{nodes.length > 1 ? 's' : ''}
+          {learned > 0 && (
+            <>
+              {' · '}
+              {learned}
+              {NBSP}branche{learned > 1 ? 's' : ''} apprise{learned > 1 ? 's' : ''}
+            </>
+          )}
         </span>
       </p>
     );
@@ -116,8 +130,13 @@ function scheduleLabel(item: Item, card: CardSummary, now: Date): string {
       ? `${item.content.nodes.find((node) => node.id === card.nodeId)?.label ?? '?'} : `
       : KIND_PREFIX[card.kind];
   const due = new Date(card.due);
-  const when =
-    due <= now ? (card.state === 'New' ? 'nouvelle, à réviser' : 'à réviser') : `dans ${formatDelay(now, due)}`;
+  const when = card.learnedAt
+    ? 'appris' // MEM-48: out of the review
+    : due <= now
+      ? card.state === 'New'
+        ? 'nouvelle, à réviser'
+        : 'à réviser'
+      : `dans ${formatDelay(now, due)}`;
   const label = prefix + when;
   return item.type === 'Quote' ? label.charAt(0).toUpperCase() + label.slice(1) : label;
 }

@@ -264,12 +264,13 @@ curl -X POST http://localhost:3000/learning/<itemId> -H "Authorization: Bearer $
   -H "Content-Type: application/json" -d '{"rating":"Good"}'
 ```
 
-La carte anglais → français, non notée pendant l'apprentissage, devient due tout de suite. Un élément qui n'est plus `ToLearn` renvoie 409.
+La carte anglais → français, non notée pendant l'apprentissage, devient due tout de suite. Un élément qui n'est plus `ToLearn` renvoie 409. Chaque élément de la séance porte l'identifiant de sa carte français → anglais (`cardId`) : noté « À revoir », il revient en fin de séance (MEM-47) et ses notes suivantes passent par `POST /reviews/:cardId`. Les deux routes renvoient `nextDueByRating`, les délais à afficher sur ses boutons.
 
 « Appris » en révision et remise en apprentissage (MEM-22) :
 
 ```bash
-# L'élément (Learning) sort de la révision ; ses deux cartes reçoivent une ligne « Learned » dans l'historique
+# L'élément (Learning, ou ToLearn depuis l'étape 2, MEM-46) sort de la révision ;
+# ses deux cartes reçoivent une ligne « Learned » dans l'historique
 curl -X POST http://localhost:3000/learning/<itemId>/learned -H "Authorization: Bearer $TOKEN"
 
 # Un élément Learned revient en révision, avec la planification qu'il avait
@@ -277,6 +278,16 @@ curl -X POST http://localhost:3000/learning/<itemId>/relearn -H "Authorization: 
 ```
 
 `Learned` est une valeur de l'enum `ReviewRating` réservée à l'historique : la planification (FSRS) ne reçoit que les quatre notes, type `Grade`.
+
+Pour une citation ou une branche de carte mentale, « Appris » porte sur la carte (MEM-48) : `cards.learnedAt` est renseigné, et `REVIEWED_CARD` (`src/reviews/in-review.ts`) écarte ces cartes de la révision, des compteurs et du rappel par e-mail.
+
+```bash
+# La carte sort de la révision (409 pour le vocabulaire, appris par élément)
+curl -X POST http://localhost:3000/reviews/<cardId>/learned -H "Authorization: Bearer $TOKEN"
+
+# « Remettre en révision », avec la planification qu'elle avait
+curl -X POST http://localhost:3000/reviews/<cardId>/relearn -H "Authorization: Bearer $TOKEN"
+```
 
 ## Prononciation (MEM-39)
 

@@ -909,6 +909,69 @@ kbd {
   }
 }
 
+/* MEM-48: « Remettre en révision », a quote or a mind map branch */
+.relearn-card {
+  display: inline;
+}
+
+.relearn-card__button {
+  margin: 0.25rem 0 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: transparent;
+  color: #147d80;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.relearn-card__button:hover:not(:disabled) {
+  background: #e3f1f1;
+}
+
+.relearn-card__button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.learned-branches {
+  margin-top: 1.5rem;
+}
+
+.learned-branches__title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.learned-branches__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learned-branches__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.learned-branches__list .relearn-card__button {
+  margin: 0;
+}
+
+.learned-branches__badge {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #2e7d32;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 .review-empty {
   margin-top: 2rem;
 }
