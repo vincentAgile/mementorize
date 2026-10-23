@@ -109,19 +109,33 @@ export function normalize(text: string): string {
 export interface Filter {
   search: string;
   status: LearningStatus | 'all';
+  /** MEM-56: a topic (as shown in the list of topics), or none, or all. */
+  topic: string | typeof ALL_TOPICS | typeof NO_TOPIC;
 }
 
-export const NO_FILTER: Filter = { search: '', status: 'all' };
+// Values of the topic filter that can't be a topic (a topic is trimmed).
+export const ALL_TOPICS = ' all';
+export const NO_TOPIC = ' none';
 
-/** The rows whose English or French contains the search, in the chosen state. */
-export function filterRows(rows: VocabularyRow[], { search, status }: Filter): VocabularyRow[] {
+export const NO_FILTER: Filter = { search: '', status: 'all', topic: ALL_TOPICS };
+
+const sameTopic = (a: string, b: string) => a.toLocaleLowerCase('fr') === b.toLocaleLowerCase('fr');
+
+/** The rows whose English or French contains the search, in the chosen state and topic. */
+export function filterRows(rows: VocabularyRow[], { search, status, topic }: Filter): VocabularyRow[] {
   const needle = normalize(search.trim());
   return rows.filter(
     (row) =>
       (status === 'all' || row.status === status) &&
+      (topic === ALL_TOPICS ||
+        (topic === NO_TOPIC ? row.topic === null : row.topic !== null && sameTopic(row.topic, topic))) &&
       (!needle || normalize(row.english).includes(needle) || normalize(row.french).includes(needle)),
   );
 }
+
+/** Some filter is on: the count says "12 éléments sur 85", and "Effacer les filtres" is offered. */
+export const isFiltered = (filter: Filter) =>
+  filter.search !== '' || filter.status !== 'all' || filter.topic !== ALL_TOPICS;
 
 // --- Topics (MEM-51) ---
 
