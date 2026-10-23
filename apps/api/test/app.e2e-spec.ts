@@ -363,6 +363,43 @@ describe('API (e2e)', () => {
     await http().post('/vocabulary-csv/preview').set(auth).send({}).expect(400);
   });
 
+  it('imports the new lines of a CSV file, all at once, as items to learn, and round-trips the export (MEM-54)', async () => {
+    const token = await register('pia');
+    const auth = { Authorization: `Bearer ${token}` };
+    await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201);
+
+    const content =
+      'Expression française;Expression anglaise;Thématique;Phrase exemple français;Phrase exemple anglais\r\n' +
+      'chérir;to cherish;Émotions;Je chéris.;I cherish.\r\naccroc;hitch\r\nbagages;luggage;Voyage\r\n;orphan\r\n';
+    const result = await http().post('/vocabulary-csv/import').set(auth).send({ content }).expect(200);
+    expect(result.body).toEqual({ ok: true, imported: 2, duplicate: 1, error: 1 });
+
+    const items = await http().get('/vocabulary').set(auth).expect(200);
+    const cherish = items.body.find((item: { word: string }) => item.word === 'to cherish');
+    expect(cherish).toMatchObject({
+      translation: 'chérir',
+      topic: 'Émotions',
+      frenchExample: 'Je chéris.',
+      example: 'I cherish.',
+      learningStatus: 'ToLearn',
+    });
+    expect(cherish.cards).toHaveLength(2);
+    const session = await http().get('/learning/session').set(auth).expect(200);
+    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['snag', 'to cherish', 'luggage']);
+
+    // Imported again: everything is a duplicate now.
+    const again = await http().post('/vocabulary-csv/import').set(auth).send({ content }).expect(200);
+    expect(again.body).toEqual({ ok: true, imported: 0, duplicate: 3, error: 1 });
+
+    // Round trip: the export of this account, imported on another one, gives the same items.
+    const exported = await http().get('/vocabulary-csv/export').set(auth).expect(200);
+    const other = { Authorization: `Bearer ${await register('quentin')}` };
+    const copy = await http().post('/vocabulary-csv/import').set(other).send({ content: exported.text }).expect(200);
+    expect(copy.body).toEqual({ ok: true, imported: 3, duplicate: 0, error: 0 });
+    const copied = await http().get('/vocabulary-csv/export').set(other).expect(200);
+    expect(copied.text).toBe(exported.text);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };
