@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getDueReviews, getItems } from '../../lib/api';
-import { nothingDueLabel } from '../../lib/format';
+import { NBSP } from '../../lib/format';
+import { NothingDue } from '../nothing-due';
 import { reviewHref, spaceOf } from '../../lib/spaces';
 
 export const metadata: Metadata = { title: 'Apprendre · Réviser · Anglais' };
 
 const SPACE = spaceOf('Vocabulary');
 
-const plural = (count: number, one: string, many: string) => `${count} ${count > 1 ? many : one}`;
+const plural = (count: number, one: string, many: string) => `${count}${NBSP}${count > 1 ? many : one}`;
 
 /**
  * Tab "Apprendre · Réviser" (MEM-25), the default one: where the sessions of
@@ -59,7 +60,7 @@ export default async function EnglishLearnReviewPage() {
             </Link>
           </>
         ) : (
-          <p className="learn-review__none">{nothingDueLabel(due, new Date())}.</p>
+          <NothingDue due={due} now={new Date()} className="learn-review__none" />
         )}
       </section>
     </div>

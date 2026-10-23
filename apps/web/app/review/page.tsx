@@ -126,7 +126,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
         {!next ? (
           <section className="review-empty">
-            <h2>Rien à réviser pour le moment</h2>
+            <h2>Rien à réviser pour le moment{'\u202f'}!</h2>
             <p>
               {due.nextDueAt
                 ? `Prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}.`
@@ -138,7 +138,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           <>
             <p className="review-progress">
               {space && <strong>{space.label} · </strong>}
-              {due.total} carte{due.total > 1 ? 's' : ''} à réviser
+              {due.total}{'\u00a0'}carte{due.total > 1 ? 's' : ''} à réviser
               {space && (
                 <>
                   {' · '}

@@ -45,7 +45,7 @@ export function ReminderForm({ settings }: { settings: ReminderSettings }) {
           <select name="hour" defaultValue={settings.hour}>
             {HOURS.map((hour) => (
               <option key={hour} value={hour}>
-                {String(hour).padStart(2, '0')} h
+                {String(hour).padStart(2, '0')}{'\u00a0'}h
               </option>
             ))}
           </select>

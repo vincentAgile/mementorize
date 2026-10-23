@@ -29,7 +29,7 @@ export async function saveRemindersAction(
     throw error; // e.g. the redirect of an expired session
   }
   revalidatePath('/reglages');
-  return { message: enabled ? `Rappel enregistré : chaque jour vers ${hour} h.` : 'Rappels désactivés.' };
+  return { message: enabled ? `Rappel enregistré : chaque jour vers ${hour}\u00a0h.` : 'Rappels désactivés.' };
 }
 
 export async function sendTestAction(): Promise<SettingsFormState> {

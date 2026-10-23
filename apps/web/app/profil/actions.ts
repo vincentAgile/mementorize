@@ -16,7 +16,7 @@ export async function saveProfileAction(_previous: ProfileFormState, formData: F
   const firstName = String(formData.get('firstName') ?? '').trim();
   const lastName = String(formData.get('lastName') ?? '').trim();
   if (firstName.length > NAME_MAX_LENGTH || lastName.length > NAME_MAX_LENGTH) {
-    return { firstName, lastName, error: `Le prénom et le nom ne peuvent pas dépasser ${NAME_MAX_LENGTH} caractères.` };
+    return { firstName, lastName, error: `Le prénom et le nom ne peuvent pas dépasser ${NAME_MAX_LENGTH}\u00a0caractères.` };
   }
 
   try {
