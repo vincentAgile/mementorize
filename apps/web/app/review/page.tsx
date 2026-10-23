@@ -138,7 +138,8 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           <>
             <p className="review-progress">
               {space && <strong>{space.label} · </strong>}
-              {due.total}{'\u00a0'}carte{due.total > 1 ? 's' : ''} à réviser
+              {due.total}
+              {'\u00a0'}carte{due.total > 1 ? 's' : ''} à réviser
               {space && (
                 <>
                   {' · '}

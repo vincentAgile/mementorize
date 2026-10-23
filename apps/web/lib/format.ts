@@ -35,7 +35,5 @@ export function firstWords(text: string, count = 3): string {
  */
 export function nothingDueLines(due: { nextDueAt: string | null }, now: Date): string[] {
   const nothing = `Rien à réviser pour le moment${NNBSP}!`;
-  return due.nextDueAt
-    ? [nothing, `Prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}`]
-    : [nothing];
+  return due.nextDueAt ? [nothing, `Prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}`] : [nothing];
 }
