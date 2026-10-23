@@ -184,7 +184,8 @@ export function getPreferences(): Promise<Preferences> {
   return authedFetch<Preferences>('/preferences');
 }
 
-export function savePreferences(input: Preferences): Promise<Preferences> {
+/** Saves the preferences sent; the others stay as they are. */
+export function savePreferences(input: Partial<Preferences>): Promise<Preferences> {
   return authedFetch<Preferences>('/preferences', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

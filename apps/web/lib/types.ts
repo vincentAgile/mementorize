@@ -144,9 +144,13 @@ export interface Profile {
   lastName: string | null;
 }
 
-/** The user's preferences of the web app (MEM-6). */
+/** The services of the translate buttons (MEM-44). */
+export type Translator = 'DeepL' | 'Google';
+
+/** The user's preferences of the web app (MEM-6, MEM-44). */
 export interface Preferences {
   homeSpace: ItemType;
+  translator: Translator;
 }
 
 export interface ReminderSettings extends ReminderSettingsInput {

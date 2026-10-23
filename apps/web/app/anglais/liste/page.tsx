@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getItems } from '../../../lib/api';
+import { getItems, getPreferences } from '../../../lib/api';
 import type { VocabularyItem } from '../../../lib/vocabulary-table';
 import { VocabularyTable } from '../vocabulary-table';
 
@@ -10,7 +10,8 @@ export const metadata: Metadata = { title: 'Liste · Anglais' };
 // and row actions. After an edit or a deletion the page is refreshed in
 // place: the table component keeps its sort and filter.
 export default async function EnglishListPage() {
-  const items = (await getItems('Vocabulary')) as VocabularyItem[];
+  const [all, { translator }] = await Promise.all([getItems('Vocabulary'), getPreferences()]);
+  const items = all as VocabularyItem[];
 
   if (items.length === 0) {
     return (
@@ -19,5 +20,5 @@ export default async function EnglishListPage() {
       </p>
     );
   }
-  return <VocabularyTable items={items} now={new Date().toISOString()} />;
+  return <VocabularyTable items={items} now={new Date().toISOString()} translator={translator} />;
 }

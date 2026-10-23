@@ -3,6 +3,7 @@ import { getPreferences, getReminderSettings } from '../../lib/api';
 import { AppHeader } from '../app-header';
 import { HomeSpaceForm } from './home-space-form';
 import { ReminderForm } from './reminder-form';
+import { TranslatorForm } from './translator-form';
 
 export const metadata: Metadata = { title: 'Réglages' };
 
@@ -15,6 +16,7 @@ export default async function SettingsPage() {
       <main className="page page--reading">
         <h1 className="visually-hidden page__sr-title">Réglages</h1>
         <HomeSpaceForm homeSpace={preferences.homeSpace} />
+        <TranslatorForm translator={preferences.translator} />
         <ReminderForm settings={settings} />
       </main>
     </>
