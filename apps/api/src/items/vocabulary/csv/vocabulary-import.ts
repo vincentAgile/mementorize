@@ -49,14 +49,12 @@ export interface ExistingPair {
  */
 export const duplicateKey = (text: string) => text.trim().toLocaleLowerCase('fr');
 
-const HEADERS = ['expression française', 'expression anglaise'];
-const isHeader = (record: CsvRecord) => HEADERS.every((header, i) => duplicateKey(record.fields[i] ?? '') === header);
 const columnsOk = (record: CsvRecord) => record.fields.length >= 2 && record.fields.length <= 5;
 
 /**
  * Reads a file to import (MEM-53) and tells, line by line, what would
  * happen: imported, left out as a duplicate, or in error. Nothing is saved.
- * The header line is recognised and skipped. When the lines only make sense
+ * The first line is the header line, whatever its titles: always skipped. When the lines only make sense
  * with the other separator, the whole file is reported instead.
  */
 export function analyzeImport(
@@ -72,7 +70,7 @@ export function analyzeImport(
     if (error instanceof CsvSyntaxError) return { ok: false, problem: 'syntax', line: error.line };
     throw error;
   }
-  if (records.length > 0 && isHeader(records[0])) records = records.slice(1);
+  records = records.slice(1); // the header line
   if (records.length === 0) return { ok: false, problem: 'empty' };
   if (records.length > MAX_IMPORT_LINES) return { ok: false, problem: 'tooManyLines' };
 
@@ -80,7 +78,7 @@ export function analyzeImport(
   const valid = records.filter(columnsOk).length;
   if (valid < records.length / 2) {
     try {
-      const other = parseCsv(text, otherSeparator).filter((record) => !isHeader(record));
+      const other = parseCsv(text, otherSeparator).slice(1);
       const otherValid = other.filter(columnsOk).length;
       if (otherValid > valid && otherValid >= other.length * 0.8) return { ok: false, problem: 'wrongSeparator' };
     } catch {
