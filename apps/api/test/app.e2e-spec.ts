@@ -211,6 +211,46 @@ describe('API (e2e)', () => {
     await http().post(`/learning/${word.id}/relearn`).set(auth).expect(409);
   });
 
+  it('takes a quote or one branch of a mind map out of the review, and puts it back (MEM-48)', async () => {
+    const token = await register('mila');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const quote = (await http().post('/quotes').set(auth).send({ text: 'Connais-toi toi-même.' }).expect(201)).body;
+    const map = (
+      await http()
+        .post('/mind-maps')
+        .set(auth)
+        .send({
+          nodes: [
+            { id: 'r', parentId: null, label: 'Mémoire', position: { x: 0, y: 0 } },
+            { id: 'a', parentId: 'r', label: 'Répétition', position: { x: 100, y: 0 } },
+            { id: 'b', parentId: 'r', label: 'Sommeil', position: { x: -100, y: 0 } },
+          ],
+        })
+        .expect(201)
+    ).body;
+    const quoteCard = quote.card.id;
+    const branch = map.cards.find((card: { nodeId: string }) => card.nodeId === 'a').id;
+
+    await http().post(`/reviews/${quoteCard}/learned`).set(auth).expect(201);
+    await http().post(`/reviews/${quoteCard}/learned`).set(auth).expect(409);
+    await http().post(`/reviews/${branch}/learned`).set(auth).expect(201);
+
+    // The quote is out; the map has only its other branch left, due tomorrow (staggered).
+    const summary = await http().get('/reviews/due/summary').set(auth).expect(200);
+    expect(summary.body.byType).toMatchObject({ Quote: 0, MindMap: 0 });
+    const mapDue = await http().get('/reviews/due?type=MindMap').set(auth).expect(200);
+    const other = map.cards.find((card: { nodeId: string }) => card.nodeId === 'b');
+    expect(new Date(mapDue.body.nextDueAt)).toEqual(new Date(other.due));
+    const after = await http().get(`/mind-maps/${map.id}`).set(auth).expect(200);
+    expect(after.body.cards.find((card: { id: string }) => card.id === branch).learnedAt).not.toBeNull();
+
+    await http().post(`/reviews/${branch}/relearn`).set(auth).expect(201);
+    await http().post(`/reviews/${branch}/relearn`).set(auth).expect(409);
+    const back = await http().get('/reviews/due/summary').set(auth).expect(200);
+    expect(back.body.byType.MindMap).toBe(1);
+  });
+
   it('takes a word still to learn straight to "Learned", out of the review (MEM-46)', async () => {
     const token = await register('lena');
     const auth = { Authorization: `Bearer ${token}` };

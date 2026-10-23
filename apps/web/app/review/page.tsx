@@ -138,7 +138,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
             cards={due.items.map((next): SessionCard => ({
               cardId: next.card.id,
               ...facesOf(next),
-              learnedItemId: next.item.type === 'Vocabulary' ? next.item.id : undefined,
+              learned: next.item.type === 'Vocabulary' ? { itemId: next.item.id } : { cardId: next.card.id },
               nextDue: next.nextDue,
             }))}
             total={due.total}

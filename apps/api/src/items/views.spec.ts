@@ -13,7 +13,7 @@ describe('API views', () => {
       ...base,
       type: 'Quote',
       content: { text: 'Hello', author: 'Me', source: null },
-      cards: [{ id: 'card-1', kind: 'QuoteRecall', nodeId: null, due: NOW, state: 'New' }],
+      cards: [{ id: 'card-1', kind: 'QuoteRecall', nodeId: null, due: NOW, state: 'New', learnedAt: null }],
     } as ItemWithCards;
 
     expect(toQuoteView(item)).toEqual({
@@ -21,7 +21,7 @@ describe('API views', () => {
       text: 'Hello',
       author: 'Me',
       source: null,
-      card: { due: NOW, state: 'New' },
+      card: { id: 'card-1', due: NOW, state: 'New', learnedAt: null }, // learnedAt: MEM-48
     });
   });
 

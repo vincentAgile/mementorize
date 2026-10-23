@@ -218,6 +218,16 @@ export function relearnVocabulary(itemId: string): Promise<unknown> {
   return authedFetch(`/learning/${encodeURIComponent(itemId)}/relearn`, { method: 'POST' });
 }
 
+/** « Appris » for a quote or a mind map branch (MEM-48): the card leaves the review. */
+export function markCardLearned(cardId: string): Promise<unknown> {
+  return authedFetch(`/reviews/${encodeURIComponent(cardId)}/learned`, { method: 'POST' });
+}
+
+/** « Remettre en révision » (MEM-48): back in the review, with the schedule it had. */
+export function relearnCard(cardId: string): Promise<unknown> {
+  return authedFetch(`/reviews/${encodeURIComponent(cardId)}/relearn`, { method: 'POST' });
+}
+
 /** How many cards are due, in all and per subject (the menu's counters, MEM-5). */
 export function getDueSummary(): Promise<DueSummary> {
   return authedFetch<DueSummary>('/reviews/due/summary');

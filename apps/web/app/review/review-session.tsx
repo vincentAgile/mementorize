@@ -15,8 +15,11 @@ export interface SessionCard {
   front: CardFace;
   back: CardFace;
   repeatFront: boolean;
-  /** Vocabulary (MEM-22): « Appris » takes the whole item out of the review. */
-  learnedItemId?: string;
+  /**
+   * What « Appris » takes out of the review: the vocabulary item (MEM-22),
+   * or only this card for a quote or a mind map branch (MEM-48).
+   */
+  learned: { itemId: string } | { cardId: string };
   /** When the card comes back with each rating (ISO dates). */
   nextDue: Record<ReviewRating, string>;
 }
@@ -54,7 +57,7 @@ export function ReviewSession({ cards, total, now, space }: ReviewSessionProps) 
       const card = pile[0];
       let comesBack: Record<ReviewRating, string> | null = null;
       if (choice === 'Learned') {
-        if (card.learnedItemId) await learnedAction(card.learnedItemId);
+        await learnedAction(card.learned);
       } else {
         // null: refused (card deleted in another tab): it leaves the pile.
         const next = await reviewAction(card.cardId, choice);
@@ -97,7 +100,7 @@ export function ReviewSession({ cards, total, now, space }: ReviewSessionProps) 
         front={current.front}
         back={current.back}
         repeatFront={current.repeatFront}
-        withLearned={Boolean(current.learnedItemId)}
+        withLearned
         delays={Object.fromEntries(
           RATINGS.map((rating) => [rating, formatDelay(new Date(clock), new Date(current.nextDue[rating]))]),
         )}

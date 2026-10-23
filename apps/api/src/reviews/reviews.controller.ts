@@ -39,6 +39,18 @@ export class ReviewsController {
     return this.reviewsService.findDue(user.id, Math.min(Math.max(limit, 1), 100), type);
   }
 
+  /** POST /reviews/:cardId/learned — « Appris »: a quote or a mind map branch leaves the review (MEM-48). */
+  @Post(':cardId/learned')
+  markLearned(@CurrentUser() user: AuthUser, @Param('cardId') cardId: string) {
+    return this.reviewsService.markLearned(user.id, cardId);
+  }
+
+  /** POST /reviews/:cardId/relearn — « Remettre en révision », same schedule (MEM-48). */
+  @Post(':cardId/relearn')
+  relearn(@CurrentUser() user: AuthUser, @Param('cardId') cardId: string) {
+    return this.reviewsService.relearn(user.id, cardId);
+  }
+
   /**
    * POST /reviews/:cardId { rating } — self-assessment of one card. Keyed by
    * card (not by item) since phase 5: a vocabulary word has two cards.

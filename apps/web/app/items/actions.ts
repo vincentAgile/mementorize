@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { ApiError, createMindMap, createQuote, createVocabulary } from '../../lib/api';
+import { ApiError, createMindMap, createQuote, createVocabulary, relearnCard } from '../../lib/api';
 import type { ItemType } from '../../lib/types';
 
 export interface ItemFormState {
@@ -61,4 +61,13 @@ export async function createItemAction(_previous: ItemFormState, formData: FormD
     redirect(`/mind-maps/${createdMapId}`); // outside the try/catch: redirect() works by throwing
   }
   return { type };
+}
+
+/** « Remettre en révision » (MEM-48): a learned quote or mind map branch goes back to the review. */
+export async function relearnCardAction(cardId: string): Promise<void> {
+  if (typeof cardId !== 'string') {
+    throw new Error('Invalid card');
+  }
+  await relearnCard(cardId);
+  revalidatePath('/', 'layout'); // the space, the map and the counters
 }

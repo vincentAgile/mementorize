@@ -150,6 +150,10 @@ model Card {
   lapses        Int
   state         CardState
   lastReview    DateTime?
+  /// Quotes and mind map branches (MEM-48): when « Appris » took the card
+  /// out of the review, its schedule kept as it was. Null while reviewed.
+  /// Vocabulary is learned per item instead (Item.learningStatus, MEM-22).
+  learnedAt     DateTime?
   reviewLogs    ReviewLog[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt

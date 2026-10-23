@@ -37,6 +37,7 @@ export interface CardSummary {
   nodeId: string | null; // mind maps: the branch this card asks about
   due: string;
   state: CardState;
+  learnedAt?: string | null; // quotes and mind map branches marked « Appris » (MEM-48)
 }
 
 interface ItemBase {
@@ -75,7 +76,7 @@ export interface MindMap {
   id: string;
   title: string;
   nodes: MindMapNode[];
-  cards: { id: string; nodeId: string; due: string; state: CardState }[];
+  cards: { id: string; nodeId: string; due: string; state: CardState; learnedAt?: string | null }[];
 }
 
 /** A card waiting to be reviewed, as returned by GET /reviews/due. */

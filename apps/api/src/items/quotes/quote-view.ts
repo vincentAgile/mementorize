@@ -16,6 +16,6 @@ export function toQuoteView(item: ItemWithCards) {
     userId: item.userId,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
-    card: card ? { due: card.due, state: card.state } : null,
+    card: card ? { id: card.id, due: card.due, state: card.state, learnedAt: card.learnedAt } : null,
   };
 }
