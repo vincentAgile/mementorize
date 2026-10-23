@@ -158,6 +158,7 @@ export type Translator = 'DeepL' | 'Google';
 export interface Preferences {
   homeSpace: ItemType;
   translator: Translator;
+  showReviewDelays: boolean; // MEM-49: the delays under the rating buttons
 }
 
 export interface ReminderSettings extends ReminderSettingsInput {

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getDueReviews } from '../../lib/api';
+import { getDueReviews, getPreferences } from '../../lib/api';
 import { firstWords, formatDelay } from '../../lib/format';
 import { subtreeIds } from '../../lib/mind-map';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
@@ -105,7 +105,7 @@ const SESSION_LIMIT = 100;
 
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const space = findSpace((await searchParams).type);
-  const due = await getDueReviews(SESSION_LIMIT, space?.type);
+  const [due, preferences] = await Promise.all([getDueReviews(SESSION_LIMIT, space?.type), getPreferences()]);
   const now = new Date();
 
   // End of a subject's session: back to its space, which says when the
@@ -142,6 +142,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
               nextDue: next.nextDue,
             }))}
             total={due.total}
+            showDelays={preferences.showReviewDelays}
             now={now.toISOString()}
             space={space && { label: space.label, href: space.href }}
           />
