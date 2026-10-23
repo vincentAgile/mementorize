@@ -184,6 +184,9 @@ describe('API (e2e)', () => {
     // the session and is reviewed directly, with the previews returned.
     const again = await http().post(`/learning/${words[1].id}`).set(auth).send({ rating: 'Again' }).expect(201);
     expect(Object.keys(again.body.nextDueByRating)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
+    // « À revoir » makes the card due at once: still to review after leaving the session.
+    const stillDue = await http().get('/reviews/due?type=Vocabulary').set(auth).expect(200);
+    expect(stillDue.body.items.map((item: { card: { id: string } }) => item.card.id)).toContain(cardId);
     const reviewed = await http().post(`/reviews/${cardId}`).set(auth).send({ rating: 'Good' }).expect(201);
     expect(reviewed.body.id).toBe(cardId);
     expect(Object.keys(reviewed.body.nextDueByRating)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
