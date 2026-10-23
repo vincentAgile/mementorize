@@ -46,7 +46,7 @@ function navLinks(due: DueSummary, pathname: string, type: string | null): NavLi
 function DueBadge({ count }: { count: number }) {
   if (count > 0) {
     return (
-      <span className="badge" aria-label={`${count} carte${count > 1 ? 's' : ''} à réviser`}>
+      <span className="badge" aria-label={`${count}\u00a0carte${count > 1 ? 's' : ''} à réviser`}>
         {count}
       </span>
     );

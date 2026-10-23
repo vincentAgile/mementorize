@@ -41,13 +41,13 @@ export async function addVocabularyAction(
   };
   const fieldErrors: VocabularyAddState['fieldErrors'] = {};
   if (!values.word) fieldErrors.word = 'Saisis le mot, l’expression ou la phrase en anglais.';
-  else if (values.word.length > MAX.word) fieldErrors.word = `${MAX.word} caractères au plus.`;
+  else if (values.word.length > MAX.word) fieldErrors.word = `${MAX.word}\u00a0caractères au plus.`;
   if (!values.translation) fieldErrors.translation = 'Saisis la traduction en français.';
   else if (values.translation.length > MAX.translation)
-    fieldErrors.translation = `${MAX.translation} caractères au plus.`;
-  if (values.example.length > MAX.example) fieldErrors.example = `${MAX.example} caractères au plus.`;
+    fieldErrors.translation = `${MAX.translation}\u00a0caractères au plus.`;
+  if (values.example.length > MAX.example) fieldErrors.example = `${MAX.example}\u00a0caractères au plus.`;
   if (values.frenchExample.length > MAX.frenchExample)
-    fieldErrors.frenchExample = `${MAX.frenchExample} caractères au plus.`;
+    fieldErrors.frenchExample = `${MAX.frenchExample}\u00a0caractères au plus.`;
   if (Object.keys(fieldErrors).length > 0) {
     return { values, fieldErrors };
   }

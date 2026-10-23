@@ -115,7 +115,7 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
         <p>
           {learned.length === 0
             ? 'Aucun élément n’a pu être enregistré.'
-            : `${learned.length} élément${learned.length > 1 ? 's' : ''} passe${learned.length > 1 ? 'nt' : ''} en apprentissage : ${learned.length > 1 ? 'ils entrent' : 'il entre'} en révision.`}
+            : `${learned.length}\u00a0élément${learned.length > 1 ? 's' : ''} passe${learned.length > 1 ? 'nt' : ''} en apprentissage : ${learned.length > 1 ? 'ils entrent' : 'il entre'} en révision.`}
           {failed > 0 && ` ${failed} n’a pas pu être enregistré (déjà appris ou supprimé entre-temps).`}
         </p>
         <ul className="learning-done__list">

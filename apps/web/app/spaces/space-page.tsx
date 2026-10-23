@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { getDueReviews, getItems } from '../../lib/api';
-import { formatDelay, nothingDueLabel } from '../../lib/format';
+import { formatDelay } from '../../lib/format';
 import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
 import { branchesOf, rootOf } from '../../lib/mind-map';
 import { reviewHref, type Space } from '../../lib/spaces';
 import type { CardSummary, Item } from '../../lib/types';
 import { AppHeader } from '../app-header';
+import { NothingDue } from '../nothing-due';
 import { ItemForm } from '../items/item-form';
 
 /**
@@ -36,7 +37,7 @@ export async function SpacePage({ space }: { space: Space }) {
                 {space.reviewLabel} <span className="space__review-count">{spaceDue.total}</span>
               </Link>
             ) : (
-              <p className="space__due">{nothingDueLabel(spaceDue, now)}</p>
+              <NothingDue due={spaceDue} now={now} className="space__due" />
             )}
           </div>
         )}

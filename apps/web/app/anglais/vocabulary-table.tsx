@@ -79,8 +79,8 @@ export function VocabularyTable({ items, now, translator }: VocabularyTableProps
 
       <p className="vocabulary__count" aria-live="polite">
         {filtered
-          ? `${shown.length} élément${shown.length > 1 ? 's' : ''} sur ${rows.length}`
-          : `${rows.length} élément${rows.length > 1 ? 's' : ''}`}
+          ? `${shown.length}\u00a0élément${shown.length > 1 ? 's' : ''} sur\u00a0${rows.length}`
+          : `${rows.length}\u00a0élément${rows.length > 1 ? 's' : ''}`}
       </p>
 
       {shown.length === 0 ? (
