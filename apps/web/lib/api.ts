@@ -292,6 +292,33 @@ export async function isApiHealthy(): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
+// Import / export of the vocabulary as CSV (MEM-50)
+// ---------------------------------------------------------------------------
+
+export type CsvExport =
+  { ok: true; body: ReadableStream<Uint8Array>; disposition: string } | { ok: false; status: number };
+
+/**
+ * The vocabulary as a CSV file (MEM-52), for app/anglais/import-export/export/route.ts.
+ * Not through authedFetch, which reads JSON: the file is passed on as it is.
+ */
+export async function exportVocabularyCsv(): Promise<CsvExport> {
+  const token = await getSessionToken();
+  if (!token) return { ok: false, status: 401 };
+  const res = await fetch(`${API_URL}/vocabulary-csv/export`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+  });
+  if (!res.ok || !res.body) return { ok: false, status: res.status };
+  return {
+    ok: true,
+    body: res.body,
+    disposition: res.headers.get('content-disposition') ?? 'attachment; filename="mementorize-anglais.csv"',
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Pronunciation (MEM-39)
 // ---------------------------------------------------------------------------
 
