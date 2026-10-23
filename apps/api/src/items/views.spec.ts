@@ -39,7 +39,13 @@ describe('API views', () => {
     const view = toVocabularyView(item);
 
     // Created before MEM-42: no French example in the content, null in the view.
-    expect(view).toMatchObject({ word: 'to cherish', translation: 'chérir', example: null, frenchExample: null });
+    expect(view).toMatchObject({
+      word: 'to cherish',
+      translation: 'chérir',
+      example: null,
+      frenchExample: null,
+      topic: null, // MEM-51: none on the items created before it
+    });
     expect(view.cards.map((c) => c.kind)).toEqual(['EnglishToFrench', 'FrenchToEnglish']);
   });
 

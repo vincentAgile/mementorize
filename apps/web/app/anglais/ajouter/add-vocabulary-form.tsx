@@ -6,16 +6,17 @@ import type { Translator } from '../../../lib/types';
 import { addVocabularyAction, type VocabularyAddState } from '../actions';
 import { VocabularyFields, type VocabularyValues } from '../vocabulary-fields';
 
-const EMPTY: VocabularyValues = { word: '', example: '', translation: '', frenchExample: '' };
+const EMPTY: VocabularyValues = { word: '', example: '', translation: '', frenchExample: '', topic: '' };
 
 /**
  * The form of the "Ajouter" tab (MEM-27), in two blocks, Anglais and
  * Français (MEM-43), made to add several items in a row: the cursor starts
  * in the first field and comes back to it after each item, a message
  * recalls the item just added, and errors show next to their field
- * (aria-invalid, aria-describedby).
+ * (aria-invalid, aria-describedby). The topic stays after an item is
+ * added, for the next items of the same subject (MEM-51).
  */
-export function AddVocabularyForm({ translator }: { translator: Translator }) {
+export function AddVocabularyForm({ translator, topics }: { translator: Translator; topics: string[] }) {
   const [state, action] = useActionState<VocabularyAddState, FormData>(addVocabularyAction, {});
   const form = useRef<HTMLFormElement>(null);
 
@@ -29,7 +30,7 @@ export function AddVocabularyForm({ translator }: { translator: Translator }) {
     (target as HTMLInputElement | null)?.focus();
   }, [state]);
 
-  const values = state.values ?? EMPTY;
+  const values = state.values ?? (state.added ? { ...EMPTY, topic: state.added.topic } : EMPTY);
 
   return (
     <form ref={form} action={action} className="add-form" noValidate>
@@ -44,7 +45,14 @@ export function AddVocabularyForm({ translator }: { translator: Translator }) {
         </p>
       )}
 
-      <VocabularyFields values={values} errors={state.fieldErrors} idPrefix="add" autoFocus translator={translator} />
+      <VocabularyFields
+        values={values}
+        errors={state.fieldErrors}
+        idPrefix="add"
+        autoFocus
+        translator={translator}
+        topics={topics}
+      />
       <div className="add-form__actions">
         <AddButton />
       </div>

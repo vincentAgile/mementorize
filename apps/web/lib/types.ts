@@ -17,6 +17,8 @@ export interface VocabularyContent {
   example: string | null; // in English
   /** In French (MEM-42); absent from the items created before it. */
   frenchExample?: string | null;
+  /** The topic of the pair (MEM-51): "Voyage", "Cuisine"…; absent before it. */
+  topic?: string | null;
 }
 
 /** A node of a mind map, as stored by the API (each node knows its parent). */
@@ -69,6 +71,7 @@ export interface CreateVocabularyInput {
   translation: string;
   example?: string;
   frenchExample?: string; // MEM-42
+  topic?: string; // MEM-51
 }
 
 /** A mind map as returned by /mind-maps (title = label of the root). */

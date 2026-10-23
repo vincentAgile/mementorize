@@ -7,22 +7,25 @@ export interface VocabularyEditState {
   saved?: boolean;
   error?: string;
   /** Sent back with an error: React resets the form after an action, this refills it. */
-  values?: { word: string; translation: string; example: string; frenchExample: string };
+  values?: { word: string; translation: string; example: string; frenchExample: string; topic: string };
 }
 
 const field = (formData: FormData, name: string) => String(formData.get(name) ?? '').trim();
 
 // Same limits as the API (CreateVocabularyDto).
-const MAX = { word: 200, translation: 200, example: 500, frenchExample: 500 } as const;
+const MAX = { word: 200, translation: 200, example: 500, frenchExample: 500, topic: 50 } as const;
 
 export interface VocabularyAddState {
-  /** The English of the item just added, for the confirmation; a new object each time. */
-  added?: { word: string };
+  /**
+   * The English of the item just added, for the confirmation; a new object
+   * each time. Its topic stays in the form, for the next items (MEM-51).
+   */
+  added?: { word: string; topic: string };
   /** One message per field, shown next to it. */
-  fieldErrors?: Partial<Record<'word' | 'translation' | 'example' | 'frenchExample', string>>;
+  fieldErrors?: Partial<Record<'word' | 'translation' | 'example' | 'frenchExample' | 'topic', string>>;
   error?: string;
   /** Sent back with an error: React resets the form after an action, this refills it. */
-  values?: { word: string; translation: string; example: string; frenchExample: string };
+  values?: { word: string; translation: string; example: string; frenchExample: string; topic: string };
 }
 
 /**
@@ -38,6 +41,7 @@ export async function addVocabularyAction(
     translation: field(formData, 'translation'),
     example: field(formData, 'example'),
     frenchExample: field(formData, 'frenchExample'),
+    topic: field(formData, 'topic'),
   };
   const fieldErrors: VocabularyAddState['fieldErrors'] = {};
   if (!values.word) fieldErrors.word = 'Saisis le mot, l’expression ou la phrase en anglais.';
@@ -48,6 +52,7 @@ export async function addVocabularyAction(
   if (values.example.length > MAX.example) fieldErrors.example = `${MAX.example}\u00a0caractères au plus.`;
   if (values.frenchExample.length > MAX.frenchExample)
     fieldErrors.frenchExample = `${MAX.frenchExample}\u00a0caractères au plus.`;
+  if (values.topic.length > MAX.topic) fieldErrors.topic = `${MAX.topic}\u00a0caractères au plus.`;
   if (Object.keys(fieldErrors).length > 0) {
     return { values, fieldErrors };
   }
@@ -58,13 +63,14 @@ export async function addVocabularyAction(
       translation: values.translation,
       example: values.example || undefined,
       frenchExample: values.frenchExample || undefined,
+      topic: values.topic || undefined,
     });
   } catch (error) {
     if (error instanceof ApiError) return { values, error: 'Impossible d’enregistrer l’élément. Réessaie.' };
     throw error; // e.g. the redirect of an expired session
   }
   revalidatePath('/', 'layout'); // the counter of the "Apprendre · Réviser" tab, the list
-  return { added: { word: values.word } };
+  return { added: { word: values.word, topic: values.topic } };
 }
 
 /** MEM-19: same rules as when adding a word (both sides required, same lengths as the API). */
@@ -77,14 +83,18 @@ export async function updateVocabularyAction(
   const translation = field(formData, 'translation');
   const example = field(formData, 'example');
   const frenchExample = field(formData, 'frenchExample');
-  const values = { word, translation, example, frenchExample };
+  const topic = field(formData, 'topic');
+  const values = { word, translation, example, frenchExample, topic };
   if (!word || !translation) {
     return { values, error: 'L’anglais et le français sont requis.' };
   }
+  if (topic.length > MAX.topic) {
+    return { values, error: `La thématique fait ${MAX.topic}\u00a0caractères au plus.` };
+  }
 
   try {
-    // An empty example is sent as such: the API removes it.
-    await updateVocabulary(id, { word, translation, example, frenchExample });
+    // An empty example or topic is sent as such: the API removes it.
+    await updateVocabulary(id, { word, translation, example, frenchExample, topic });
   } catch (error) {
     if (error instanceof ApiError) return { values, error: 'Impossible d’enregistrer la modification.' };
     throw error; // e.g. the redirect of an expired session

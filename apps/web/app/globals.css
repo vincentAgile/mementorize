@@ -1674,6 +1674,21 @@ kbd {
   border-radius: 8px;
 }
 
+/* MEM-51: the topic of the pair, under both blocks */
+.vocab-fields .vocab-fields__topic {
+  grid-column: 1 / -1;
+  padding: 0 1rem;
+}
+
+.vocab-fields__topic input {
+  max-width: 24rem;
+}
+
+.vocabulary__topic {
+  color: #555;
+  white-space: nowrap;
+}
+
 .vocab-fields__block legend {
   padding: 0 0.35rem;
   font-weight: 600;

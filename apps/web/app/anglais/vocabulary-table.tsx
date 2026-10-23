@@ -14,6 +14,7 @@ import {
   sortRows,
   statusLabel,
   toRow,
+  topicsOf,
   type VocabularyItem,
 } from '../../lib/vocabulary-table';
 import { VocabularyActions } from './vocabulary-actions';
@@ -21,6 +22,7 @@ import { VocabularyActions } from './vocabulary-actions';
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: 'english', label: 'Anglais' },
   { key: 'french', label: 'Français' },
+  { key: 'topic', label: 'Thématique' },
   { key: 'status', label: 'État' },
   { key: 'review', label: 'Révision' },
 ];
@@ -46,6 +48,7 @@ export function VocabularyTable({ items, now, translator }: VocabularyTableProps
   const searchId = useId();
 
   const rows = useMemo(() => items.map(toRow), [items]);
+  const topics = useMemo(() => topicsOf(rows.map((row) => row.topic)), [rows]); // MEM-51
   const shown = useMemo(() => sortRows(filterRows(rows, filter), sort), [rows, filter, sort]);
   const date = new Date(now);
   const filtered = filter.search !== '' || filter.status !== 'all';
@@ -138,12 +141,13 @@ export function VocabularyTable({ items, now, translator }: VocabularyTableProps
                       </span>
                     )}
                   </td>
+                  <td className="vocabulary__topic">{row.topic}</td>
                   <td>
                     <span className={`status status--${row.status}`}>{statusLabel(row.status)}</span>
                   </td>
                   <td className="vocabulary__review">{reviewLabel(row, date)}</td>
                   <td>
-                    <VocabularyActions row={row} translator={translator} />
+                    <VocabularyActions row={row} translator={translator} topics={topics} />
                   </td>
                 </tr>
               ))}

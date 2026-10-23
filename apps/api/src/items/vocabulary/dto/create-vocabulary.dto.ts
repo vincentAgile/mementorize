@@ -24,4 +24,10 @@ export class CreateVocabularyDto {
   @IsString()
   @MaxLength(500)
   frenchExample?: string;
+
+  /** Topic of the pair (MEM-51), free text: "Voyage", "Cuisine"… */
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  topic?: string;
 }

@@ -38,6 +38,7 @@ export class VocabularyController {
       translation: dto.translation,
       example: dto.example ?? null,
       frenchExample: dto.frenchExample?.trim() || null,
+      topic: dto.topic?.trim() || null,
     });
     this.pronunciations.request(item.id); // MEM-39, in the background
     return toVocabularyView(item);
@@ -54,7 +55,7 @@ export class VocabularyController {
   }
 
   /**
-   * Changes the English, the French or the examples (MEM-19, MEM-42). The
+   * Changes the English, the French, the examples or the topic (MEM-19, MEM-42, MEM-51). The
    * cards, the learning state and the review history stay as they are; an
    * empty example removes it.
    */
@@ -64,6 +65,7 @@ export class VocabularyController {
       ...dto,
       ...(dto.example !== undefined && { example: dto.example.trim() || null }),
       ...(dto.frenchExample !== undefined && { frenchExample: dto.frenchExample.trim() || null }),
+      ...(dto.topic !== undefined && { topic: dto.topic.trim() || null }),
     };
     const item = await this.items.update(user.id, id, 'Vocabulary', changes);
     if (dto.word !== undefined) this.pronunciations.request(id); // new English, new audio (MEM-39)
