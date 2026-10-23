@@ -1,4 +1,5 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -11,7 +12,7 @@ import { AppModule } from '../src/app.module.js';
  * unique users, so it doesn't depend on what's already in the database.
  */
 describe('API (e2e)', () => {
-  let app: INestApplication;
+  let app: NestExpressApplication;
   const http = () => request(app.getHttpServer());
   const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -25,7 +26,8 @@ describe('API (e2e)', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
+    app = moduleRef.createNestApplication<NestExpressApplication>();
+    app.useBodyParser('json', { limit: '3mb' }); // as in main.ts
     // Same global pipe as main.ts, so that validation behaves as in production.
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
@@ -322,6 +324,43 @@ describe('API (e2e)', () => {
       'carte d’embarquement,boarding pass,Voyage,Montrez votre carte.,"Show your ""boarding pass""; please."',
     );
     await http().get('/vocabulary-csv/export').expect(401);
+  });
+
+  it('previews a CSV file to import, with its duplicates and errors, without saving anything (MEM-53)', async () => {
+    const token = await register('oscar');
+    const auth = { Authorization: `Bearer ${token}` };
+    await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201);
+
+    const content =
+      '\uFEFFExpression française;Expression anglaise;Thématique;Phrase exemple français;Phrase exemple anglais\r\n' +
+      'Accroc;hitch\r\nchérir;to cherish;Émotions\r\n;orphan\r\n';
+    const preview = await http().post('/vocabulary-csv/preview').set(auth).send({ content }).expect(200);
+    expect(preview.body.summary).toEqual({ total: 3, new: 1, duplicate: 1, error: 1 });
+    expect(preview.body.rows[0]).toMatchObject({
+      line: 2,
+      status: 'duplicate',
+      languages: ['fr'],
+      of: { existing: 'snag → accroc' },
+    });
+    expect(preview.body.rows[1]).toMatchObject({ line: 3, status: 'new', topic: 'Émotions' });
+
+    // Nothing saved; the other separator is spotted; a large file goes through.
+    const items = await http().get('/vocabulary').set(auth).expect(200);
+    expect(items.body).toHaveLength(1);
+    const wrong = await http()
+      .post('/vocabulary-csv/preview')
+      .set(auth)
+      .send({ content: 'chérir,to cherish\r\n' })
+      .expect(200);
+    expect(wrong.body).toEqual({ ok: false, problem: 'wrongSeparator' });
+    const big = 'un;one;' + 'x'.repeat(40) + ';' + 'phrase '.repeat(70) + '\r\n';
+    const large = await http()
+      .post('/vocabulary-csv/preview')
+      .set(auth)
+      .send({ content: big.repeat(1500) })
+      .expect(200);
+    expect(large.body.summary.total).toBe(1500);
+    await http().post('/vocabulary-csv/preview').set(auth).send({}).expect(400);
   });
 
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {

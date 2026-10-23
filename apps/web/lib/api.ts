@@ -8,6 +8,7 @@ import type {
   Credentials,
   DueReviews,
   DueSummary,
+  ImportAnalysis,
   LearningSession,
   Item,
   ItemType,
@@ -316,6 +317,15 @@ export async function exportVocabularyCsv(): Promise<CsvExport> {
     body: res.body,
     disposition: res.headers.get('content-disposition') ?? 'attachment; filename="mementorize-anglais.csv"',
   };
+}
+
+/** What importing this CSV file would do, line by line (MEM-53). Nothing is saved. */
+export function previewVocabularyImport(content: string): Promise<ImportAnalysis> {
+  return authedFetch<ImportAnalysis>('/vocabulary-csv/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
 }
 
 // ---------------------------------------------------------------------------

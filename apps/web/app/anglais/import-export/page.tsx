@@ -3,12 +3,14 @@ import Link from 'next/link';
 import { getItems, getPreferences } from '../../../lib/api';
 import { SEPARATOR_NAMES } from '../../../lib/csv-separator';
 import { NBSP } from '../../../lib/format';
+import { ImportSection } from './import-section';
 
 export const metadata: Metadata = { title: 'Import / export · Anglais' };
 
 /**
  * Tab "Import / export" (MEM-52): the vocabulary to and from CSV files,
- * with the separator chosen in the settings (MEM-55).
+ * with the separator chosen in the settings (MEM-55). The import (MEM-53)
+ * shows the lines of the file before anything is saved.
  */
 export default async function EnglishImportExportPage() {
   const [items, { csvSeparator }] = await Promise.all([getItems('Vocabulary'), getPreferences()]);
@@ -42,6 +44,8 @@ export default async function EnglishImportExportPage() {
           </>
         )}
       </section>
+
+      <ImportSection separator={csvSeparator} />
     </div>
   );
 }

@@ -2042,6 +2042,26 @@ kbd {
   max-width: 52rem;
 }
 
+/* Grid items may shrink: the wide table of the preview scrolls in its box. */
+.import-export > * {
+  min-width: 0;
+}
+
+.import-export .button--secondary {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: transparent;
+  color: #147d80;
+  font: inherit;
+  cursor: pointer;
+}
+
+.import-preview__table th {
+  padding: 0.55rem 0.6rem;
+}
+
 .import-export__separator {
   margin: 0;
   color: #555;
@@ -2078,7 +2098,135 @@ kbd {
   background: #0f6366;
 }
 
+/* MEM-53: the file to import, then the grid of its lines */
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.5rem 1rem;
+  border: 2px dashed #b9cfd0;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.drop-zone.is-dragging,
+.drop-zone:hover {
+  border-color: #147d80;
+  background: #f0f7f7;
+}
+
+.drop-zone:focus-within {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
+}
+
+.drop-zone__hint {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.import-problem {
+  padding: 0.8rem 1rem;
+  border-left: 4px solid #c1543a;
+  border-radius: 4px;
+  background: #fbefec;
+}
+
+.import-problem p {
+  margin: 0 0 0.75rem;
+}
+
+.import-preview__summary {
+  font-size: 1.05rem;
+}
+
+.import-preview__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.import-preview__tools select {
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+}
+
+.import-preview__line {
+  color: #666;
+  font-variant-numeric: tabular-nums;
+}
+
+.import-status {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.import-status--new {
+  background: #e0f1e2;
+  color: #1f6125;
+}
+
+.import-status--duplicate {
+  background: #fdf0d5;
+  color: #7a4d00;
+}
+
+.import-status--error {
+  background: #fbe3de;
+  color: #9a2f1a;
+}
+
+.import-preview__why {
+  display: block;
+  margin-top: 0.2rem;
+  color: #555;
+  font-size: 0.85rem;
+}
+
 @media (prefers-color-scheme: dark) {
+  .drop-zone.is-dragging,
+  .drop-zone:hover {
+    background: #16292a;
+  }
+
+  .drop-zone__hint,
+  .import-preview__why,
+  .import-preview__line {
+    color: #aaa;
+  }
+
+  .import-problem {
+    background: #3a221d;
+  }
+
+  .import-export .button--secondary {
+    border-color: #5cc3c6;
+    color: #5cc3c6;
+  }
+
+  .import-status--new {
+    background: #1f3b22;
+    color: #a5d6a7;
+  }
+
+  .import-status--duplicate {
+    background: #3d3016;
+    color: #ffd27a;
+  }
+
+  .import-status--error {
+    background: #46231c;
+    color: #ffab9a;
+  }
+
   .import-export__separator {
     color: #bbb;
   }

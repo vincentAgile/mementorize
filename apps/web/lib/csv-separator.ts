@@ -13,3 +13,6 @@ export const SEPARATOR_NAMES: Record<CsvSeparator, string> = {
 };
 
 export const CSV_SEPARATORS = Object.keys(SEPARATOR_CHARS) as CsvSeparator[];
+
+/** The largest file to import (MEM-53): 1 Mo. */
+export const MAX_FILE_BYTES = 1_000_000;
