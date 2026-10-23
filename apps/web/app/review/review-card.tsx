@@ -24,8 +24,8 @@ interface ReviewCardProps {
   back: CardFace;
   /** Keep the question visible above the answer (vocabulary: word -> translation). */
   repeatFront?: boolean;
-  /** When the card comes back with each rating ("10 min"). */
-  delays: Partial<Record<Answer, string>>;
+  /** When the card comes back with each rating ("10 min"); none when the setting is off (MEM-49). */
+  delays?: Partial<Record<Answer, string>>;
   /** Offer the button "Appris" (MEM-22, MEM-48). */
   withLearned: boolean;
   /** Sends the answer; the session then shows the next card. */

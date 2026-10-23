@@ -291,20 +291,25 @@ describe('API (e2e)', () => {
     expect(cleared.body).toMatchObject({ firstName: null, lastName: null });
   });
 
-  it('saves the home space (Anglais by default) and the translation service (DeepL by default), each on its own', async () => {
+  it('saves the home space (Anglais by default), the translation service (DeepL by default) and the delays (hidden by default), each on its own', async () => {
     const token = await register('erin');
     const auth = { Authorization: `Bearer ${token}` };
 
     const initial = await http().get('/preferences').set(auth).expect(200);
-    expect(initial.body).toEqual({ homeSpace: 'Vocabulary', translator: 'DeepL' });
+    expect(initial.body).toEqual({ homeSpace: 'Vocabulary', translator: 'DeepL', showReviewDelays: false });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
     const saved = await http().get('/preferences').set(auth).expect(200);
-    expect(saved.body).toEqual({ homeSpace: 'Quote', translator: 'DeepL' });
+    expect(saved.body).toEqual({ homeSpace: 'Quote', translator: 'DeepL', showReviewDelays: false });
 
     // MEM-44: the translator alone, the home space untouched.
     const translator = await http().put('/preferences').set(auth).send({ translator: 'Google' }).expect(200);
-    expect(translator.body).toEqual({ homeSpace: 'Quote', translator: 'Google' });
+    expect(translator.body).toEqual({ homeSpace: 'Quote', translator: 'Google', showReviewDelays: false });
+
+    // MEM-49: the delays on the rating buttons, off by default.
+    const delays = await http().put('/preferences').set(auth).send({ showReviewDelays: true }).expect(200);
+    expect(delays.body).toEqual({ homeSpace: 'Quote', translator: 'Google', showReviewDelays: true });
+    await http().put('/preferences').set(auth).send({ showReviewDelays: 'yes' }).expect(400);
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);

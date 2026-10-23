@@ -17,6 +17,8 @@ interface LearningSessionViewProps {
   session: LearningSession;
   /** The server's clock, so that the server and the browser show the same delays. */
   now: string;
+  /** The delays under the rating buttons: a setting, off by default (MEM-49). */
+  showDelays: boolean;
 }
 
 /**
@@ -33,7 +35,7 @@ interface LearningSessionViewProps {
  * The items are those loaded with the page: leaving the session keeps the
  * unrated ones "À apprendre".
  */
-export function LearningSessionView({ session, now }: LearningSessionViewProps) {
+export function LearningSessionView({ session, now, showDelays }: LearningSessionViewProps) {
   const [items] = useState(session.items);
   const [phase, setPhase] = useState<Phase>('discover');
   const [index, setIndex] = useState(0); // step 1
@@ -234,12 +236,16 @@ export function LearningSessionView({ session, now }: LearningSessionViewProps) 
             <RatingButtons
               onAnswer={(answer) => void rate(answer)}
               withLearned
-              delays={Object.fromEntries(
-                (['Again', 'Hard', 'Good'] as const).map((rating) => [
-                  rating,
-                  formatDelay(new Date(clock), new Date(due[rating])),
-                ]),
-              )}
+              delays={
+                showDelays
+                  ? Object.fromEntries(
+                      (['Again', 'Hard', 'Good'] as const).map((rating) => [
+                        rating,
+                        formatDelay(new Date(clock), new Date(due[rating])),
+                      ]),
+                    )
+                  : undefined
+              }
               disabled={sending}
             />
           </>

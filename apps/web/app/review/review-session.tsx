@@ -31,6 +31,8 @@ interface ReviewSessionProps {
   /** The server's clock, so that the server and the browser show the same delays at first. */
   now: string;
   space?: { label: string; href: string };
+  /** The delays under the rating buttons: a setting, off by default (MEM-49). */
+  showDelays: boolean;
 }
 
 const RATINGS = ['Again', 'Hard', 'Good'] as const;
@@ -42,7 +44,7 @@ const RATINGS = ['Again', 'Hard', 'Good'] as const;
  * until it gets another answer. The pile lives here, in the browser: leaving
  * the session and coming back starts a new one, from the FSRS due dates.
  */
-export function ReviewSession({ cards, total, now, space }: ReviewSessionProps) {
+export function ReviewSession({ cards, total, now, space, showDelays }: ReviewSessionProps) {
   const router = useRouter();
   const [pile, setPile] = useState(cards);
   // Incremented after each answer: a fresh (hidden) card, even when the same
@@ -101,9 +103,13 @@ export function ReviewSession({ cards, total, now, space }: ReviewSessionProps) 
         back={current.back}
         repeatFront={current.repeatFront}
         withLearned
-        delays={Object.fromEntries(
-          RATINGS.map((rating) => [rating, formatDelay(new Date(clock), new Date(current.nextDue[rating]))]),
-        )}
+        delays={
+          showDelays
+            ? Object.fromEntries(
+                RATINGS.map((rating) => [rating, formatDelay(new Date(clock), new Date(current.nextDue[rating]))]),
+              )
+            : undefined
+        }
         onAnswer={answer}
       />
     </>
