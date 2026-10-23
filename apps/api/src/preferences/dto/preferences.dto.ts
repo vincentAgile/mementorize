@@ -1,5 +1,5 @@
 import type { ItemType, Translator } from '@prisma/client';
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
 import { ITEM_TYPES } from '../../items/item-content.js';
 
 /** Runtime list of the translation services (MEM-44), in sync with the Prisma enum. */
@@ -16,4 +16,9 @@ export class PreferencesDto {
   @IsOptional()
   @IsEnum(TRANSLATORS)
   translator?: Translator;
+
+  /** Show the delays on the rating buttons (MEM-49). */
+  @IsOptional()
+  @IsBoolean()
+  showReviewDelays?: boolean;
 }

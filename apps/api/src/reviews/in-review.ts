@@ -14,5 +14,10 @@ export const IN_REVIEW = { learningStatus: 'Learning' } as const satisfies Prism
  * answer. The English → French cards are kept, with their schedule and
  * history, but ignored: they can come back (a setting, later). Used with
  * IN_REVIEW by every query on due cards.
+ * MEM-48: the cards marked « Appris » (a quote, a mind map branch) are left
+ * out too.
  */
-export const REVIEWED_CARD = { kind: { not: 'EnglishToFrench' } } as const satisfies Prisma.CardWhereInput;
+export const REVIEWED_CARD = {
+  kind: { not: 'EnglishToFrench' },
+  learnedAt: null,
+} as const satisfies Prisma.CardWhereInput;

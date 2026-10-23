@@ -10,7 +10,7 @@ export function toMindMapView(item: ItemWithCards) {
     userId: item.userId,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
-    cards: item.cards.map(({ id, nodeId, due, state }) => ({ id, nodeId, due, state })),
+    cards: item.cards.map(({ id, nodeId, due, state, learnedAt }) => ({ id, nodeId, due, state, learnedAt })),
   };
 }
 

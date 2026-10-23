@@ -828,15 +828,22 @@ kbd {
   cursor: pointer;
 }
 
+/*
+ * MEM-46: four coloured buttons, the label always shown (the colour is not
+ * the only cue). Dark text on the orange and the yellow, white text on the
+ * red and the green: contrast of at least 4.5:1 for the label and the delay.
+ */
 .review-card__ratings {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-auto-columns: minmax(0, 1fr); /* three or four equal columns, on one line */
+  grid-auto-flow: column;
   gap: 0.5rem;
 }
 
 @media (max-width: 480px) {
   .review-card__ratings {
     grid-template-columns: repeat(2, 1fr);
+    grid-auto-flow: row;
   }
 }
 
@@ -844,18 +851,27 @@ kbd {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: 3rem;
   padding: 0.6rem 0.25rem;
-  border: 1px solid #ccc;
+  border: none;
   border-radius: 6px;
-  background: transparent;
-  color: inherit;
   font: inherit;
   cursor: pointer;
 }
 
+.rating:hover:not(:disabled) {
+  filter: brightness(0.93);
+}
+
+.rating:focus-visible {
+  outline: 3px solid #1a1a1a;
+  outline-offset: 2px;
+}
+
 .rating:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: wait;
 }
 
@@ -865,46 +881,95 @@ kbd {
 
 .rating__delay {
   font-size: 0.8rem;
-  color: #888;
 }
 
-.rating--again .rating__label {
-  color: #c1543a;
+.rating--again {
+  background: #c62828;
+  color: #fff;
 }
 
-.rating--hard .rating__label {
-  color: #b7791f;
+.rating--hard {
+  background: #f39c3d;
+  color: #1a1a1a;
 }
 
-.rating--good .rating__label {
-  color: #147d80;
-}
-
-.rating--easy .rating__label {
-  color: #2f6fb5;
-}
-
-/* MEM-22: a fifth button for the vocabulary, set apart from the four grades */
-.review-card__ratings--five {
-  grid-template-columns: repeat(4, 1fr) 1.15fr;
+.rating--good {
+  background: #f6d34a;
+  color: #1a1a1a;
 }
 
 .rating--learned {
-  border-style: dashed;
+  background: #2e7d32;
+  color: #fff;
 }
 
-.rating--learned .rating__label {
-  color: #6b4fa0;
+@media (prefers-color-scheme: dark) {
+  .rating:focus-visible {
+    outline-color: #fff;
+  }
 }
 
-@media (max-width: 480px) {
-  .review-card__ratings--five {
-    grid-template-columns: repeat(2, 1fr);
-  }
+/* MEM-48: « Remettre en révision », a quote or a mind map branch */
+.relearn-card {
+  display: inline;
+}
 
-  .review-card__ratings--five .rating--learned {
-    grid-column: 1 / -1;
-  }
+.relearn-card__button {
+  margin: 0.25rem 0 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: transparent;
+  color: #147d80;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.relearn-card__button:hover:not(:disabled) {
+  background: #e3f1f1;
+}
+
+.relearn-card__button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.learned-branches {
+  margin-top: 1.5rem;
+}
+
+.learned-branches__title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.learned-branches__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learned-branches__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.learned-branches__list .relearn-card__button {
+  margin: 0;
+}
+
+.learned-branches__badge {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #2e7d32;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .review-empty {
@@ -1450,6 +1515,11 @@ kbd {
 
 .learning-done {
   margin-top: 2rem;
+}
+
+.learning-done__known {
+  color: #2e7d32;
+  font-weight: 600;
 }
 
 .learning-done__list {

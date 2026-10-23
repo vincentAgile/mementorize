@@ -37,6 +37,7 @@ export interface CardSummary {
   nodeId: string | null; // mind maps: the branch this card asks about
   due: string;
   state: CardState;
+  learnedAt?: string | null; // quotes and mind map branches marked « Appris » (MEM-48)
 }
 
 interface ItemBase {
@@ -75,7 +76,7 @@ export interface MindMap {
   id: string;
   title: string;
   nodes: MindMapNode[];
-  cards: { id: string; nodeId: string; due: string; state: CardState }[];
+  cards: { id: string; nodeId: string; due: string; state: CardState; learnedAt?: string | null }[];
 }
 
 /** A card waiting to be reviewed, as returned by GET /reviews/due. */
@@ -102,6 +103,7 @@ export interface DueSummary {
 /** A vocabulary item of a learning session (MEM-21). */
 export interface LearningItem {
   id: string;
+  cardId: string; // its French → English card, reviewed directly when it comes back (MEM-47)
   word: string;
   translation: string;
   example: string | null;
@@ -113,6 +115,11 @@ export interface LearningItem {
 export interface LearningSession {
   total: number; // all the items still to learn
   items: LearningItem[]; // up to five, the oldest first
+}
+
+/** Answer of POST /reviews/:cardId and POST /learning/:itemId: when the card comes back next time. */
+export interface RatedCard {
+  nextDueByRating: Record<ReviewRating, string>;
 }
 
 export interface DueReviews {
@@ -151,6 +158,7 @@ export type Translator = 'DeepL' | 'Google';
 export interface Preferences {
   homeSpace: ItemType;
   translator: Translator;
+  showReviewDelays: boolean; // MEM-49: the delays under the rating buttons
 }
 
 export interface ReminderSettings extends ReminderSettingsInput {

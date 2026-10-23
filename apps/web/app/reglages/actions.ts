@@ -83,3 +83,23 @@ export async function saveTranslatorAction(
   revalidatePath('/', 'layout'); // the forms of the Anglais space use it
   return { message: `Service de traduction enregistré : ${TRANSLATOR_NAMES[translator]}.` };
 }
+
+/** Show the delays under the rating buttons (MEM-49). */
+export async function saveReviewDelaysAction(
+  _previous: SettingsFormState,
+  formData: FormData,
+): Promise<SettingsFormState> {
+  const showReviewDelays = formData.get('showReviewDelays') === 'on';
+  try {
+    await savePreferences({ showReviewDelays });
+  } catch (error) {
+    if (error instanceof ApiError) return { error: "Impossible d'enregistrer le réglage de la révision." };
+    throw error;
+  }
+  revalidatePath('/reglages');
+  return {
+    message: showReviewDelays
+      ? 'Les boutons de révision affichent le délai avant la prochaine révision.'
+      : 'Les boutons de révision n’affichent plus que leur libellé.',
+  };
+}

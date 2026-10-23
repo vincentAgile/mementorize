@@ -66,6 +66,7 @@ describe('LearningService', () => {
       // No French example in a content from before MEM-42: null.
       expect(session.items[0]).toMatchObject({
         id: 'item-1',
+        cardId: 'fr-en',
         word: 'snag',
         translation: 'accroc',
         frenchExample: null,
@@ -88,7 +89,12 @@ describe('LearningService', () => {
         where: { id: 'item-1' },
         data: { learningStatus: 'Learning' },
       });
-      expect(result).toEqual({ id: 'item-1', learningStatus: 'Learning', nextDue: expected.card.due });
+      expect(result).toEqual({
+        id: 'item-1',
+        learningStatus: 'Learning',
+        nextDue: expected.card.due,
+        nextDueByRating: scheduler.preview({ ...word().cards[1], ...expected.card }, NOW),
+      });
     });
 
     it("refuses an item that doesn't exist or isn't the user's", async () => {
@@ -120,8 +126,21 @@ describe('LearningService', () => {
       });
     });
 
-    it('refuses an item that is not being learned', async () => {
+    it('takes an item still to learn straight to "Learned", at step 2 of a learning session (MEM-46)', async () => {
       prismaMock.item.findFirst.mockResolvedValue(word('ToLearn'));
+
+      await service.markLearned(userId, 'item-1', NOW);
+
+      expect(prismaMock.reviewLog.create).toHaveBeenCalledTimes(2);
+      expect(prismaMock.card.update).not.toHaveBeenCalled();
+      expect(prismaMock.item.update).toHaveBeenCalledWith({
+        where: { id: 'item-1' },
+        data: { learningStatus: 'Learned' },
+      });
+    });
+
+    it('refuses an item already learned', async () => {
+      prismaMock.item.findFirst.mockResolvedValue(word('Learned'));
       await expect(service.markLearned(userId, 'item-1', NOW)).rejects.toBeInstanceOf(ConflictException);
     });
   });

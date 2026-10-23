@@ -6,11 +6,12 @@ import type { PreferencesDto } from './dto/preferences.dto.js';
 export interface Preferences {
   homeSpace: ItemType;
   translator: Translator;
+  showReviewDelays: boolean;
 }
 
-const SELECT = { homeSpace: true, translator: true } as const;
+const SELECT = { homeSpace: true, translator: true, showReviewDelays: true } as const;
 
-/** The user's preferences of the web app (MEM-6, MEM-44), stored on their account. */
+/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49), stored on their account. */
 @Injectable()
 export class PreferencesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -23,7 +24,7 @@ export class PreferencesService {
   update(userId: string, dto: PreferencesDto): Promise<Preferences> {
     return this.prisma.user.update({
       where: { id: userId },
-      data: { homeSpace: dto.homeSpace, translator: dto.translator },
+      data: { homeSpace: dto.homeSpace, translator: dto.translator, showReviewDelays: dto.showReviewDelays },
       select: SELECT,
     });
   }

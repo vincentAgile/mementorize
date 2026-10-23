@@ -164,6 +164,7 @@ describe('API (e2e)', () => {
     const session = await http().get('/learning/session').set(auth).expect(200);
     expect(session.body.total).toBe(2);
     expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['snag', 'to cherish']);
+    const cardId = session.body.items[1].cardId;
 
     const learned = await http().post(`/learning/${words[0].id}`).set(auth).send({ rating: 'Good' }).expect(201);
     expect(learned.body.learningStatus).toBe('Learning');
@@ -178,6 +179,14 @@ describe('API (e2e)', () => {
     expect(after.body.total).toBe(1);
     await http().post(`/learning/${words[0].id}`).set(auth).send({ rating: 'Good' }).expect(409);
     await http().post(`/learning/${words[1].id}`).set(auth).send({ rating: 'Nope' }).expect(400);
+
+    // MEM-47: « À revoir » at step 2, then the card comes back at the end of
+    // the session and is reviewed directly, with the previews returned.
+    const again = await http().post(`/learning/${words[1].id}`).set(auth).send({ rating: 'Again' }).expect(201);
+    expect(Object.keys(again.body.nextDueByRating)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
+    const reviewed = await http().post(`/reviews/${cardId}`).set(auth).send({ rating: 'Good' }).expect(201);
+    expect(reviewed.body.id).toBe(cardId);
+    expect(Object.keys(reviewed.body.nextDueByRating)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
   });
 
   it('takes a learned word out of the review, and puts it back with the same schedule (MEM-22)', async () => {
@@ -187,7 +196,6 @@ describe('API (e2e)', () => {
     const word = (
       await http().post('/vocabulary').set(auth).send({ word: 'thrifty', translation: 'économe' }).expect(201)
     ).body;
-    await http().post(`/learning/${word.id}/learned`).set(auth).expect(409); // still to learn
     await http().post(`/learning/${word.id}`).set(auth).send({ rating: 'Good' }).expect(201);
     const before = await http().get(`/vocabulary/${word.id}`).set(auth).expect(200);
 
@@ -201,6 +209,63 @@ describe('API (e2e)', () => {
     const after = await http().get(`/vocabulary/${word.id}`).set(auth).expect(200);
     expect(after.body.cards).toEqual(before.body.cards);
     await http().post(`/learning/${word.id}/relearn`).set(auth).expect(409);
+  });
+
+  it('takes a quote or one branch of a mind map out of the review, and puts it back (MEM-48)', async () => {
+    const token = await register('mila');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const quote = (await http().post('/quotes').set(auth).send({ text: 'Connais-toi toi-même.' }).expect(201)).body;
+    const map = (
+      await http()
+        .post('/mind-maps')
+        .set(auth)
+        .send({
+          nodes: [
+            { id: 'r', parentId: null, label: 'Mémoire', position: { x: 0, y: 0 } },
+            { id: 'a', parentId: 'r', label: 'Répétition', position: { x: 100, y: 0 } },
+            { id: 'b', parentId: 'r', label: 'Sommeil', position: { x: -100, y: 0 } },
+          ],
+        })
+        .expect(201)
+    ).body;
+    const quoteCard = quote.card.id;
+    const branch = map.cards.find((card: { nodeId: string }) => card.nodeId === 'a').id;
+
+    await http().post(`/reviews/${quoteCard}/learned`).set(auth).expect(201);
+    await http().post(`/reviews/${quoteCard}/learned`).set(auth).expect(409);
+    await http().post(`/reviews/${branch}/learned`).set(auth).expect(201);
+
+    // The quote is out; the map has only its other branch left, due tomorrow (staggered).
+    const summary = await http().get('/reviews/due/summary').set(auth).expect(200);
+    expect(summary.body.byType).toMatchObject({ Quote: 0, MindMap: 0 });
+    const mapDue = await http().get('/reviews/due?type=MindMap').set(auth).expect(200);
+    const other = map.cards.find((card: { nodeId: string }) => card.nodeId === 'b');
+    expect(new Date(mapDue.body.nextDueAt)).toEqual(new Date(other.due));
+    const after = await http().get(`/mind-maps/${map.id}`).set(auth).expect(200);
+    expect(after.body.cards.find((card: { id: string }) => card.id === branch).learnedAt).not.toBeNull();
+
+    await http().post(`/reviews/${branch}/relearn`).set(auth).expect(201);
+    await http().post(`/reviews/${branch}/relearn`).set(auth).expect(409);
+    const back = await http().get('/reviews/due/summary').set(auth).expect(200);
+    expect(back.body.byType.MindMap).toBe(1);
+  });
+
+  it('takes a word still to learn straight to "Learned", out of the review (MEM-46)', async () => {
+    const token = await register('lena');
+    const auth = { Authorization: `Bearer ${token}` };
+
+    const word = (
+      await http().post('/vocabulary').set(auth).send({ word: 'to know', translation: 'savoir' }).expect(201)
+    ).body;
+    const learned = await http().post(`/learning/${word.id}/learned`).set(auth).expect(201);
+    expect(learned.body.learningStatus).toBe('Learned');
+
+    const session = await http().get('/learning/session').set(auth).expect(200);
+    expect(session.body.total).toBe(0);
+    const due = await http().get('/reviews/due/summary').set(auth).expect(200);
+    expect(due.body.byType.Vocabulary).toBe(0);
+    await http().post(`/learning/${word.id}/learned`).set(auth).expect(409);
   });
 
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
@@ -226,20 +291,25 @@ describe('API (e2e)', () => {
     expect(cleared.body).toMatchObject({ firstName: null, lastName: null });
   });
 
-  it('saves the home space (Anglais by default) and the translation service (DeepL by default), each on its own', async () => {
+  it('saves the home space (Anglais by default), the translation service (DeepL by default) and the delays (hidden by default), each on its own', async () => {
     const token = await register('erin');
     const auth = { Authorization: `Bearer ${token}` };
 
     const initial = await http().get('/preferences').set(auth).expect(200);
-    expect(initial.body).toEqual({ homeSpace: 'Vocabulary', translator: 'DeepL' });
+    expect(initial.body).toEqual({ homeSpace: 'Vocabulary', translator: 'DeepL', showReviewDelays: false });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
     const saved = await http().get('/preferences').set(auth).expect(200);
-    expect(saved.body).toEqual({ homeSpace: 'Quote', translator: 'DeepL' });
+    expect(saved.body).toEqual({ homeSpace: 'Quote', translator: 'DeepL', showReviewDelays: false });
 
     // MEM-44: the translator alone, the home space untouched.
     const translator = await http().put('/preferences').set(auth).send({ translator: 'Google' }).expect(200);
-    expect(translator.body).toEqual({ homeSpace: 'Quote', translator: 'Google' });
+    expect(translator.body).toEqual({ homeSpace: 'Quote', translator: 'Google', showReviewDelays: false });
+
+    // MEM-49: the delays on the rating buttons, off by default.
+    const delays = await http().put('/preferences').set(auth).send({ showReviewDelays: true }).expect(200);
+    expect(delays.body).toEqual({ homeSpace: 'Quote', translator: 'Google', showReviewDelays: true });
+    await http().put('/preferences').set(auth).send({ showReviewDelays: 'yes' }).expect(400);
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);

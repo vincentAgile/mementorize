@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getLearningSession } from '../../lib/api';
+import { getLearningSession, getPreferences } from '../../lib/api';
 import { AppHeader } from '../app-header';
 import { LearningSessionView } from './learning-session';
 
@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Apprendre · Anglais' };
 // The learning process of the vocabulary (MEM-21): a session of up to five
 // new items, discovered then rated once, before they join the review.
 export default async function LearningPage() {
-  const session = await getLearningSession();
+  const [session, preferences] = await Promise.all([getLearningSession(), getPreferences()]);
 
   return (
     <>
@@ -25,7 +25,11 @@ export default async function LearningPage() {
             </p>
           </section>
         ) : (
-          <LearningSessionView session={session} now={new Date().toISOString()} />
+          <LearningSessionView
+            session={session}
+            now={new Date().toISOString()}
+            showDelays={preferences.showReviewDelays}
+          />
         )}
       </main>
     </>

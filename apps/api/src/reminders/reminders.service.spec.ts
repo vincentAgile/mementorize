@@ -53,6 +53,7 @@ describe('RemindersService', () => {
         where: {
           due: { lte: NOW },
           kind: { not: 'EnglishToFrench' },
+          learnedAt: null,
           item: { userId: 'user-1', learningStatus: 'Learning' },
         },
       });

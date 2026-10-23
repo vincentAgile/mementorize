@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Card, Item, ItemType } from '@prisma/client';
 import { ITEM_TYPES } from '../items/item-content.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -72,8 +72,17 @@ export class ReviewsService {
     };
   }
 
-  /** Records a self-assessment and reschedules the card. */
-  async review(userId: string, cardId: string, rating: Grade, now = new Date()): Promise<Card> {
+  /**
+   * Records a self-assessment and reschedules the card. Returned with its
+   * new previews: a card rated « À revoir » comes back at the end of the
+   * session (MEM-47), with these delays on its buttons.
+   */
+  async review(
+    userId: string,
+    cardId: string,
+    rating: Grade,
+    now = new Date(),
+  ): Promise<Card & { nextDueByRating: NextDueByRating }> {
     const card = await this.prisma.card.findFirst({ where: { id: cardId, item: { userId } } });
     if (!card) {
       throw new NotFoundException(`Card ${cardId} not found`);
@@ -86,6 +95,57 @@ export class ReviewsService {
       this.prisma.card.update({ where: { id: card.id }, data: next }),
       this.prisma.reviewLog.create({ data: { ...log, cardId: card.id } }),
     ]);
+    return { ...updated, nextDueByRating: this.scheduler.preview(updated, now) };
+  }
+
+  /**
+   * « Appris » for a quote or a mind map branch (MEM-48): the card leaves the
+   * review and the counters. A `Learned` entry in its history, with its
+   * schedule as it stands: nothing is rescheduled, so that putting it back
+   * finds the same schedule. Vocabulary is learned per item (MEM-22).
+   */
+  async markLearned(userId: string, cardId: string, now = new Date()): Promise<Card> {
+    const card = await this.learnableCard(userId, cardId);
+    if (card.learnedAt) {
+      throw new ConflictException(`Card ${cardId} is already learned`);
+    }
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.card.update({ where: { id: card.id }, data: { learnedAt: now } }),
+      this.prisma.reviewLog.create({
+        data: {
+          cardId: card.id,
+          rating: 'Learned',
+          state: card.state,
+          due: card.due,
+          stability: card.stability,
+          difficulty: card.difficulty,
+          scheduledDays: card.scheduledDays,
+          learningSteps: card.learningSteps,
+          reviewedAt: now,
+        },
+      }),
+    ]);
     return updated;
+  }
+
+  /** « Remettre en révision » (MEM-48): back in the review, with the schedule it had. */
+  async relearn(userId: string, cardId: string): Promise<Card> {
+    const card = await this.learnableCard(userId, cardId);
+    if (!card.learnedAt) {
+      throw new ConflictException(`Card ${cardId} is not learned`);
+    }
+    return this.prisma.card.update({ where: { id: card.id }, data: { learnedAt: null } });
+  }
+
+  /** The user's card of a quote or a mind map: 404, or 409 for vocabulary (learned per item). */
+  private async learnableCard(userId: string, cardId: string) {
+    const card = await this.prisma.card.findFirst({ where: { id: cardId, item: { userId } }, include: { item: true } });
+    if (!card) {
+      throw new NotFoundException(`Card ${cardId} not found`);
+    }
+    if (card.item.type === 'Vocabulary') {
+      throw new ConflictException(`Card ${cardId} is vocabulary: learned per item`);
+    }
+    return card;
   }
 }
