@@ -192,3 +192,7 @@ export type ImportRow = {
 export type ImportAnalysis =
   | { ok: true; rows: ImportRow[]; summary: { total: number; new: number; duplicate: number; error: number } }
   | { ok: false; problem: 'empty' | 'tooManyLines' | 'syntax' | 'wrongSeparator'; line?: number };
+
+/** Answer of POST /vocabulary-csv/import (MEM-54). */
+export type ImportResult =
+  { ok: true; imported: number; duplicate: number; error: number } | Extract<ImportAnalysis, { ok: false }>;

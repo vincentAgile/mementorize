@@ -49,6 +49,36 @@ export class ItemsService {
     });
   }
 
+  /**
+   * Creates several items of one type in a single transaction: all or none
+   * (the import of a CSV file, MEM-54). They keep the given order: each one
+   * is created a millisecond after the previous one, so that "the oldest
+   * first" (the learning sessions, MEM-21) follows the file.
+   */
+  createMany<T extends ItemType>(
+    userId: string,
+    type: T,
+    contents: ContentByType[T][],
+    now = new Date(),
+  ): Promise<ItemWithCards[]> {
+    return this.prisma.$transaction(
+      contents.map((content, index) => {
+        const createdAt = new Date(now.getTime() + index);
+        return this.prisma.item.create({
+          data: {
+            userId,
+            type,
+            content: content as Prisma.InputJsonValue,
+            learningStatus: initialLearningStatus(type),
+            createdAt,
+            cards: { create: cardSlots(type, content).map((slot) => this.newCard(slot, now)) },
+          },
+          include: WITH_CARDS,
+        });
+      }),
+    );
+  }
+
   findAll(userId: string, type?: ItemType): Promise<ItemWithCards[]> {
     return this.prisma.item.findMany({
       where: { userId, ...(type && { type }) },

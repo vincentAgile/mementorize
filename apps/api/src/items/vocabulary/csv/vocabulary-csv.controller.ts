@@ -33,4 +33,14 @@ export class VocabularyCsvController {
   preview(@CurrentUser() user: AuthUser, @Body() dto: ImportFileDto) {
     return this.csv.preview(user.id, dto.content);
   }
+
+  /**
+   * POST /vocabulary-csv/import { content } — imports the lines "to import"
+   * of the file, all or none (MEM-54). Duplicates and errors are left out.
+   */
+  @Post('import')
+  @HttpCode(HttpStatus.OK)
+  import(@CurrentUser() user: AuthUser, @Body() dto: ImportFileDto) {
+    return this.csv.import(user.id, dto.content);
+  }
 }

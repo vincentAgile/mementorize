@@ -305,6 +305,8 @@ L'import se fait en deux temps. `POST /vocabulary-csv/preview { content }` (MEM-
 - un doublon est une expression anglaise **ou** française déjà présente, dans le vocabulaire ou plus haut dans le fichier, sans tenir compte des majuscules ni des espaces en début et fin ; les accents comptent ;
 - un fichier illisible renvoie `{ ok: false, problem }` (`empty`, `tooManyLines`, `syntax`, ou `wrongSeparator` quand les lignes n'ont de sens qu'avec l'autre séparateur).
 
+Puis `POST /vocabulary-csv/import { content }` (MEM-54) analyse le fichier à nouveau (le vocabulaire a pu changer depuis l'aperçu) et crée les lignes `new` en une seule transaction (`ItemsService.createMany`, tout ou rien) : éléments « À apprendre », avec leur thématique et leurs exemples, dans l'ordre du fichier ; leur prononciation est générée en arrière-plan. Réponse : `{ ok: true, imported, duplicate, error }`.
+
 Le JSON des requêtes peut atteindre 3 Mo (`main.ts`), pour un fichier de 1 Mo.
 
 ## Prononciation (MEM-39)

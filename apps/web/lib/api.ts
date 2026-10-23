@@ -9,6 +9,7 @@ import type {
   DueReviews,
   DueSummary,
   ImportAnalysis,
+  ImportResult,
   LearningSession,
   Item,
   ItemType,
@@ -322,6 +323,15 @@ export async function exportVocabularyCsv(): Promise<CsvExport> {
 /** What importing this CSV file would do, line by line (MEM-53). Nothing is saved. */
 export function previewVocabularyImport(content: string): Promise<ImportAnalysis> {
   return authedFetch<ImportAnalysis>('/vocabulary-csv/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+}
+
+/** Imports the lines "to import" of this CSV file, all or none (MEM-54). */
+export function importVocabularyCsv(content: string): Promise<ImportResult> {
+  return authedFetch<ImportResult>('/vocabulary-csv/import', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content }),

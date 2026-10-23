@@ -5,7 +5,13 @@ import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import { MAX_FILE_BYTES, SEPARATOR_NAMES } from '../../../lib/csv-separator';
 import { NBSP } from '../../../lib/format';
 import type { CsvSeparator, ImportAnalysis, ImportRow } from '../../../lib/types';
-import { type PreviewResult, previewImportAction, switchSeparatorAction } from './actions';
+import {
+  type ImportActionResult,
+  importAction,
+  type PreviewResult,
+  previewImportAction,
+  switchSeparatorAction,
+} from './actions';
 
 type StatusFilter = 'all' | ImportRow['status'];
 
@@ -29,6 +35,7 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
   const [result, setResult] = useState<PreviewResult | null>(null);
   const [filter, setFilter] = useState<StatusFilter>('all');
   const [dragging, setDragging] = useState(false);
+  const [done, setDone] = useState<ImportActionResult | null>(null); // MEM-54
   const [pending, startTransition] = useTransition();
   const input = useRef<HTMLInputElement>(null);
   const inputId = useId();
@@ -55,7 +62,23 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
   function reset() {
     setFile(null);
     setResult(null);
+    setDone(null);
     setResetCount((n) => n + 1);
+  }
+
+  /** MEM-54, after the confirmation: the file is sent again, and imported. */
+  function confirmImport() {
+    if (!file) return;
+    const data = new FormData();
+    data.set('file', file);
+    startTransition(async () => {
+      const outcome = await importAction(data);
+      setDone(outcome);
+      if ('result' in outcome && outcome.result.ok) {
+        setResult(null);
+        setFile(null);
+      }
+    });
   }
 
   return (
@@ -67,7 +90,16 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
         éléments importés seront « À apprendre ».
       </p>
 
-      {!result && (
+      {done && 'result' in done && done.result.ok && <Imported result={done.result} onAgain={reset} />}
+      {done && !('result' in done && done.result.ok) && (
+        <p className="form-error" role="alert">
+          {'error' in done
+            ? done.error
+            : 'L’import a échoué : le fichier n’a pas pu être relu. Rien n’a été enregistré.'}
+        </p>
+      )}
+
+      {!result && !(done && 'result' in done && done.result.ok) && (
         <label
           htmlFor={inputId}
           className={dragging ? 'drop-zone is-dragging' : 'drop-zone'}
@@ -136,6 +168,8 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
           filter={filter}
           onFilter={setFilter}
           onReset={reset}
+          onImport={confirmImport}
+          importing={pending}
         />
       )}
     </section>
@@ -175,12 +209,20 @@ interface PreviewProps {
   filter: StatusFilter;
   onFilter: (filter: StatusFilter) => void;
   onReset: () => void;
+  /** MEM-54: import the lines "to import", once confirmed. */
+  onImport: () => void;
+  importing: boolean;
 }
 
-/** The grid of the lines of the file, with their status, and the summary above it. */
-function Preview({ analysis, fileName, filter, onFilter, onReset }: PreviewProps) {
+/** The grid of the lines of the file, with their status, the summary above it, and the import below. */
+function Preview({ analysis, fileName, filter, onFilter, onReset, onImport, importing }: PreviewProps) {
   const { rows, summary } = analysis;
   const shown = filter === 'all' ? rows : rows.filter((row) => row.status === filter);
+  const confirm = useRef<HTMLDialogElement>(null);
+  const left = [
+    summary.duplicate > 0 && (summary.duplicate > 1 ? `les ${summary.duplicate}\u00a0doublons` : 'le doublon'),
+    summary.error > 0 && (summary.error > 1 ? `les ${summary.error}\u00a0lignes en erreur` : 'la ligne en erreur'),
+  ].filter(Boolean);
 
   return (
     <div className="import-preview">
@@ -247,6 +289,78 @@ function Preview({ analysis, fileName, filter, onFilter, onReset }: PreviewProps
           </tbody>
         </table>
       </div>
+
+      <div className="import-preview__actions">
+        <button
+          type="button"
+          className="button--primary"
+          disabled={summary.new === 0 || importing}
+          onClick={() => confirm.current?.showModal()}
+        >
+          {importing ? 'Import…' : `Importer ${plural(summary.new, 'élément')}`}
+        </button>
+        {summary.new === 0 && <span className="import-preview__none">Aucune ligne à importer dans ce fichier.</span>}
+      </div>
+
+      <dialog ref={confirm} className="dialog" aria-labelledby="import-confirm-title">
+        <h3 id="import-confirm-title">Importer {plural(summary.new, 'élément')} ?</h3>
+        <p>
+          {summary.new > 1 ? `${summary.new}\u00a0éléments seront importés` : '1\u00a0élément sera importé'}, « À
+          apprendre ».
+          {left.length > 0 &&
+            ` ${capitalize(left.join(' et '))} ne ${summary.duplicate + summary.error > 1 ? 'seront' : 'sera'} pas intégré${summary.duplicate + summary.error > 1 ? 's' : ''}.`}
+        </p>
+        <div className="dialog__buttons">
+          <button type="button" className="button--secondary" onClick={() => confirm.current?.close()}>
+            Annuler
+          </button>
+          <button
+            type="button"
+            className="button--primary"
+            onClick={() => {
+              confirm.current?.close();
+              onImport();
+            }}
+          >
+            Importer
+          </button>
+        </div>
+      </dialog>
+    </div>
+  );
+}
+
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/** MEM-54: the result, with where to go next. */
+function Imported({
+  result,
+  onAgain,
+}: {
+  result: { imported: number; duplicate: number; error: number };
+  onAgain: () => void;
+}) {
+  return (
+    <div className="import-done" role="status">
+      <p>
+        <strong>
+          {result.imported > 1
+            ? `${result.imported}\u00a0éléments importés`
+            : result.imported === 1
+              ? '1\u00a0élément importé'
+              : 'Aucun élément importé'}
+        </strong>
+        {result.imported > 0 && ', « À apprendre »'}.
+        {result.duplicate + result.error > 0 &&
+          ` ${plural(result.duplicate, 'doublon')} et ${plural(result.error, 'ligne')} en erreur laissés de côté.`}
+      </p>
+      <p className="import-done__links">
+        <Link href="/anglais/liste">Voir la liste</Link>
+        <Link href="/anglais">Apprendre · Réviser</Link>
+        <button type="button" className="link-button" onClick={onAgain}>
+          Importer un autre fichier
+        </button>
+      </p>
     </div>
   );
 }

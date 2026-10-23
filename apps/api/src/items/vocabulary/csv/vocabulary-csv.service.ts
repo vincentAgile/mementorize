@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { PronunciationService } from '../../../pronunciation/pronunciation.service.js';
 import { PrismaService } from '../../../prisma/prisma.service.js';
+import { ItemsService } from '../../items.service.js';
 import { contentOf } from '../../item-content.js';
 import { SEPARATOR_CHARS, toCsv } from './csv.js';
 import { analyzeImport, type ImportAnalysis } from './vocabulary-import.js';
@@ -16,7 +18,11 @@ export const CSV_HEADERS = [
 /** Import / export of the vocabulary as CSV files (MEM-50). */
 @Injectable()
 export class VocabularyCsvService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly items: ItemsService,
+    private readonly pronunciations: PronunciationService,
+  ) {}
 
   /** The separator chosen in the settings (MEM-55). */
   async separator(userId: string): Promise<string> {
@@ -59,5 +65,35 @@ export class VocabularyCsvService {
       return [translation, word, topic ?? '', frenchExample ?? '', example ?? ''];
     });
     return { csv: toCsv([CSV_HEADERS, ...lines], separator), count: items.length };
+  }
+
+  /**
+   * MEM-54: imports the lines "to import" of the file, analysed again now
+   * (duplicates included: the vocabulary may have changed since the
+   * preview), in a single transaction. The items are "À apprendre"
+   * (MEM-15), with their topic and examples, in the order of the file.
+   */
+  async import(
+    userId: string,
+    content: string,
+  ): Promise<
+    { ok: true; imported: number; duplicate: number; error: number } | Extract<ImportAnalysis, { ok: false }>
+  > {
+    const analysis = await this.preview(userId, content);
+    if (!analysis.ok) return analysis;
+    const rows = analysis.rows.filter((row) => row.status === 'new');
+    const created = await this.items.createMany(
+      userId,
+      'Vocabulary',
+      rows.map((row) => ({
+        word: row.english,
+        translation: row.french,
+        example: row.example || null,
+        frenchExample: row.frenchExample || null,
+        topic: row.topic || null,
+      })),
+    );
+    for (const item of created) this.pronunciations.request(item.id); // MEM-39, in the background
+    return { ok: true, imported: created.length, duplicate: analysis.summary.duplicate, error: analysis.summary.error };
   }
 }
