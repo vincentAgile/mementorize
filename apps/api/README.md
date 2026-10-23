@@ -299,6 +299,7 @@ curl http://localhost:3000/vocabulary-csv/export -H "Authorization: Bearer $TOKE
 ```
 
 L'import se fait en deux temps. `POST /vocabulary-csv/preview { content }` (MEM-53) analyse le fichier sans rien enregistrer (`vocabulary-import.ts`) :
+
 - la ligne d'en-têtes est reconnue et ignorée ; 2 000 lignes au plus ;
 - chaque ligne a un statut : `new` (à importer), `duplicate` ou `error` (motif) ;
 - un doublon est une expression anglaise **ou** française déjà présente, dans le vocabulaire ou plus haut dans le fichier, sans tenir compte des majuscules ni des espaces en début et fin ; les accents comptent ;
