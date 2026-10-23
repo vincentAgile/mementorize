@@ -66,6 +66,7 @@ describe('LearningService', () => {
       // No French example in a content from before MEM-42: null.
       expect(session.items[0]).toMatchObject({
         id: 'item-1',
+        cardId: 'fr-en',
         word: 'snag',
         translation: 'accroc',
         frenchExample: null,
@@ -88,7 +89,12 @@ describe('LearningService', () => {
         where: { id: 'item-1' },
         data: { learningStatus: 'Learning' },
       });
-      expect(result).toEqual({ id: 'item-1', learningStatus: 'Learning', nextDue: expected.card.due });
+      expect(result).toEqual({
+        id: 'item-1',
+        learningStatus: 'Learning',
+        nextDue: expected.card.due,
+        nextDueByRating: scheduler.preview({ ...word().cards[1], ...expected.card }, NOW),
+      });
     });
 
     it("refuses an item that doesn't exist or isn't the user's", async () => {

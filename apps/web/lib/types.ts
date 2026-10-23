@@ -102,6 +102,7 @@ export interface DueSummary {
 /** A vocabulary item of a learning session (MEM-21). */
 export interface LearningItem {
   id: string;
+  cardId: string; // its French → English card, reviewed directly when it comes back (MEM-47)
   word: string;
   translation: string;
   example: string | null;
@@ -113,6 +114,11 @@ export interface LearningItem {
 export interface LearningSession {
   total: number; // all the items still to learn
   items: LearningItem[]; // up to five, the oldest first
+}
+
+/** Answer of POST /reviews/:cardId and POST /learning/:itemId: when the card comes back next time. */
+export interface RatedCard {
+  nextDueByRating: Record<ReviewRating, string>;
 }
 
 export interface DueReviews {

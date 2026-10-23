@@ -1,7 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { markVocabularyLearned, submitReview } from '../../lib/api';
+import { ApiError, markVocabularyLearned, submitReview } from '../../lib/api';
 import type { ReviewRating } from '../../lib/types';
 
 const RATINGS: readonly ReviewRating[] = ['Again', 'Hard', 'Good', 'Easy'];
@@ -9,21 +8,39 @@ const RATINGS: readonly ReviewRating[] = ['Again', 'Hard', 'Good', 'Easy'];
 // A Server Action is a public HTTP endpoint in disguise: anyone can call it
 // with any arguments, so they are validated even though our own buttons
 // only ever send valid values.
-export async function reviewAction(cardId: string, rating: ReviewRating): Promise<void> {
+//
+// No revalidatePath here, on purpose (MEM-47): the session keeps its pile in
+// the browser, and a new rendering of /review would start another session,
+// from the cards due at that time. The counters of the menu are brought up
+// to date when the session ends (router.refresh) or when the user leaves it.
+
+/**
+ * Rates a card. Returns when it comes back for each rating (the buttons of a
+ * card put back at the bottom of the pile), or null when the API refused it
+ * (card deleted meanwhile, in another tab).
+ */
+export async function reviewAction(cardId: string, rating: ReviewRating): Promise<Record<ReviewRating, string> | null> {
   if (typeof cardId !== 'string' || !RATINGS.includes(rating)) {
     throw new Error('Invalid review');
   }
-  await submitReview(cardId, rating);
-  revalidatePath('/review'); // show the next due card
-  revalidatePath('/', 'layout'); // due counter in the header, schedules in the spaces
+  try {
+    return (await submitReview(cardId, rating)).nextDueByRating;
+  } catch (error) {
+    if (error instanceof ApiError) return null;
+    throw error; // e.g. the redirect of an expired session
+  }
 }
 
-/** "Appris" (MEM-22): the vocabulary item and its two cards leave the review. */
-export async function learnedAction(itemId: string): Promise<void> {
+/** "Appris" (MEM-22): the vocabulary item and its two cards leave the review. False when refused. */
+export async function learnedAction(itemId: string): Promise<boolean> {
   if (typeof itemId !== 'string') {
     throw new Error('Invalid item');
   }
-  await markVocabularyLearned(itemId);
-  revalidatePath('/review'); // show the next due card
-  revalidatePath('/', 'layout'); // counters, and the state in the Anglais table
+  try {
+    await markVocabularyLearned(itemId);
+  } catch (error) {
+    if (error instanceof ApiError) return false;
+    throw error;
+  }
+  return true;
 }

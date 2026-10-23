@@ -164,6 +164,7 @@ describe('API (e2e)', () => {
     const session = await http().get('/learning/session').set(auth).expect(200);
     expect(session.body.total).toBe(2);
     expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['snag', 'to cherish']);
+    const cardId = session.body.items[1].cardId;
 
     const learned = await http().post(`/learning/${words[0].id}`).set(auth).send({ rating: 'Good' }).expect(201);
     expect(learned.body.learningStatus).toBe('Learning');
@@ -178,6 +179,14 @@ describe('API (e2e)', () => {
     expect(after.body.total).toBe(1);
     await http().post(`/learning/${words[0].id}`).set(auth).send({ rating: 'Good' }).expect(409);
     await http().post(`/learning/${words[1].id}`).set(auth).send({ rating: 'Nope' }).expect(400);
+
+    // MEM-47: « À revoir » at step 2, then the card comes back at the end of
+    // the session and is reviewed directly, with the previews returned.
+    const again = await http().post(`/learning/${words[1].id}`).set(auth).send({ rating: 'Again' }).expect(201);
+    expect(Object.keys(again.body.nextDueByRating)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
+    const reviewed = await http().post(`/reviews/${cardId}`).set(auth).send({ rating: 'Good' }).expect(201);
+    expect(reviewed.body.id).toBe(cardId);
+    expect(Object.keys(reviewed.body.nextDueByRating)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
   });
 
   it('takes a learned word out of the review, and puts it back with the same schedule (MEM-22)', async () => {
