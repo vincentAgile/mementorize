@@ -72,6 +72,8 @@ describe('LearningService', () => {
         frenchExample: null,
       });
       expect(Object.keys(session.items[0].nextDue)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
+      const afterAgain = scheduler.review(card('fr-en', 'FrenchToEnglish', NOW), 'Again', NOW).card;
+      expect(session.items[0].nextDueAfterAgain).toEqual(scheduler.preview(afterAgain, NOW));
     });
   });
 

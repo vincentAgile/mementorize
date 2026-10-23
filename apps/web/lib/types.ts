@@ -110,6 +110,8 @@ export interface LearningItem {
   frenchExample?: string | null; // MEM-42
   /** When the French → English card comes back, for each rating of step 2. */
   nextDue: Record<ReviewRating, string>;
+  /** The same once rated « À revoir »: the answers are only sent at the end of the session. */
+  nextDueAfterAgain: Record<ReviewRating, string>;
 }
 
 export interface LearningSession {

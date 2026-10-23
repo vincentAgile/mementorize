@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatDelay } from '../../lib/format';
 import { pronounce, stopPronouncing } from '../../lib/speech';
 import type { LearningItem, LearningSession } from '../../lib/types';
@@ -29,27 +29,24 @@ interface LearningSessionViewProps {
  *    « Appris » straight to "Appris", out of the review (MEM-46).
  * Same shortcuts as the review: Space reveals (and goes on in step 1), 1-4 answer (4: « Appris »).
  * MEM-47: as in the review, an item rated « À revoir » at step 2 is put back
- * at the bottom of the pile, until it gets another answer. Its first rating
- * moves it to "En cours d'apprentissage"; the next ones are reviews of its
- * card.
- * The items are those loaded with the page: leaving the session keeps the
- * unrated ones "À apprendre".
+ * at the bottom of the pile, until it gets another answer.
+ * The answers of step 2 are kept here and only sent at the end of the
+ * session, in their order (the first one moves the item to "En cours
+ * d'apprentissage", the next ones are reviews of its card): leaving the
+ * session ("Arrêter", another page) keeps every item "À apprendre".
  */
 export function LearningSessionView({ session, now, showDelays }: LearningSessionViewProps) {
   const [items] = useState(session.items);
   const [phase, setPhase] = useState<Phase>('discover');
   const [index, setIndex] = useState(0); // step 1
   const [pile, setPile] = useState<number[]>([]); // step 2: indexes in `items`, the current one first
-  const [started, setStarted] = useState<Set<string>>(new Set()); // rated « À revoir » once: in learning
-  const [nextDue, setNextDue] = useState<Record<string, LearningItem['nextDue']>>({}); // after « À revoir »
+  const [answers, setAnswers] = useState<Record<string, Answer[]>>({}); // step 2, sent at the end
   const [clock, setClock] = useState(now);
   const [revealed, setRevealed] = useState(false);
   const [learned, setLearned] = useState<LearningItem[]>([]); // now in the review
   const [known, setKnown] = useState<LearningItem[]>([]); // « Appris »: out of the review
   const [failed, setFailed] = useState(0);
-  const [sending, setSending] = useState(false);
-  // Set as soon as a rating is sent: two clicks (or keys) in the same frame rate only once.
-  const answered = useRef(false);
+  const [sending, setSending] = useState(false); // the answers, at the end of the session
 
   const item = phase === 'rate' ? items[pile[0]] : items[index];
   const last = index === items.length - 1;
@@ -81,36 +78,38 @@ export function LearningSessionView({ session, now, showDelays }: LearningSessio
     }
   }
 
-  async function rate(answer: Answer) {
-    if (answered.current || !item) return;
-    answered.current = true;
+  function rate(answer: Answer) {
+    if (!item || sending) return;
     stopPronouncing();
-    setSending(true);
-    let comesBack: LearningItem['nextDue'] | null = null;
-    let ok: boolean;
-    if (answer === 'Learned') {
-      ok = await learnedAction(item.id); // from "À apprendre" or, after « À revoir », "En cours"
-    } else {
-      // First rating: the item enters the learning; then, reviews of its card.
-      const next = started.has(item.id) ? await reviewAction(item.cardId, answer) : await learnAction(item.id, answer);
-      ok = next !== null;
-      if (answer === 'Again') comesBack = next;
-    }
-    if (!ok) setFailed((count) => count + 1);
-    else if (answer === 'Learned') setKnown((done) => [...done, item]);
-    else if (!comesBack) setLearned((done) => [...done, item]);
-    if (comesBack) {
-      const again = comesBack;
-      setStarted((ids) => new Set(ids).add(item.id));
-      setNextDue((dues) => ({ ...dues, [item.id]: again }));
-    }
-    const rest = comesBack ? [...pile.slice(1), pile[0]] : pile.slice(1);
+    const all = { ...answers, [item.id]: [...(answers[item.id] ?? []), answer] };
+    const rest = answer === 'Again' ? [...pile.slice(1), pile[0]] : pile.slice(1);
+    setAnswers(all);
     setClock(new Date().toISOString());
-    setSending(false);
-    answered.current = false;
     setRevealed(false);
     setPile(rest);
-    if (rest.length === 0) setPhase('done');
+    if (rest.length === 0) void save(all);
+  }
+
+  /** End of the session: the answers of each item, in their order. */
+  async function save(all: Record<string, Answer[]>) {
+    setSending(true);
+    for (const it of items) {
+      const [first, ...next] = all[it.id] ?? [];
+      if (!first) continue;
+      // « Appris » at once: straight from "À apprendre" to "Appris". Otherwise
+      // the first rating moves the item to "En cours d'apprentissage", and
+      // the next answers are reviews of its card (or « Appris » in the end).
+      let ok = first === 'Learned' ? await learnedAction(it.id) : (await learnAction(it.id, first)) !== null;
+      for (const answer of next) {
+        if (!ok) break;
+        ok = answer === 'Learned' ? await learnedAction(it.id) : (await reviewAction(it.cardId, answer)) !== null;
+      }
+      if (!ok) setFailed((count) => count + 1);
+      else if ([first, ...next].at(-1) === 'Learned') setKnown((done) => [...done, it]);
+      else setLearned((done) => [...done, it]);
+    }
+    setSending(false);
+    setPhase('done');
   }
 
   // Keyboard: Space (or Enter) reveals, then goes on in step 1; 1-4 answer in step 2.
@@ -125,7 +124,7 @@ export function LearningSessionView({ session, now, showDelays }: LearningSessio
         else goOn();
       } else if (phase === 'rate' && revealed) {
         const answer = answerOfKey(event.key, true);
-        if (answer) void rate(answer);
+        if (answer) rate(answer);
       }
     }
     window.addEventListener('keydown', onKeyDown);
@@ -174,11 +173,20 @@ export function LearningSessionView({ session, now, showDelays }: LearningSessio
     );
   }
 
+  if (!item) {
+    // Step 2 over: the answers are being sent.
+    return (
+      <p className="review-progress" role="status">
+        Enregistrement de la session…
+      </p>
+    );
+  }
+
   const discovering = phase === 'discover';
   const step = discovering ? 'Étape 1 · Découverte' : 'Étape 2 · Français → anglais';
   // Step 2: the items answered so far (« À revoir » put back in the pile does not count).
   const position = discovering ? index : items.length - pile.length;
-  const due = nextDue[item.id] ?? item.nextDue;
+  const due = answers[item.id]?.length ? item.nextDueAfterAgain : item.nextDue; // put back after « À revoir »
 
   return (
     <section aria-label="Apprentissage">
@@ -234,7 +242,7 @@ export function LearningSessionView({ session, now, showDelays }: LearningSessio
             <Examples item={item} />
             <p className="review-card__question">Tu t&apos;en souvenais bien ?</p>
             <RatingButtons
-              onAnswer={(answer) => void rate(answer)}
+              onAnswer={rate}
               withLearned
               delays={
                 showDelays

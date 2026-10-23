@@ -17,6 +17,13 @@ export interface LearningItem {
   frenchExample: string | null; // MEM-42
   /** When the French → English card comes back, for each of the four ratings of step 2. */
   nextDue: NextDueByRating;
+  /**
+   * The same, once rated « À revoir » (any number of times): the answers of
+   * step 2 are only sent at the end of the session, so that leaving it keeps
+   * every item "À apprendre"; the buttons of an item put back at the bottom
+   * of the pile show these.
+   */
+  nextDueAfterAgain: NextDueByRating;
 }
 
 export interface LearningSession {
@@ -64,6 +71,7 @@ export class LearningService {
             example,
             frenchExample: frenchExample ?? null,
             nextDue: this.scheduler.preview(item.cards[0], now),
+            nextDueAfterAgain: this.scheduler.preview(this.scheduler.review(item.cards[0], 'Again', now).card, now),
           };
         }),
     };
