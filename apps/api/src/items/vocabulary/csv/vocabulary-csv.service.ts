@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import { contentOf } from '../../item-content.js';
 import { SEPARATOR_CHARS, toCsv } from './csv.js';
+import { analyzeImport, type ImportAnalysis } from './vocabulary-import.js';
 
 /** The columns of the file, in this order (MEM-50): the same for the export and the import. */
 export const CSV_HEADERS = [
@@ -24,6 +25,23 @@ export class VocabularyCsvService {
       select: { csvSeparator: true },
     });
     return SEPARATOR_CHARS[csvSeparator];
+  }
+
+  /**
+   * MEM-53: what importing this file would do, line by line, against the
+   * user's vocabulary as it is now. Nothing is saved.
+   */
+  async preview(userId: string, content: string): Promise<ImportAnalysis> {
+    const [separator, items] = await Promise.all([
+      this.separator(userId),
+      this.prisma.item.findMany({ where: { userId, type: 'Vocabulary' }, select: { content: true, type: true } }),
+    ]);
+    const existing = items.map((item) => {
+      const { word, translation } = contentOf({ ...item, type: 'Vocabulary' as const });
+      return { english: word, french: translation };
+    });
+    const other = separator === SEPARATOR_CHARS.Semicolon ? SEPARATOR_CHARS.Comma : SEPARATOR_CHARS.Semicolon;
+    return analyzeImport(content, separator, other, existing);
   }
 
   /**

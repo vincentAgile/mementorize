@@ -173,3 +173,22 @@ export type CsvSeparator = 'Semicolon' | 'Comma';
 export interface ReminderSettings extends ReminderSettingsInput {
   emailAvailable: boolean; // false: the server can't send e-mails
 }
+
+/** A line of a CSV file to import, and what importing it would do (MEM-53). */
+export type ImportRow = {
+  line: number;
+  french: string;
+  english: string;
+  topic: string;
+  frenchExample: string;
+  example: string;
+} & (
+  | { status: 'new' }
+  | { status: 'duplicate'; languages: ('en' | 'fr')[]; of: { existing: string } | { line: number } }
+  | { status: 'error'; error: string }
+);
+
+/** Answer of POST /vocabulary-csv/preview: the lines, or why the file can't be read. */
+export type ImportAnalysis =
+  | { ok: true; rows: ImportRow[]; summary: { total: number; new: number; duplicate: number; error: number } }
+  | { ok: false; problem: 'empty' | 'tooManyLines' | 'syntax' | 'wrongSeparator'; line?: number };
