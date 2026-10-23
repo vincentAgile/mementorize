@@ -350,14 +350,14 @@ describe('API (e2e)', () => {
     const wrong = await http()
       .post('/vocabulary-csv/preview')
       .set(auth)
-      .send({ content: 'chérir,to cherish\r\n' })
+      .send({ content: 'Français,Anglais\r\nchérir,to cherish\r\n' })
       .expect(200);
     expect(wrong.body).toEqual({ ok: false, problem: 'wrongSeparator' });
     const big = 'un;one;' + 'x'.repeat(40) + ';' + 'phrase '.repeat(70) + '\r\n';
     const large = await http()
       .post('/vocabulary-csv/preview')
       .set(auth)
-      .send({ content: big.repeat(1500) })
+      .send({ content: 'Français;Anglais\r\n' + big.repeat(1500) })
       .expect(200);
     expect(large.body.summary.total).toBe(1500);
     await http().post('/vocabulary-csv/preview').set(auth).send({}).expect(400);

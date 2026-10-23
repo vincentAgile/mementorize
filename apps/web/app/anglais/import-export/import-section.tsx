@@ -86,8 +86,8 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
       <h2 id="import-title">Importer</h2>
       <p>
         Un fichier CSV au format de l’export : expression française, expression anglaise, puis, facultatives, la
-        thématique et les phrases d’exemple en français et en anglais. Séparateur : {SEPARATOR_NAMES[separator]}. Les
-        éléments importés seront « À apprendre ».
+        thématique et les phrases d’exemple en français et en anglais. Séparateur : {SEPARATOR_NAMES[separator]}. La
+        première ligne, celle des en-têtes, est ignorée. Les éléments importés seront « À apprendre ».
       </p>
 
       {done && 'result' in done && done.result.ok && <Imported result={done.result} onAgain={reset} />}
@@ -179,7 +179,7 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
 function problemText(analysis: Extract<ImportAnalysis, { ok: false }>, separator: CsvSeparator, other: CsvSeparator) {
   switch (analysis.problem) {
     case 'empty':
-      return 'Ce fichier ne contient aucune ligne à importer.';
+      return 'Ce fichier ne contient aucune ligne à importer : sa première ligne, celle des en-têtes, est ignorée.';
     case 'tooManyLines':
       return 'Ce fichier dépasse 2 000 lignes : découpe-le en plusieurs fichiers.';
     case 'syntax':
