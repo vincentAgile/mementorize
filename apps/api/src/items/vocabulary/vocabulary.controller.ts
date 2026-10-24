@@ -17,9 +17,9 @@ import type { AuthUser } from '../../auth/auth-user.js';
 import { CurrentUser } from '../../auth/current-user.decorator.js';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import { PronunciationService } from '../../pronunciation/pronunciation.service.js';
+import { DeleteItemsDto } from '../delete-items.dto.js';
 import { ItemsService } from '../items.service.js';
 import { CreateVocabularyDto } from './dto/create-vocabulary.dto.js';
-import { DeleteVocabularyDto } from './dto/delete-vocabulary.dto.js';
 import { UpdateVocabularyDto } from './dto/update-vocabulary.dto.js';
 import { toVocabularyView } from './vocabulary-view.js';
 
@@ -102,7 +102,7 @@ export class VocabularyController {
    */
   @Post('delete')
   @HttpCode(HttpStatus.OK)
-  async removeMany(@CurrentUser() user: AuthUser, @Body() dto: DeleteVocabularyDto) {
+  async removeMany(@CurrentUser() user: AuthUser, @Body() dto: DeleteItemsDto) {
     return { deleted: await this.items.removeMany(user.id, dto.ids, 'Vocabulary') };
   }
 

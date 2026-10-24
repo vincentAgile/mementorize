@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { getItems, getPreferences } from '../../../lib/api';
 import { SEPARATOR_NAMES } from '../../../lib/csv-separator';
 import { NBSP } from '../../../lib/format';
-import { ImportSection } from './import-section';
+import { ImportSection } from '../../csv/import-section';
 
 export const metadata: Metadata = { title: 'Import / export · Anglais' };
 
@@ -45,7 +45,7 @@ export default async function EnglishImportExportPage() {
         )}
       </section>
 
-      <ImportSection separator={csvSeparator} />
+      <ImportSection type="Vocabulary" separator={csvSeparator} />
     </div>
   );
 }

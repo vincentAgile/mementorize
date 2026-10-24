@@ -1,3 +1,4 @@
+import { ITEM_NOUN, type Noun, QUOTE_NOUN } from './nouns';
 import type { ItemType } from './types';
 
 /**
@@ -11,12 +12,16 @@ export interface Space {
   /** In the bar at the bottom of a phone's screen (MEM-30). */
   shortLabel: string;
   href: string;
-  /** Shown when the space has no item yet: invites to fill the form above. */
+  /** Shown when the space has no item yet: invites to add one. */
   emptyText: string;
   /** The button that reviews this subject only (MEM-4). */
   reviewLabel: string;
   /** The sub-menu of the space (MEM-24, MEM-29), if it has one. */
   tabs?: SpaceTab[];
+  /** The learning process of the space (MEM-21, MEM-68), if it has one. */
+  learnHref?: string;
+  /** How its items are named in the messages (v0.12): « élément », « citation ». */
+  noun: Noun;
 }
 
 export interface SpaceTab {
@@ -31,7 +36,8 @@ export const SPACES: Space[] = [
     label: 'Anglais',
     shortLabel: 'Anglais',
     href: '/anglais',
-    emptyText: 'Aucun mot pour le moment : ajoute ton premier mot anglais avec le formulaire ci-dessus.',
+    emptyText:
+      'Aucun élément de vocabulaire pour le moment : commence par ajouter un mot, une expression ou une phrase.',
     reviewLabel: "Réviser l'anglais",
     tabs: [
       { href: '/anglais', label: 'Apprendre · Réviser' },
@@ -39,6 +45,8 @@ export const SPACES: Space[] = [
       { href: '/anglais/ajouter', label: 'Ajouter' },
       { href: '/anglais/import-export', label: 'Import / export' }, // MEM-52
     ],
+    learnHref: '/apprendre',
+    noun: ITEM_NOUN,
   },
   {
     type: 'MindMap',
@@ -47,14 +55,24 @@ export const SPACES: Space[] = [
     href: '/cartes-mentales',
     emptyText: 'Aucune carte mentale pour le moment : donne un sujet central à ta première carte ci-dessus.',
     reviewLabel: 'Réviser les cartes mentales',
+    noun: { one: 'carte mentale', many: 'cartes mentales', feminine: true },
   },
   {
     type: 'Quote',
     label: 'Citations',
     shortLabel: 'Citations',
     href: '/citations',
-    emptyText: 'Aucune citation pour le moment : ajoute ta première citation avec le formulaire ci-dessus.',
+    emptyText: 'Aucune citation pour le moment : commence par ajouter une citation, avec son auteur et sa source.',
     reviewLabel: 'Réviser les citations',
+    // MEM-66: the same sub-menu as the Anglais space.
+    tabs: [
+      { href: '/citations', label: 'Apprendre · Réviser' },
+      { href: '/citations/liste', label: 'Liste' },
+      { href: '/citations/ajouter', label: 'Ajouter' },
+      { href: '/citations/import-export', label: 'Import / export' },
+    ],
+    learnHref: '/apprendre?type=Quote', // MEM-68
+    noun: QUOTE_NOUN,
   },
 ];
 
@@ -70,24 +88,30 @@ export function findSpace(type: string | undefined): Space | undefined {
 const startsWith = (pathname: string, prefix: string) => pathname === prefix || pathname.startsWith(`${prefix}/`);
 
 /**
- * The space a page belongs to, from its URL (and the `?type=` of the
- * review): its own pages, the review of this subject only (MEM-4), the mind
- * map editor, the learning process of the vocabulary (MEM-21). None for the
+ * The space a page belongs to, from its URL (and the `?type=` of the review
+ * and of the learning process): its own pages, the review of this subject
+ * only (MEM-4), the mind map editor, the learning process of the vocabulary
+ * (MEM-21) or of the quotes (/apprendre?type=Quote, MEM-68). None for the
  * pages outside the spaces (Tout réviser, Réglages, Profil).
  */
 export function activeSpace(pathname: string, type: string | null): Space | undefined {
   return SPACES.find(
     (space) =>
       startsWith(pathname, space.href) ||
-      (pathname === '/review' && type === space.type) ||
-      (space.type === 'MindMap' && startsWith(pathname, '/mind-maps')) ||
-      (space.type === 'Vocabulary' && startsWith(pathname, '/apprendre')),
+      inSession(space, pathname, type) ||
+      (space.type === 'MindMap' && startsWith(pathname, '/mind-maps')),
   );
 }
 
+/** The type of the items of a learning session: the vocabulary, unless `?type=` says otherwise. */
+export const learnedType = (type: string | null) => type ?? 'Vocabulary';
+
 /** Whether the page is a learning or review session of this space. */
 export function inSession(space: Space, pathname: string, type: string | null): boolean {
-  return (pathname === '/review' && type === space.type) || (space.type === 'Vocabulary' && pathname === '/apprendre');
+  return (
+    (pathname === '/review' && type === space.type) ||
+    (pathname === '/apprendre' && space.learnHref !== undefined && learnedType(type) === space.type)
+  );
 }
 
 /** Address of the review of one subject (MEM-4). */

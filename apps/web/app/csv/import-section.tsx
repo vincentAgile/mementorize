@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useId, useRef, useState, useTransition } from 'react';
-import { MAX_FILE_BYTES, SEPARATOR_NAMES } from '../../../lib/csv-separator';
-import { NBSP } from '../../../lib/format';
-import type { CsvSeparator, ImportAnalysis, ImportRow } from '../../../lib/types';
+import { type ReactNode, useEffect, useId, useRef, useState, useTransition } from 'react';
+import { MAX_FILE_BYTES, SEPARATOR_NAMES } from '../../lib/csv-separator';
+import { NBSP } from '../../lib/format';
+import { agree, countOf, ITEM_NOUN, type Noun, QUOTE_NOUN } from '../../lib/nouns';
+import type { CsvSeparator, ImportAnalysis, ImportRow, ListType, QuoteImportRow } from '../../lib/types';
 import {
   type ImportActionResult,
   importAction,
@@ -13,9 +14,10 @@ import {
   switchSeparatorAction,
 } from './actions';
 
-type StatusFilter = 'all' | ImportRow['status'];
+type AnyRow = ImportRow | QuoteImportRow;
+type StatusFilter = 'all' | AnyRow['status'];
 
-const STATUS_LABELS: Record<ImportRow['status'], string> = { new: 'À importer', duplicate: 'Doublon', error: 'Erreur' };
+const STATUS_LABELS: Record<AnyRow['status'], string> = { new: 'À importer', duplicate: 'Doublon', error: 'Erreur' };
 const FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'Toutes les lignes' },
   { value: 'new', label: 'À importer' },
@@ -25,12 +27,91 @@ const FILTERS: { value: StatusFilter; label: string }[] = [
 
 const plural = (count: number, one: string, many = `${one}s`) => `${count}${NBSP}${count > 1 ? many : one}`;
 
+/** What differs from one space to the other: the columns of the file, of the grid, the wording, the links. */
+interface ImportKind<Row extends AnyRow> {
+  noun: Noun;
+  /** The format of the file, said above the drop zone. */
+  format: ReactNode;
+  /** The columns of the grid, after « Ligne » and before « Statut ». */
+  headers: string[];
+  cells: (row: Row) => ReactNode[];
+  /** The class of the cells of each column. */
+  cellClasses: (string | undefined)[];
+  /** Why a duplicate line won't be imported. */
+  duplicate: (row: Extract<Row, { status: 'duplicate' }>) => string;
+  space: string;
+}
+
+const VOCABULARY: ImportKind<ImportRow> = {
+  noun: ITEM_NOUN,
+  format: (
+    <>
+      Un fichier CSV au format de l’export : expression française, expression anglaise, puis, facultatives, la
+      thématique et les phrases d’exemple en français et en anglais.
+    </>
+  ),
+  headers: ['Français', 'Anglais', 'Thématique'],
+  cells: (row) => [
+    <>
+      {row.french}
+      {row.frenchExample && (
+        <span lang="fr" className="item-list__example">
+          {row.frenchExample}
+        </span>
+      )}
+    </>,
+    <>
+      <span lang="en">{row.english}</span>
+      {row.example && (
+        <span lang="en" className="item-list__example">
+          {row.example}
+        </span>
+      )}
+    </>,
+    row.topic,
+  ],
+  cellClasses: [undefined, undefined, 'item-list__topic'],
+  duplicate: (row) => {
+    const languages =
+      row.languages.length === 2 ? 'anglais et français' : row.languages[0] === 'en' ? 'anglais' : 'français';
+    const of =
+      'existing' in row.of
+        ? `déjà dans le vocabulaire : «\u00a0${row.of.existing}\u00a0»`
+        : `comme la ligne ${row.of.line}`;
+    return `${languages}, ${of}`;
+  },
+  space: '/anglais',
+};
+
+const QUOTES: ImportKind<QuoteImportRow> = {
+  noun: QUOTE_NOUN,
+  format: (
+    <>Un fichier CSV au format de l’export : le texte de la citation, puis, facultatifs, son auteur et sa source.</>
+  ),
+  headers: ['Texte', 'Auteur', 'Source'],
+  cells: (row) => [row.text, row.author, row.source],
+  cellClasses: ['import-preview__text', 'item-list__author', 'item-list__source'],
+  duplicate: (row) =>
+    'existing' in row.of
+      ? `déjà dans les citations : «\u00a0${row.of.existing}\u00a0»`
+      : `même texte que la ligne ${row.of.line}`,
+  space: '/citations',
+};
+
+const KINDS: Record<ListType, ImportKind<AnyRow>> = {
+  Vocabulary: VOCABULARY as unknown as ImportKind<AnyRow>,
+  Quote: QUOTES as unknown as ImportKind<AnyRow>,
+};
+
 /**
- * The "Importer" section of the tab (MEM-53): a CSV file, chosen or dropped,
- * is read on the server and shown as a grid, each line with its status (to
- * import, duplicate, error). Nothing is saved at this stage.
+ * The "Importer" section of the Import / export tab, in the Anglais space
+ * (MEM-53, MEM-54) and the Citations space (MEM-72): a CSV file, chosen or
+ * dropped, is read on the server and shown as a grid, each line with its
+ * status (to import, duplicate, error). Nothing is saved until the import
+ * is confirmed; the items imported are "En attente".
  */
-export function ImportSection({ separator }: { separator: CsvSeparator }) {
+export function ImportSection({ type, separator }: { type: ListType; separator: CsvSeparator }) {
+  const kind = KINDS[type];
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<PreviewResult | null>(null);
   const [filter, setFilter] = useState<StatusFilter>('all');
@@ -41,11 +122,11 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
   const inputId = useId();
   const other: CsvSeparator = separator === 'Semicolon' ? 'Comma' : 'Semicolon';
 
-  function analyze(chosen: File, action = previewImportAction) {
+  function analyze(chosen: File, action = previewImportAction.bind(null, type)) {
     setFile(chosen);
     setFilter('all');
     if (chosen.size > MAX_FILE_BYTES) {
-      setResult({ error: 'Ce fichier dépasse 1 Mo : découpe-le en plusieurs fichiers.' });
+      setResult({ error: 'Ce fichier dépasse 1 Mo : découpe-le en plusieurs fichiers.' });
       return;
     }
     const data = new FormData();
@@ -72,7 +153,7 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
     const data = new FormData();
     data.set('file', file);
     startTransition(async () => {
-      const outcome = await importAction(data);
+      const outcome = await importAction(type, data);
       setDone(outcome);
       if ('result' in outcome && outcome.result.ok) {
         setResult(null);
@@ -85,13 +166,12 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
     <section className="import-export__section" aria-labelledby="import-title">
       <h2 id="import-title">Importer</h2>
       <p>
-        Un fichier CSV au format de l’export : expression française, expression anglaise, puis, facultatives, la
-        thématique et les phrases d’exemple en français et en anglais. Séparateur : {SEPARATOR_NAMES[separator]}. La
-        première ligne, celle des en-têtes, est ignorée. Les éléments importés seront « En attente » : vous les
-        ajouterez à la file d’apprentissage depuis la Liste.
+        {kind.format} Séparateur : {SEPARATOR_NAMES[separator]}. La première ligne, celle des en-têtes, est ignorée. Les{' '}
+        {kind.noun.many} {agree('importé', kind.noun, 2)} seront « En attente » : vous les ajouterez à la file
+        d’apprentissage depuis la Liste.
       </p>
 
-      {done && 'result' in done && done.result.ok && <Imported result={done.result} onAgain={reset} />}
+      {done && 'result' in done && done.result.ok && <Imported kind={kind} result={done.result} onAgain={reset} />}
       {done && !('result' in done && done.result.ok) && (
         <p className="form-error" role="alert">
           {'error' in done
@@ -152,7 +232,7 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
                 type="button"
                 className="link-button"
                 disabled={pending}
-                onClick={() => analyze(file, switchSeparatorAction.bind(null, other))}
+                onClick={() => analyze(file, switchSeparatorAction.bind(null, type, other))}
               >
                 Passer à la {SEPARATOR_NAMES[other]} et relire le fichier
               </button>{' '}
@@ -164,6 +244,7 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
 
       {result && 'analysis' in result && result.analysis.ok && (
         <Preview
+          kind={kind}
           analysis={result.analysis}
           fileName={file?.name}
           filter={filter}
@@ -182,7 +263,7 @@ function problemText(analysis: Extract<ImportAnalysis, { ok: false }>, separator
     case 'empty':
       return 'Ce fichier ne contient aucune ligne à importer : sa première ligne, celle des en-têtes, est ignorée.';
     case 'tooManyLines':
-      return 'Ce fichier dépasse 2 000 lignes : découpe-le en plusieurs fichiers.';
+      return 'Ce fichier dépasse 2 000 lignes : découpe-le en plusieurs fichiers.';
     case 'syntax':
       return `Fichier illisible : le guillemet ouvert ligne ${analysis.line} n’est jamais refermé.`;
     case 'wrongSeparator':
@@ -190,7 +271,7 @@ function problemText(analysis: Extract<ImportAnalysis, { ok: false }>, separator
   }
 }
 
-function Problem({ file, onReset, children }: { file: File | null; onReset: () => void; children: React.ReactNode }) {
+function Problem({ file, onReset, children }: { file: File | null; onReset: () => void; children: ReactNode }) {
   return (
     <div className="import-problem" role="alert">
       <p>
@@ -205,6 +286,7 @@ function Problem({ file, onReset, children }: { file: File | null; onReset: () =
 }
 
 interface PreviewProps {
+  kind: ImportKind<AnyRow>;
   analysis: Extract<ImportAnalysis, { ok: true }>;
   fileName?: string;
   filter: StatusFilter;
@@ -216,14 +298,16 @@ interface PreviewProps {
 }
 
 /** The grid of the lines of the file, with their status, the summary above it, and the import below. */
-function Preview({ analysis, fileName, filter, onFilter, onReset, onImport, importing }: PreviewProps) {
+function Preview({ kind, analysis, fileName, filter, onFilter, onReset, onImport, importing }: PreviewProps) {
   const { rows, summary } = analysis;
+  const { noun } = kind;
   const shown = filter === 'all' ? rows : rows.filter((row) => row.status === filter);
   const confirm = useRef<HTMLDialogElement>(null);
   const left = [
-    summary.duplicate > 0 && (summary.duplicate > 1 ? `les ${summary.duplicate}\u00a0doublons` : 'le doublon'),
-    summary.error > 0 && (summary.error > 1 ? `les ${summary.error}\u00a0lignes en erreur` : 'la ligne en erreur'),
+    summary.duplicate > 0 && (summary.duplicate > 1 ? `les ${summary.duplicate} doublons` : 'le doublon'),
+    summary.error > 0 && (summary.error > 1 ? `les ${summary.error} lignes en erreur` : 'la ligne en erreur'),
   ].filter(Boolean);
+  const leftOut = summary.duplicate + summary.error;
 
   return (
     <div className="import-preview">
@@ -249,14 +333,16 @@ function Preview({ analysis, fileName, filter, onFilter, onReset, onImport, impo
         </button>
       </div>
 
-      <div className="vocabulary__scroll">
-        <table className="vocabulary__table import-preview__table">
+      <div className="item-list__scroll">
+        <table className="item-list__table import-preview__table">
           <thead>
             <tr>
               <th scope="col">Ligne</th>
-              <th scope="col">Français</th>
-              <th scope="col">Anglais</th>
-              <th scope="col">Thématique</th>
+              {kind.headers.map((header) => (
+                <th key={header} scope="col">
+                  {header}
+                </th>
+              ))}
               <th scope="col">Statut</th>
             </tr>
           </thead>
@@ -264,26 +350,20 @@ function Preview({ analysis, fileName, filter, onFilter, onReset, onImport, impo
             {shown.map((row) => (
               <tr key={row.line} className={`import-row--${row.status}`}>
                 <td className="import-preview__line">{row.line}</td>
-                <td>
-                  {row.french}
-                  {row.frenchExample && (
-                    <span lang="fr" className="vocabulary__example">
-                      {row.frenchExample}
-                    </span>
-                  )}
-                </td>
-                <td>
-                  <span lang="en">{row.english}</span>
-                  {row.example && (
-                    <span lang="en" className="vocabulary__example">
-                      {row.example}
-                    </span>
-                  )}
-                </td>
-                <td className="vocabulary__topic">{row.topic}</td>
+                {kind.cells(row).map((cell, index) => (
+                  <td key={kind.headers[index]} className={kind.cellClasses[index]}>
+                    {cell}
+                  </td>
+                ))}
                 <td>
                   <span className={`import-status import-status--${row.status}`}>{STATUS_LABELS[row.status]}</span>
-                  {row.status !== 'new' && <span className="import-preview__why">{why(row)}</span>}
+                  {row.status !== 'new' && (
+                    <span className="import-preview__why">
+                      {row.status === 'error'
+                        ? row.error
+                        : kind.duplicate(row as Extract<AnyRow, { status: 'duplicate' }>)}
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -298,18 +378,21 @@ function Preview({ analysis, fileName, filter, onFilter, onReset, onImport, impo
           disabled={summary.new === 0 || importing}
           onClick={() => confirm.current?.showModal()}
         >
-          {importing ? 'Import…' : `Importer ${plural(summary.new, 'élément')}`}
+          {importing ? 'Import…' : `Importer ${countOf(summary.new, noun)}`}
         </button>
         {summary.new === 0 && <span className="import-preview__none">Aucune ligne à importer dans ce fichier.</span>}
       </div>
 
       <dialog ref={confirm} className="dialog" aria-labelledby="import-confirm-title">
-        <h3 id="import-confirm-title">Importer {plural(summary.new, 'élément')} ?</h3>
+        <h3 id="import-confirm-title">
+          Importer {countOf(summary.new, noun)}
+          {' '}?
+        </h3>
         <p>
-          {summary.new > 1 ? `${summary.new}\u00a0éléments seront importés` : '1\u00a0élément sera importé'}, en
+          {countOf(summary.new, noun)} {summary.new > 1 ? 'seront' : 'sera'} {agree('importé', noun, summary.new)}, en
           attente, à ajouter ensuite à la file d’apprentissage depuis la Liste.
           {left.length > 0 &&
-            ` ${capitalize(left.join(' et '))} ne ${summary.duplicate + summary.error > 1 ? 'seront' : 'sera'} pas intégré${summary.duplicate + summary.error > 1 ? 's' : ''}.`}
+            ` ${capitalize(left.join(' et '))} ne ${leftOut > 1 ? 'seront' : 'sera'} pas intégré${leftOut > 1 ? 's' : ''}.`}
         </p>
         <div className="dialog__buttons">
           <button type="button" className="button--secondary" onClick={() => confirm.current?.close()}>
@@ -335,9 +418,11 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 
 /** MEM-54: the result, with where to go next. */
 function Imported({
+  kind: { noun, space },
   result,
   onAgain,
 }: {
+  kind: ImportKind<AnyRow>;
   result: { imported: number; duplicate: number; error: number };
   onAgain: () => void;
 }) {
@@ -345,11 +430,9 @@ function Imported({
     <div className="import-done" role="status">
       <p>
         <strong>
-          {result.imported > 1
-            ? `${result.imported}\u00a0éléments importés`
-            : result.imported === 1
-              ? '1\u00a0élément importé'
-              : 'Aucun élément importé'}
+          {result.imported > 0
+            ? `${countOf(result.imported, noun)} ${agree('importé', noun, result.imported)}`
+            : `${noun.feminine ? 'Aucune' : 'Aucun'} ${noun.one} ${agree('importé', noun, 1)}`}
         </strong>
         {result.imported > 0 && ', en attente. Ajoutez-les à la file d’apprentissage depuis la Liste'}.
         {result.duplicate + result.error > 0 &&
@@ -357,23 +440,12 @@ function Imported({
       </p>
       <p className="import-done__links">
         {/* MEM-62: the list filtered on the items "En attente", where they join the queue. */}
-        <Link href="/anglais/liste?etat=Waiting">Voir les éléments en attente</Link>
-        <Link href="/anglais">Apprendre · Réviser</Link>
+        <Link href={`${space}/liste?etat=Waiting`}>Voir les {noun.many} en attente</Link>
+        <Link href={space}>Apprendre · Réviser</Link>
         <button type="button" className="link-button" onClick={onAgain}>
           Importer un autre fichier
         </button>
       </p>
     </div>
   );
-}
-
-/** Why a line won't be imported: the expression already there, or the error. */
-function why(row: ImportRow): string {
-  if (row.status === 'error') return row.error;
-  if (row.status !== 'duplicate') return '';
-  const languages =
-    row.languages.length === 2 ? 'anglais et français' : row.languages[0] === 'en' ? 'anglais' : 'français';
-  const of =
-    'existing' in row.of ? `déjà dans le vocabulaire : « ${row.of.existing} »` : `comme la ligne ${row.of.line}`;
-  return `${languages}, ${of}`;
 }

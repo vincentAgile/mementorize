@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { analyzeImport } from './vocabulary-import.js';
 
 const existing = [{ english: 'Snag', french: 'accroc' }];
-const analyze = (text: string, separator = ';') =>
-  analyzeImport(text, separator, separator === ';' ? ',' : ';', existing);
+const analyze = (text: string, separator = ';') => analyzeImport(text, separator, existing);
 // The lines of a file, after its header line.
 const HEAD = 'Français;Anglais\n';
 

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import type { Card, Item, ItemType, LearningStatus, Prisma } from '@prisma/client';
-import { IN_QUEUE, renumberQueue } from '../learning/learning-queue.js';
+import { hasQueue, IN_QUEUE, renumberQueue } from '../learning/learning-queue.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { SchedulerService } from '../scheduling/scheduler.service.js';
 import { type CardSlot, cardSlots, type ContentByType, initialLearningStatus, slotKey } from './item-content.js';
@@ -30,8 +30,8 @@ export class ItemsService {
   ) {}
 
   /**
-   * Creates the item together with its review cards. A vocabulary item "À
-   * apprendre" goes last in the learning queue (MEM-61).
+   * Creates the item together with its review cards. An item "À apprendre"
+   * goes last in the learning queue of its type (MEM-61, MEM-67).
    */
   async create<T extends ItemType>(
     userId: string,
@@ -41,7 +41,7 @@ export class ItemsService {
     learningStatus: LearningStatus = initialLearningStatus(type),
   ): Promise<ItemWithCards> {
     const cards = cardSlots(type, content).map((slot) => this.newCard(slot, now));
-    const learnPosition = learningStatus === 'ToLearn' ? (await this.queueLength(userId)) + 1 : null;
+    const learnPosition = learningStatus === 'ToLearn' ? (await this.queueLength(userId, type)) + 1 : null;
 
     return this.prisma.item.create({
       data: {
@@ -56,9 +56,13 @@ export class ItemsService {
     });
   }
 
-  /** The last position of the learning queue (MEM-61): its length, positions having no gap. */
-  private async queueLength(userId: string): Promise<number> {
-    const { _max } = await this.prisma.item.aggregate({ where: IN_QUEUE(userId), _max: { learnPosition: true } });
+  /** The last position of the learning queue of this type (MEM-61): its length, positions having no gap. */
+  private async queueLength(userId: string, type: ItemType): Promise<number> {
+    if (!hasQueue(type)) return 0;
+    const { _max } = await this.prisma.item.aggregate({
+      where: IN_QUEUE(userId, type),
+      _max: { learnPosition: true },
+    });
     return _max.learnPosition ?? 0;
   }
 
@@ -75,7 +79,7 @@ export class ItemsService {
     now = new Date(),
     learningStatus: LearningStatus = initialLearningStatus(type),
   ): Promise<ItemWithCards[]> {
-    const last = learningStatus === 'ToLearn' ? await this.queueLength(userId) : 0;
+    const last = learningStatus === 'ToLearn' ? await this.queueLength(userId, type) : 0;
     return this.prisma.$transaction(
       contents.map((content, index) => {
         const createdAt = new Date(now.getTime() + index);
@@ -161,7 +165,9 @@ export class ItemsService {
   async remove(userId: string, id: string, type?: ItemType): Promise<void> {
     const item = await this.findOne(userId, id, type);
     await this.prisma.item.delete({ where: { id } });
-    if (item.learningStatus === 'ToLearn') await renumberQueue(this.prisma, userId); // MEM-61: no gap
+    if (item.learningStatus === 'ToLearn' && hasQueue(item.type)) {
+      await renumberQueue(this.prisma, userId, item.type); // MEM-61: no gap
+    }
   }
 
   /**
@@ -171,7 +177,7 @@ export class ItemsService {
    */
   async removeMany(userId: string, ids: string[], type: ItemType): Promise<number> {
     const { count } = await this.prisma.item.deleteMany({ where: { id: { in: ids }, userId, type } });
-    if (count > 0 && type === 'Vocabulary') await renumberQueue(this.prisma, userId); // MEM-61: no gap
+    if (count > 0 && hasQueue(type)) await renumberQueue(this.prisma, userId, type); // MEM-61: no gap
     return count;
   }
 

@@ -1,7 +1,9 @@
 export type ItemType = 'Quote' | 'Vocabulary' | 'MindMap';
+/** The spaces with a list, a learning queue and CSV files: the vocabulary and the quotes (v0.12). */
+export type ListType = 'Vocabulary' | 'Quote';
 export type CardKind = 'QuoteRecall' | 'EnglishToFrench' | 'FrenchToEnglish' | 'BranchRecall';
 export type CardState = 'New' | 'Learning' | 'Review' | 'Relearning';
-/** Learning state of an item (MEM-15); only vocabulary leaves `Learning`. */
+/** Learning state of an item (MEM-15): vocabulary and quotes (MEM-67); mind maps are always `Learning`. */
 export type LearningStatus = 'Waiting' | 'ToLearn' | 'Learning' | 'Learned'; // Waiting: MEM-61
 export type ReviewRating = 'Again' | 'Hard' | 'Good' | 'Easy';
 
@@ -39,7 +41,7 @@ export interface CardSummary {
   nodeId: string | null; // mind maps: the branch this card asks about
   due: string;
   state: CardState;
-  learnedAt?: string | null; // quotes and mind map branches marked « Appris » (MEM-48)
+  learnedAt?: string | null; // mind map branches marked « Appris » (MEM-48)
 }
 
 interface ItemBase {
@@ -65,6 +67,7 @@ export interface CreateQuoteInput {
   text: string;
   author?: string;
   source?: string;
+  queue?: boolean; // MEM-71: false, the quote is "En attente" (true by default)
 }
 
 export interface CreateVocabularyInput {
@@ -121,7 +124,25 @@ export interface LearningItem {
 
 export interface LearningSession {
   total: number; // all the items still to learn
-  items: LearningItem[]; // up to five, the oldest first
+  items: LearningItem[]; // up to five, the first ones of the learning queue
+}
+
+/** A quote of a learning session (MEM-68): learned in a single step, as it is reviewed. */
+export interface QuoteLearningItem {
+  id: string;
+  cardId: string; // reviewed directly when it comes back in the session (MEM-47)
+  text: string;
+  author: string | null;
+  source: string | null;
+  /** When the card comes back, for each rating. */
+  nextDue: Record<ReviewRating, string>;
+  /** The same once rated « À revoir »: the answers are only sent at the end of the session. */
+  nextDueAfterAgain: Record<ReviewRating, string>;
+}
+
+export interface QuoteLearningSession {
+  total: number; // all the quotes still to learn
+  items: QuoteLearningItem[]; // up to five, the first ones of their learning queue
 }
 
 /** Answer of POST /reviews/:cardId and POST /learning/:itemId: when the card comes back next time. */
@@ -191,11 +212,18 @@ export type ImportRow = {
   | { status: 'error'; error: string }
 );
 
-/** Answer of POST /vocabulary-csv/preview: the lines, or why the file can't be read. */
-export type ImportAnalysis =
-  | { ok: true; rows: ImportRow[]; summary: { total: number; new: number; duplicate: number; error: number } }
+/** A line of a CSV file of quotes to import, and what importing it would do (MEM-72). */
+export type QuoteImportRow = { line: number; text: string; author: string; source: string } & (
+  | { status: 'new' }
+  | { status: 'duplicate'; of: { existing: string } | { line: number } }
+  | { status: 'error'; error: string }
+);
+
+/** Answer of POST /vocabulary-csv/preview and /quotes-csv/preview: the lines, or why the file can't be read. */
+export type ImportAnalysis<Row = ImportRow | QuoteImportRow> =
+  | { ok: true; rows: Row[]; summary: { total: number; new: number; duplicate: number; error: number } }
   | { ok: false; problem: 'empty' | 'tooManyLines' | 'syntax' | 'wrongSeparator'; line?: number };
 
-/** Answer of POST /vocabulary-csv/import (MEM-54). */
+/** Answer of POST /vocabulary-csv/import (MEM-54) and /quotes-csv/import (MEM-72). */
 export type ImportResult =
   { ok: true; imported: number; duplicate: number; error: number } | Extract<ImportAnalysis, { ok: false }>;

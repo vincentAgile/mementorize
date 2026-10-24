@@ -7,7 +7,8 @@ import { createItemAction } from './actions';
 /**
  * The add form of a space: the space decides the type of item (MEM-7), so
  * the form only shows the fields of that type. The type travels in a hidden
- * field, read by the Server Action.
+ * field, read by the Server Action. The Anglais and Citations spaces have
+ * their own "Ajouter" tab (MEM-27, MEM-71).
  */
 export function ItemForm({ type }: { type: ItemType }) {
   const [state, formAction, pending] = useActionState(createItemAction, {});
@@ -19,12 +20,7 @@ export function ItemForm({ type }: { type: ItemType }) {
     <form action={formAction} className="items__form">
       <input type="hidden" name="type" value={type} />
 
-      {type === 'Quote' ? (
-        <>
-          <textarea name="text" placeholder="Texte de la citation" rows={3} defaultValue={values.text} required />
-          <input name="author" placeholder="Auteur (optionnel)" defaultValue={values.author} />
-        </>
-      ) : type === 'MindMap' ? (
+      {type === 'MindMap' ? (
         <input
           name="topic"
           placeholder="Sujet central (ex. La Révolution française)"

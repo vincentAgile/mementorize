@@ -1,13 +1,13 @@
 'use server';
 
-import { ApiError, learnVocabulary, markVocabularyLearned } from '../../lib/api';
+import { ApiError, learnItem, markItemLearned } from '../../lib/api';
 import type { ReviewRating } from '../../lib/types';
 
 const RATINGS: readonly ReviewRating[] = ['Again', 'Hard', 'Good', 'Easy'];
 
 /**
- * Step 2 of a learning session (MEM-21): records the rating, the item moves
- * to "En cours d'apprentissage". Returns when its card comes back for each
+ * Step 2 of a learning session (MEM-21), or the rating of a quote (MEM-68):
+ * records the rating, the item moves to "En cours d'apprentissage". Returns when its card comes back for each
  * rating (MEM-47: after « À revoir », at the end of the session), or null
  * when the API refused it (the item was learned in another tab, or deleted
  * meanwhile).
@@ -19,7 +19,7 @@ export async function learnAction(itemId: string, rating: ReviewRating): Promise
   }
   let nextDue: Record<ReviewRating, string>;
   try {
-    nextDue = (await learnVocabulary(itemId, rating)).nextDueByRating;
+    nextDue = (await learnItem(itemId, rating)).nextDueByRating;
   } catch (error) {
     if (error instanceof ApiError) return null;
     throw error; // e.g. the redirect of an expired session
@@ -42,7 +42,7 @@ export async function learnedAction(itemId: string): Promise<boolean> {
     throw new Error('Invalid item');
   }
   try {
-    await markVocabularyLearned(itemId);
+    await markItemLearned(itemId);
   } catch (error) {
     if (error instanceof ApiError) return false;
     throw error;

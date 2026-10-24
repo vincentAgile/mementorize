@@ -4,8 +4,8 @@ import { useFormStatus } from 'react-dom';
 import { relearnCardAction } from './actions';
 
 /**
- * « Remettre en révision » (MEM-48): a quote or a mind map branch marked
- * « Appris » goes back to the review, with the schedule it had. `what` names
+ * « Remettre en révision » (MEM-48): a mind map branch marked « Appris »
+ * goes back to the review, with the schedule it had. `what` names
  * it for screen readers: « Remettre en révision la branche « Sommeil » ».
  */
 export function RelearnCardButton({ cardId, what }: { cardId: string; what: string }) {

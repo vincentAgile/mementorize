@@ -146,8 +146,8 @@ describe('ReviewsService', () => {
       item: { id: 'item-1', userId, type },
     });
 
-    it('takes a quote card out of the review, logs "Learned" and keeps its schedule', async () => {
-      const card = learnable('Quote');
+    it('takes a mind map branch out of the review, logs "Learned" and keeps its schedule', async () => {
+      const card = learnable('MindMap');
       prismaMock.card.findFirst.mockResolvedValue(card);
 
       await service.markLearned(userId, 'card-1', NOW);
@@ -162,8 +162,10 @@ describe('ReviewsService', () => {
       });
     });
 
-    it('refuses vocabulary (learned per item), a card already learned, or an unknown card', async () => {
+    it('refuses vocabulary and quotes (learned per item, MEM-67), a card already learned, or an unknown card', async () => {
       prismaMock.card.findFirst.mockResolvedValue(learnable('Vocabulary'));
+      await expect(service.markLearned(userId, 'card-1', NOW)).rejects.toBeInstanceOf(ConflictException);
+      prismaMock.card.findFirst.mockResolvedValue(learnable('Quote'));
       await expect(service.markLearned(userId, 'card-1', NOW)).rejects.toBeInstanceOf(ConflictException);
       prismaMock.card.findFirst.mockResolvedValue(learnable('MindMap', NOW));
       await expect(service.markLearned(userId, 'card-1', NOW)).rejects.toBeInstanceOf(ConflictException);

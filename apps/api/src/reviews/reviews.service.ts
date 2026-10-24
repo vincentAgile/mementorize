@@ -99,10 +99,11 @@ export class ReviewsService {
   }
 
   /**
-   * « Appris » for a quote or a mind map branch (MEM-48): the card leaves the
-   * review and the counters. A `Learned` entry in its history, with its
-   * schedule as it stands: nothing is rescheduled, so that putting it back
-   * finds the same schedule. Vocabulary is learned per item (MEM-22).
+   * « Appris » for a mind map branch (MEM-48): the card leaves the review and
+   * the counters. A `Learned` entry in its history, with its schedule as it
+   * stands: nothing is rescheduled, so that putting it back finds the same
+   * schedule. Vocabulary (MEM-22) and quotes (MEM-67) are learned per item:
+   * POST /learning/:itemId/learned.
    */
   async markLearned(userId: string, cardId: string, now = new Date()): Promise<Card> {
     const card = await this.learnableCard(userId, cardId);
@@ -137,14 +138,14 @@ export class ReviewsService {
     return this.prisma.card.update({ where: { id: card.id }, data: { learnedAt: null } });
   }
 
-  /** The user's card of a quote or a mind map: 404, or 409 for vocabulary (learned per item). */
+  /** The user's card of a mind map: 404, or 409 for vocabulary and quotes (learned per item). */
   private async learnableCard(userId: string, cardId: string) {
     const card = await this.prisma.card.findFirst({ where: { id: cardId, item: { userId } }, include: { item: true } });
     if (!card) {
       throw new NotFoundException(`Card ${cardId} not found`);
     }
-    if (card.item.type === 'Vocabulary') {
-      throw new ConflictException(`Card ${cardId} is vocabulary: learned per item`);
+    if (card.item.type !== 'MindMap') {
+      throw new ConflictException(`Card ${cardId} is ${card.item.type}: learned per item`);
     }
     return card;
   }
