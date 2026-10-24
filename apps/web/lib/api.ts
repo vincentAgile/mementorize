@@ -14,6 +14,7 @@ import type {
   Item,
   QuoteLearningSession,
   ItemType,
+  ListType,
   MindMap,
   MindMapNode,
   Preferences,
@@ -116,12 +117,32 @@ export function getItems(type?: ItemType): Promise<Item[]> {
   return authedFetch<Item[]>(type ? `/items?type=${type}` : '/items');
 }
 
-export function createQuote(input: CreateQuoteInput): Promise<unknown> {
-  return authedFetch('/quotes', {
+/** The quote created: where it went (MEM-71). */
+export interface CreatedItem {
+  learningStatus: 'ToLearn' | 'Waiting';
+  learnPosition: number | null;
+}
+
+export function createQuote(input: CreateQuoteInput): Promise<CreatedItem> {
+  return authedFetch<CreatedItem>('/quotes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
+}
+
+/** Changes a quote (MEM-69): its text, author or source; an empty author or source removes it. */
+export function updateQuote(id: string, input: { text: string; author: string; source: string }): Promise<unknown> {
+  return authedFetch(`/quotes/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+}
+
+/** Deletes a quote with its card and history (MEM-69). */
+export function deleteQuote(id: string): Promise<void> {
+  return authedFetch<void>(`/quotes/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 /** Changes a vocabulary item (MEM-19); an empty example (English or French) removes it. */
@@ -139,48 +160,47 @@ export function deleteVocabulary(id: string): Promise<void> {
 }
 
 /**
- * MEM-63: puts items "En attente" in the learning queue (last, in this
- * order), or takes items out of it; MEM-64: puts items of the queue at its
- * head ("top").
+ * MEM-63: puts items "En attente" in the learning queue of their space
+ * (last, in this order), or takes items out of it; MEM-64: puts items of the
+ * queue at its head ("top"). One queue per space (MEM-67).
  */
-export function queueVocabularyItems(
+export function queueItems(
+  type: ListType,
   op: 'add' | 'remove' | 'top',
   ids: string[],
 ): Promise<{ changed: number; ignored: number }> {
   return authedFetch<{ changed: number; ignored: number }>(`/learning/queue/${op}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids }),
+    body: JSON.stringify({ type, ids }),
   });
 }
 
-/** MEM-64: moves an item of the learning queue to a position (1: the head). */
-export function moveInLearningQueue(id: string, position: number): Promise<{ position: number; total: number }> {
+/** MEM-64: moves an item of the learning queue of its space to a position (1: the head). */
+export function moveInLearningQueue(
+  type: ListType,
+  id: string,
+  position: number,
+): Promise<{ position: number; total: number }> {
   return authedFetch<{ position: number; total: number }>('/learning/queue/move', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, position }),
+    body: JSON.stringify({ type, id, position }),
   });
 }
 
-/** MEM-59: deletes several vocabulary items at once; returns how many were deleted. */
-export async function deleteVocabularyItems(ids: string[]): Promise<number> {
-  const { deleted } = await authedFetch<{ deleted: number }>('/vocabulary/delete', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids }),
-  });
+/** MEM-59, MEM-69: deletes several items of a space at once; returns how many were deleted. */
+export async function deleteItems(type: ListType, ids: string[]): Promise<number> {
+  const { deleted } = await authedFetch<{ deleted: number }>(
+    type === 'Quote' ? '/quotes/delete' : '/vocabulary/delete',
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) },
+  );
   return deleted;
 }
 
-/** The item created: where it went (MEM-62). */
-export interface CreatedVocabulary {
-  learningStatus: 'ToLearn' | 'Waiting';
-  learnPosition: number | null;
-}
-
-export function createVocabulary(input: CreateVocabularyInput): Promise<CreatedVocabulary> {
-  return authedFetch<CreatedVocabulary>('/vocabulary', {
+/** The item created, and where it went (MEM-62). */
+export function createVocabulary(input: CreateVocabularyInput): Promise<CreatedItem> {
+  return authedFetch<CreatedItem>('/vocabulary', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

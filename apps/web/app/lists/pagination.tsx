@@ -1,9 +1,12 @@
 'use client';
 
 import { useId } from 'react';
-import { PAGE_SIZES, pageNumbers } from '../../lib/vocabulary-table';
+import type { Noun } from '../../lib/nouns';
+import { PAGE_SIZES, pageNumbers } from '../../lib/item-list';
 
 interface PaginationProps {
+  /** « éléments », « citations » par page. */
+  noun: Noun;
   page: number;
   pageCount: number;
   pageSize: number;
@@ -12,12 +15,12 @@ interface PaginationProps {
 }
 
 /**
- * Under the vocabulary table (MEM-58): how many items per page, and the
+ * Under the list of a space (MEM-58): how many items per page, and the
  * navigation between pages (hidden when there is only one). On a phone,
  * only « Précédent », « Page X sur Y » and « Suivant »; on a computer, the
  * page numbers too.
  */
-export function Pagination({ page, pageCount, pageSize, onPage, onPageSize }: PaginationProps) {
+export function Pagination({ noun, page, pageCount, pageSize, onPage, onPageSize }: PaginationProps) {
   const sizeId = useId();
   return (
     <div className="pagination">
@@ -31,7 +34,7 @@ export function Pagination({ page, pageCount, pageSize, onPage, onPageSize }: Pa
           ))}
         </select>
         <span aria-hidden="true">par page</span>
-        <span className="visually-hidden">éléments par page</span>
+        <span className="visually-hidden">{noun.many} par page</span>
       </p>
 
       {pageCount > 1 && (

@@ -249,8 +249,8 @@ function Preview({ analysis, fileName, filter, onFilter, onReset, onImport, impo
         </button>
       </div>
 
-      <div className="vocabulary__scroll">
-        <table className="vocabulary__table import-preview__table">
+      <div className="item-list__scroll">
+        <table className="item-list__table import-preview__table">
           <thead>
             <tr>
               <th scope="col">Ligne</th>
@@ -267,7 +267,7 @@ function Preview({ analysis, fileName, filter, onFilter, onReset, onImport, impo
                 <td>
                   {row.french}
                   {row.frenchExample && (
-                    <span lang="fr" className="vocabulary__example">
+                    <span lang="fr" className="item-list__example">
                       {row.frenchExample}
                     </span>
                   )}
@@ -275,12 +275,12 @@ function Preview({ analysis, fileName, filter, onFilter, onReset, onImport, impo
                 <td>
                   <span lang="en">{row.english}</span>
                   {row.example && (
-                    <span lang="en" className="vocabulary__example">
+                    <span lang="en" className="item-list__example">
                       {row.example}
                     </span>
                   )}
                 </td>
-                <td className="vocabulary__topic">{row.topic}</td>
+                <td className="item-list__topic">{row.topic}</td>
                 <td>
                   <span className={`import-status import-status--${row.status}`}>{STATUS_LABELS[row.status]}</span>
                   {row.status !== 'new' && <span className="import-preview__why">{why(row)}</span>}

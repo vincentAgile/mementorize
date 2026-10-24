@@ -536,6 +536,41 @@ describe('API (e2e)', () => {
       .expect(401);
   });
 
+  it("edits a quote, and deletes several quotes at once, only the user's own (MEM-69)", async () => {
+    const auth = { Authorization: `Bearer ${await register('uma')}` };
+    const other = { Authorization: `Bearer ${await register('vic')}` };
+    const ids: string[] = [];
+    for (const text of ['Un', 'Deux', 'Trois']) {
+      ids.push(
+        (await http().post('/quotes').set(auth).send({ text, author: 'Moi', source: 'Ici' }).expect(201)).body.id,
+      );
+    }
+    const theirs = (await http().post('/quotes').set(other).send({ text: 'Quatre' }).expect(201)).body.id;
+    const word = (await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201))
+      .body.id;
+
+    // The author emptied: removed; the state and the place in the queue stay.
+    const edited = await http()
+      .patch(`/quotes/${ids[2]}`)
+      .set(auth)
+      .send({ text: ' Trois, revu ', author: ' ' })
+      .expect(200);
+    expect(edited.body).toMatchObject({ text: 'Trois, revu', author: null, source: 'Ici', learnPosition: 3 });
+
+    const result = await http()
+      .post('/quotes/delete')
+      .set(auth)
+      .send({ ids: [ids[0], ids[1], theirs, word, 'unknown'] })
+      .expect(200);
+    expect(result.body).toEqual({ deleted: 2 });
+    const left = (await http().get('/quotes').set(auth).expect(200)).body;
+    expect(left.map((quote: { id: string; learnPosition: number }) => [quote.id, quote.learnPosition])).toEqual([
+      [ids[2], 1],
+    ]);
+    await http().get(`/quotes/${theirs}`).set(other).expect(200);
+    await http().get(`/vocabulary/${word}`).set(auth).expect(200);
+  });
+
   it('keeps the learning queue numbered 1, 2, 3… and learns it in that order (MEM-61)', async () => {
     const auth = { Authorization: `Bearer ${await register('tess')}` };
     const ids: string[] = [];

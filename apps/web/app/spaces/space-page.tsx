@@ -55,7 +55,7 @@ export async function SpacePage({ space }: { space: Space }) {
 }
 
 /** The items of a space, each with its schedule. */
-export function SpaceItems({ items, now }: { items: Item[]; now: Date }) {
+function SpaceItems({ items, now }: { items: Item[]; now: Date }) {
   return (
     <ul className="items__list">
       {items.map((item) => (
