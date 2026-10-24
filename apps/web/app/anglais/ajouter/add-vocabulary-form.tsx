@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { Translator } from '../../../lib/types';
+import { ordinal } from '../../lists/ordinal';
 import { addVocabularyAction, type VocabularyAddState } from '../actions';
 import { VocabularyFields, type VocabularyValues } from '../vocabulary-fields';
 
@@ -69,16 +70,6 @@ export function AddVocabularyForm({ translator, topics }: { translator: Translat
         <AddButton />
       </div>
     </form>
-  );
-}
-
-/** 1ᵉʳ, 2ᵉ, 12ᵉ: the place in the learning queue. */
-function ordinal(position: number) {
-  return (
-    <>
-      {position}
-      <sup>{position === 1 ? 'er' : 'e'}</sup>
-    </>
   );
 }
 
