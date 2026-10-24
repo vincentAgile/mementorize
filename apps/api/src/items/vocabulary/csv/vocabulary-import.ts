@@ -1,7 +1,5 @@
-import { type CsvRecord, CsvSyntaxError, parseCsv } from './csv.js';
-
-/** At most this many lines in a file to import (MEM-53). */
-export const MAX_IMPORT_LINES = 2000;
+import type { CsvRecord } from '../../csv/csv.js';
+import { type ImportProblem, readImportFile } from '../../csv/import-file.js';
 
 /** Same limits as the entry form (CreateVocabularyDto). */
 const MAX = { french: 200, english: 200, topic: 50, frenchExample: 500, example: 500 } as const;
@@ -35,7 +33,7 @@ export type ImportAnalysis =
       rows: ImportRow[];
       summary: { total: number; new: number; duplicate: number; error: number };
     }
-  | { ok: false; problem: 'empty' | 'tooManyLines' | 'syntax' | 'wrongSeparator'; line?: number };
+  | ImportProblem;
 
 /** An existing vocabulary item, for the duplicates. */
 export interface ExistingPair {
@@ -54,37 +52,14 @@ const columnsOk = (record: CsvRecord) => record.fields.length >= 2 && record.fie
 /**
  * Reads a file to import (MEM-53) and tells, line by line, what would
  * happen: imported, left out as a duplicate, or in error. Nothing is saved.
- * The first line is the header line, whatever its titles: always skipped. When the lines only make sense
- * with the other separator, the whole file is reported instead.
+ * The first line is the header line, whatever its titles: always skipped.
+ * When the lines only make sense with the other separator, the whole file
+ * is reported instead (readImportFile).
  */
-export function analyzeImport(
-  text: string,
-  separator: string,
-  otherSeparator: string,
-  existing: ExistingPair[],
-): ImportAnalysis {
-  let records: CsvRecord[];
-  try {
-    records = parseCsv(text, separator);
-  } catch (error) {
-    if (error instanceof CsvSyntaxError) return { ok: false, problem: 'syntax', line: error.line };
-    throw error;
-  }
-  records = records.slice(1); // the header line
-  if (records.length === 0) return { ok: false, problem: 'empty' };
-  if (records.length > MAX_IMPORT_LINES) return { ok: false, problem: 'tooManyLines' };
-
-  // Wrong separator: hardly a line has 2 to 5 columns, but they would with the other one.
-  const valid = records.filter(columnsOk).length;
-  if (valid < records.length / 2) {
-    try {
-      const other = parseCsv(text, otherSeparator).slice(1);
-      const otherValid = other.filter(columnsOk).length;
-      if (otherValid > valid && otherValid >= other.length * 0.8) return { ok: false, problem: 'wrongSeparator' };
-    } catch {
-      // Not readable with the other separator either: the lines say what's wrong.
-    }
-  }
+export function analyzeImport(text: string, separator: string, existing: ExistingPair[]): ImportAnalysis {
+  const file = readImportFile(text, separator, columnsOk);
+  if (!file.ok) return file;
+  const { records } = file;
 
   const english = new Map<string, { existing: string } | { line: number }>();
   const french = new Map<string, { existing: string } | { line: number }>();

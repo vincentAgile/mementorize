@@ -3,7 +3,8 @@ import { PronunciationService } from '../../../pronunciation/pronunciation.servi
 import { PrismaService } from '../../../prisma/prisma.service.js';
 import { ItemsService } from '../../items.service.js';
 import { contentOf } from '../../item-content.js';
-import { SEPARATOR_CHARS, toCsv } from './csv.js';
+import { toCsv } from '../../csv/csv.js';
+import { userSeparator } from '../../csv/user-separator.js';
 import { analyzeImport, type ImportAnalysis } from './vocabulary-import.js';
 
 /** The columns of the file, in this order (MEM-50): the same for the export and the import. */
@@ -24,30 +25,20 @@ export class VocabularyCsvService {
     private readonly pronunciations: PronunciationService,
   ) {}
 
-  /** The separator chosen in the settings (MEM-55). */
-  async separator(userId: string): Promise<string> {
-    const { csvSeparator } = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { csvSeparator: true },
-    });
-    return SEPARATOR_CHARS[csvSeparator];
-  }
-
   /**
    * MEM-53: what importing this file would do, line by line, against the
    * user's vocabulary as it is now. Nothing is saved.
    */
   async preview(userId: string, content: string): Promise<ImportAnalysis> {
     const [separator, items] = await Promise.all([
-      this.separator(userId),
+      userSeparator(this.prisma, userId),
       this.prisma.item.findMany({ where: { userId, type: 'Vocabulary' }, select: { content: true, type: true } }),
     ]);
     const existing = items.map((item) => {
       const { word, translation } = contentOf({ ...item, type: 'Vocabulary' as const });
       return { english: word, french: translation };
     });
-    const other = separator === SEPARATOR_CHARS.Semicolon ? SEPARATOR_CHARS.Comma : SEPARATOR_CHARS.Semicolon;
-    return analyzeImport(content, separator, other, existing);
+    return analyzeImport(content, separator, existing);
   }
 
   /**
@@ -57,7 +48,7 @@ export class VocabularyCsvService {
    */
   async export(userId: string): Promise<{ csv: string; count: number }> {
     const [separator, items] = await Promise.all([
-      this.separator(userId),
+      userSeparator(this.prisma, userId),
       this.prisma.item.findMany({ where: { userId, type: 'Vocabulary' }, orderBy: { createdAt: 'asc' } }),
     ]);
     const lines = items.map((item) => {
