@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import type { AuthUser } from '../../../auth/auth-user.js';
 import { CurrentUser } from '../../../auth/current-user.decorator.js';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard.js';
-import { ImportFileDto } from './dto/import-file.dto.js';
+import { ImportFileDto } from '../../csv/import-file.dto.js';
 import { VocabularyCsvService } from './vocabulary-csv.service.js';
 
 /** Import / export of the vocabulary as CSV files (MEM-50). */

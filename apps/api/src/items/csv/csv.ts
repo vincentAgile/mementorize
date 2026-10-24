@@ -1,5 +1,5 @@
 /**
- * CSV as in RFC 4180, for the import / export of the vocabulary (MEM-50):
+ * CSV as in RFC 4180, for the import / export of the vocabulary (MEM-50) and of the quotes (MEM-72):
  * fields between double quotes when they hold the separator, a double quote
  * or a line break, a double quote doubled inside them. Lines end with CRLF.
  */

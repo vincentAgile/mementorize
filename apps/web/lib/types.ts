@@ -212,11 +212,18 @@ export type ImportRow = {
   | { status: 'error'; error: string }
 );
 
-/** Answer of POST /vocabulary-csv/preview: the lines, or why the file can't be read. */
-export type ImportAnalysis =
-  | { ok: true; rows: ImportRow[]; summary: { total: number; new: number; duplicate: number; error: number } }
+/** A line of a CSV file of quotes to import, and what importing it would do (MEM-72). */
+export type QuoteImportRow = { line: number; text: string; author: string; source: string } & (
+  | { status: 'new' }
+  | { status: 'duplicate'; of: { existing: string } | { line: number } }
+  | { status: 'error'; error: string }
+);
+
+/** Answer of POST /vocabulary-csv/preview and /quotes-csv/preview: the lines, or why the file can't be read. */
+export type ImportAnalysis<Row = ImportRow | QuoteImportRow> =
+  | { ok: true; rows: Row[]; summary: { total: number; new: number; duplicate: number; error: number } }
   | { ok: false; problem: 'empty' | 'tooManyLines' | 'syntax' | 'wrongSeparator'; line?: number };
 
-/** Answer of POST /vocabulary-csv/import (MEM-54). */
+/** Answer of POST /vocabulary-csv/import (MEM-54) and /quotes-csv/import (MEM-72). */
 export type ImportResult =
   { ok: true; imported: number; duplicate: number; error: number } | Extract<ImportAnalysis, { ok: false }>;

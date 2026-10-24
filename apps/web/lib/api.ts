@@ -364,20 +364,23 @@ export async function isApiHealthy(): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
-// Import / export of the vocabulary as CSV (MEM-50)
+// Import / export as CSV: the vocabulary (MEM-50), the quotes (MEM-72)
 // ---------------------------------------------------------------------------
+
+const CSV_PATHS: Record<ListType, string> = { Vocabulary: '/vocabulary-csv', Quote: '/quotes-csv' };
 
 export type CsvExport =
   { ok: true; body: ReadableStream<Uint8Array>; disposition: string } | { ok: false; status: number };
 
 /**
- * The vocabulary as a CSV file (MEM-52), for app/anglais/import-export/export/route.ts.
- * Not through authedFetch, which reads JSON: the file is passed on as it is.
+ * The items of a space as a CSV file (MEM-52, MEM-72), for the export routes
+ * of the Import / export tabs. Not through authedFetch, which reads JSON: the
+ * file is passed on as it is.
  */
-export async function exportVocabularyCsv(): Promise<CsvExport> {
+export async function exportCsv(type: ListType): Promise<CsvExport> {
   const token = await getSessionToken();
   if (!token) return { ok: false, status: 401 };
-  const res = await fetch(`${API_URL}/vocabulary-csv/export`, {
+  const res = await fetch(`${API_URL}${CSV_PATHS[type]}/export`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
     signal: AbortSignal.timeout(API_TIMEOUT_MS),
@@ -386,22 +389,22 @@ export async function exportVocabularyCsv(): Promise<CsvExport> {
   return {
     ok: true,
     body: res.body,
-    disposition: res.headers.get('content-disposition') ?? 'attachment; filename="mementorize-anglais.csv"',
+    disposition: res.headers.get('content-disposition') ?? 'attachment; filename="mementorize.csv"',
   };
 }
 
-/** What importing this CSV file would do, line by line (MEM-53). Nothing is saved. */
-export function previewVocabularyImport(content: string): Promise<ImportAnalysis> {
-  return authedFetch<ImportAnalysis>('/vocabulary-csv/preview', {
+/** What importing this CSV file would do, line by line (MEM-53, MEM-72). Nothing is saved. */
+export function previewImport(type: ListType, content: string): Promise<ImportAnalysis> {
+  return authedFetch<ImportAnalysis>(`${CSV_PATHS[type]}/preview`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content }),
   });
 }
 
-/** Imports the lines "to import" of this CSV file, all or none (MEM-54). */
-export function importVocabularyCsv(content: string): Promise<ImportResult> {
-  return authedFetch<ImportResult>('/vocabulary-csv/import', {
+/** Imports the lines "to import" of this CSV file, all or none, "En attente" (MEM-54, MEM-72). */
+export function importCsv(type: ListType, content: string): Promise<ImportResult> {
+  return authedFetch<ImportResult>(`${CSV_PATHS[type]}/import`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content }),

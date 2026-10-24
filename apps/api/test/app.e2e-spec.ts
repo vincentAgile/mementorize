@@ -388,6 +388,52 @@ describe('API (e2e)', () => {
     await http().post(`/learning/${word.id}/learned`).set(auth).expect(409);
   });
 
+  it('exports the quotes as CSV and imports them back, "En attente" (MEM-72)', async () => {
+    const auth = { Authorization: `Bearer ${await register('wes')}` };
+    await http()
+      .post('/quotes')
+      .set(auth)
+      .send({ text: 'Il dit : "Viens; vite".\nPuis partit.', author: 'Moi', source: 'Ici' })
+      .expect(201);
+    await http().post('/quotes').set(auth).send({ text: 'La vie est un songe.', queue: false }).expect(201);
+    await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201);
+
+    const exported = await http().get('/quotes-csv/export').set(auth).expect(200);
+    expect(exported.headers['content-disposition']).toMatch(
+      /^attachment; filename="mementorize-citations-\d{4}-\d{2}-\d{2}\.csv"$/,
+    );
+    expect(exported.text).toBe(
+      '\uFEFFTexte;Auteur;Source\r\n"Il dit : ""Viens; vite"".\nPuis partit.";Moi;Ici\r\nLa vie est un songe.;;\r\n',
+    );
+
+    // Round trip, in another account: the same quotes.
+    const other = { Authorization: `Bearer ${await register('xia')}` };
+    const preview = await http().post('/quotes-csv/preview').set(other).send({ content: exported.text }).expect(200);
+    expect(preview.body.summary).toEqual({ total: 2, new: 2, duplicate: 0, error: 0 });
+    const imported = await http().post('/quotes-csv/import').set(other).send({ content: exported.text }).expect(200);
+    expect(imported.body).toEqual({ ok: true, imported: 2, duplicate: 0, error: 0 });
+    const quotes = (await http().get('/quotes').set(other).expect(200)).body as Record<string, unknown>[];
+    expect(
+      quotes.map(({ text, author, source, learningStatus }) => ({ text, author, source, learningStatus })),
+    ).toEqual(
+      expect.arrayContaining([
+        { text: 'Il dit : "Viens; vite".\nPuis partit.', author: 'Moi', source: 'Ici', learningStatus: 'Waiting' },
+        { text: 'La vie est un songe.', author: null, source: null, learningStatus: 'Waiting' },
+      ]),
+    );
+
+    // Again: only duplicates; the other separator is reported.
+    const again = await http().post('/quotes-csv/import').set(other).send({ content: exported.text }).expect(200);
+    expect(again.body).toEqual({ ok: true, imported: 0, duplicate: 2, error: 0 });
+    const comma = await http()
+      .post('/quotes-csv/preview')
+      .set(other)
+      .send({ content: 'Texte,Auteur,Source\nUn,Moi,\n' })
+      .expect(200);
+    expect(comma.body).toEqual({ ok: false, problem: 'wrongSeparator' });
+    await http().post('/quotes-csv/preview').send({ content: 'x' }).expect(401);
+  });
+
   it('exports the vocabulary as CSV, with the separator of the settings (MEM-52, MEM-55)', async () => {
     const token = await register('nora');
     const auth = { Authorization: `Bearer ${token}` };

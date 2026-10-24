@@ -2144,6 +2144,11 @@ kbd {
   cursor: pointer;
 }
 
+.import-preview__text,
+.item-list__main--quote {
+  white-space: pre-line; /* a quote on several lines keeps them (MEM-72) */
+}
+
 .import-preview__table th {
   padding: 0.55rem 0.6rem;
 }
