@@ -3,6 +3,7 @@ import type { AuthUser } from '../auth/auth-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { ReviewDto } from '../reviews/dto/review.dto.js';
+import { MoveInQueueDto } from './dto/move-in-queue.dto.js';
 import { QueueItemsDto } from './dto/queue-items.dto.js';
 import { LearningService } from './learning.service.js';
 
@@ -29,6 +30,20 @@ export class LearningController {
   @HttpCode(HttpStatus.OK)
   removeFromQueue(@CurrentUser() user: AuthUser, @Body() dto: QueueItemsDto) {
     return this.learning.removeFromQueue(user.id, dto.ids);
+  }
+
+  /** POST /learning/queue/move { id, position } — reorders the learning queue (MEM-64). */
+  @Post('queue/move')
+  @HttpCode(HttpStatus.OK)
+  moveInQueue(@CurrentUser() user: AuthUser, @Body() dto: MoveInQueueDto) {
+    return this.learning.moveInQueue(user.id, dto.id, dto.position);
+  }
+
+  /** POST /learning/queue/top { ids } — these items of the queue at its head, in their order (MEM-64). */
+  @Post('queue/top')
+  @HttpCode(HttpStatus.OK)
+  moveToTopOfQueue(@CurrentUser() user: AuthUser, @Body() dto: QueueItemsDto) {
+    return this.learning.moveToTopOfQueue(user.id, dto.ids);
   }
 
   /** POST /learning/:itemId/learned — "Appris" in a review: the item leaves the review (MEM-22). */

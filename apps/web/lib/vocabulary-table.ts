@@ -55,7 +55,7 @@ export const statusLabel = (status: LearningStatus) => LEARNING_STATUS_LABELS[st
 
 // --- Sorting (MEM-17) ---
 
-export type SortKey = 'english' | 'french' | 'topic' | 'status' | 'review';
+export type SortKey = 'position' | 'english' | 'french' | 'topic' | 'status' | 'review';
 export interface Sort {
   key: SortKey;
   direction: 'asc' | 'desc';
@@ -66,6 +66,7 @@ const collator = new Intl.Collator('fr', { sensitivity: 'base', numeric: true })
 const STATUS_ORDER: Record<LearningStatus, number> = { Waiting: 0, ToLearn: 1, Learning: 2, Learned: 3 };
 
 const COMPARE: Record<SortKey, (a: VocabularyRow, b: VocabularyRow) => number> = {
+  position: (a, b) => (a.position ?? Infinity) - (b.position ?? Infinity), // MEM-64
   english: (a, b) => collator.compare(a.english, b.english),
   french: (a, b) => collator.compare(a.french, b.french),
   topic: (a, b) => collator.compare(a.topic ?? '', b.topic ?? ''),
@@ -89,6 +90,9 @@ export function sortRows(rows: VocabularyRow[], sort: Sort | null): VocabularyRo
     }
     if (sort.key === 'topic' && (a.topic === null) !== (b.topic === null)) {
       return a.topic === null ? 1 : -1;
+    }
+    if (sort.key === 'position' && (a.position === null) !== (b.position === null)) {
+      return a.position === null ? 1 : -1;
     }
     return sign * COMPARE[sort.key](a, b) || byDate(a, b);
   });
@@ -171,4 +175,33 @@ export function pageNumbers(current: number, count: number): (number | null)[] {
     result.push(page);
   }
   return result;
+}
+
+// --- The learning queue (MEM-64) ---
+
+/** Filtered on "À apprendre" without a chosen sort: the list follows the queue. */
+export function effectiveSort(sort: Sort | null, filter: Filter): Sort | null {
+  return sort ?? (filter.status === 'ToLearn' ? { key: 'position', direction: 'asc' } : null);
+}
+
+/**
+ * The list shows the whole learning queue, in its order: it can be
+ * reordered (drag and drop, « Monter », « Descendre »).
+ */
+export function isQueueView(filter: Filter, sort: Sort | null): boolean {
+  const order = effectiveSort(sort, filter);
+  return (
+    filter.status === 'ToLearn' &&
+    filter.search.trim() === '' &&
+    filter.topic === ALL_TOPICS &&
+    order?.key === 'position' &&
+    order.direction === 'asc'
+  );
+}
+
+/** The ids of the queue in their new order once `id` is at `position` (1: the head). */
+export function moveInQueue(queue: string[], id: string, position: number): string[] {
+  const rest = queue.filter((other) => other !== id);
+  const index = Math.min(Math.max(position, 1), rest.length + 1) - 1;
+  return [...rest.slice(0, index), id, ...rest.slice(index)];
 }

@@ -267,6 +267,18 @@ curl -X POST http://localhost:3000/learning/queue/remove -H "Authorization: Bear
   -H "Content-Type: application/json" -d '{"ids":["<id1>"]}'
 ```
 
+Et s'ordonne (MEM-64) :
+
+```bash
+# Déplace un élément de la file à une position (1 : en tête ; au-delà de la fin : en dernier) → { position, total }
+curl -X POST http://localhost:3000/learning/queue/move -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"id":"<id>","position":3}'
+
+# Les éléments de la file parmi ids passent en tête, dans leur ordre actuel → { changed, ignored }
+curl -X POST http://localhost:3000/learning/queue/top -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"ids":["<id1>","<id2>"]}'
+```
+
 Le processus d'apprentissage (`src/learning/`) fait passer les éléments de `ToLearn` à `Learning`, dans l'ordre de la file :
 
 ```bash

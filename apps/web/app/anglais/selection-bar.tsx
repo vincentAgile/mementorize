@@ -13,7 +13,7 @@ interface SelectionBarProps {
   /** After the deletion: how many items were deleted (null: it failed). */
   onDeleted: (count: number | null) => void;
   /** MEM-63: after « Ajouter à la file » or « Retirer de la file ». */
-  onQueued: (op: 'add' | 'remove', result: { changed: number; ignored: number } | null) => void;
+  onQueued: (op: 'add' | 'remove' | 'top', result: { changed: number; ignored: number } | null) => void;
 }
 
 /**
@@ -25,7 +25,7 @@ export function SelectionBar({ ids, onClear, onDeleted, onQueued }: SelectionBar
   const [pending, startTransition] = useTransition();
   const count = ids.length;
 
-  function queue(op: 'add' | 'remove') {
+  function queue(op: 'add' | 'remove' | 'top') {
     startTransition(async () => onQueued(op, await queueItemsAction(op, ids)));
   }
 
@@ -46,6 +46,10 @@ export function SelectionBar({ ids, onClear, onDeleted, onQueued }: SelectionBar
       </button>
       <button type="button" className="selection-bar__action" disabled={pending} onClick={() => queue('remove')}>
         Retirer de la file
+      </button>
+      {/* MEM-64: the items "À apprendre" selected, in their order in the queue. */}
+      <button type="button" className="selection-bar__action" disabled={pending} onClick={() => queue('top')}>
+        Placer en tête de file
       </button>
       <button
         type="button"

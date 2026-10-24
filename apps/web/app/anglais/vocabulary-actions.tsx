@@ -17,10 +17,13 @@ export function VocabularyActions({
   row,
   translator,
   topics,
+  queueMenu,
 }: {
   row: VocabularyRow;
   translator: Translator;
   topics: string[];
+  /** MEM-64: where to move an item of the learning queue (built by the table). */
+  queueMenu?: React.ReactNode;
 }) {
   const editRef = useRef<HTMLDialogElement>(null);
   const deleteRef = useRef<HTMLDialogElement>(null);
@@ -29,6 +32,7 @@ export function VocabularyActions({
 
   return (
     <div className="row-actions">
+      {queueMenu}
       {row.status === 'Waiting' && (
         // MEM-63: last in the learning queue.
         <form action={queueRowAction.bind(null, 'add', row.id)}>

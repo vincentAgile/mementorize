@@ -6,9 +6,12 @@ import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
 import type { LearningStatus, Translator } from '../../lib/types';
 import {
   ALL_TOPICS,
+  effectiveSort,
   type Filter,
   filterRows,
   isFiltered,
+  isQueueView,
+  moveInQueue,
   NO_TOPIC,
   NO_FILTER,
   nextSort,
@@ -21,12 +24,14 @@ import {
   topicsOf,
   type VocabularyItem,
 } from '../../lib/vocabulary-table';
-import { savePageSizeAction } from './actions';
+import { moveInQueueAction, savePageSizeAction } from './actions';
 import { Pagination } from './pagination';
+import { QueueMenu } from './queue-menu';
 import { SelectionBar } from './selection-bar';
 import { VocabularyActions } from './vocabulary-actions';
 
-const COLUMNS: { key: SortKey; label: string }[] = [
+const COLUMNS: { key: SortKey; label: string; title?: string }[] = [
+  { key: 'position', label: 'N°', title: 'Position dans la file d’apprentissage' }, // MEM-64
   { key: 'english', label: 'Anglais' },
   { key: 'french', label: 'Français' },
   { key: 'topic', label: 'Thématique' },
@@ -96,9 +101,36 @@ export function VocabularyTable({
   };
   const searchId = useId();
 
-  const rows = useMemo(() => items.map(toRow), [items]);
+  // MEM-64: the order of the queue shown at once after a move, until the
+  // server's answer refreshes the list (or puts the previous one back).
+  // Kept with the items it applies to: new items from the server replace it.
+  const [movedFor, setMovedFor] = useState<{ items: VocabularyItem[]; positions: Map<string, number> } | null>(null);
+  const moved = movedFor?.items === items ? movedFor.positions : null;
+  const setMoved = (positions: Map<string, number> | null) => setMovedFor(positions && { items, positions });
+  const [announce, setAnnounce] = useState('');
+  const [dragged, setDragged] = useState<string | null>(null);
+  const [dropOn, setDropOn] = useState<string | null>(null);
+
+  const rows = useMemo(
+    () =>
+      items.map((item) => {
+        const row = toRow(item);
+        return moved?.has(row.id) ? { ...row, position: moved.get(row.id)! } : row;
+      }),
+    [items, moved],
+  );
   const topics = useMemo(() => topicsOf(rows.map((row) => row.topic)), [rows]); // MEM-51
-  const shown = useMemo(() => sortRows(filterRows(rows, filter), sort), [rows, filter, sort]);
+  const order = effectiveSort(sort, filter);
+  const shown = useMemo(() => sortRows(filterRows(rows, filter), order), [rows, filter, order]);
+  const queueView = isQueueView(filter, sort);
+  const queue = useMemo(
+    () =>
+      rows
+        .filter((row) => row.position !== null)
+        .sort((a, b) => a.position! - b.position!)
+        .map((row) => row.id),
+    [rows],
+  );
   // After a deletion, the last page may be empty: the one before it.
   const pageCount = Math.max(1, Math.ceil(shown.length / pageSize));
   const current = Math.min(page, pageCount);
@@ -136,6 +168,21 @@ export function VocabularyTable({
     setSelected(next);
     setAllMatching(false);
   }
+  /** MEM-64: moves an item of the queue, shown at once, saved on the server. */
+  async function move(id: string, english: string, position: number) {
+    const next = moveInQueue(queue, id, position);
+    const target = next.indexOf(id) + 1;
+    setMoved(new Map(next.map((other, index) => [other, index + 1])));
+    setAnnounce(`${english} déplacé en position ${target} sur ${next.length}`);
+    // « Monter » / « Descendre » across the limits of a page: the page follows the item.
+    if (queueView) setPage(Math.ceil(target / pageSize));
+    if ((await moveInQueueAction(id, target)) === null) {
+      setMoved(null);
+      setAnnounce('');
+      setNotice({ ok: false, text: 'Le déplacement a échoué : la file a retrouvé son ordre précédent. Réessaie.' });
+    }
+  }
+
   const date = new Date(now);
   const filtered = isFiltered(filter);
   // The chosen topic stays in the list even when no item has it any more (deleted, edited).
@@ -200,6 +247,26 @@ export function VocabularyTable({
           </>
         )}
       </p>
+
+      {/* MEM-64: where a moved item is now, for screen readers. */}
+      <p className="visually-hidden" aria-live="polite">
+        {announce}
+      </p>
+      {filter.status === 'ToLearn' && !queueView && shown.length > 0 && (
+        <p className="queue-hint">
+          Pour réordonner la file, affichez-la en entier, triée par N°, sans recherche ni filtre de thématique.{' '}
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => {
+              setFilter({ ...NO_FILTER, status: 'ToLearn' });
+              setSortState(null);
+            }}
+          >
+            Afficher la file
+          </button>
+        </p>
+      )}
 
       {notice && (
         <p className={notice.ok ? 'notice' : 'form-error'} role="status">
@@ -272,17 +339,17 @@ export function VocabularyTable({
                   </label>
                 </th>
                 {COLUMNS.map((column) => {
-                  const active = sort?.key === column.key;
+                  const active = order?.key === column.key;
                   return (
                     <th
                       key={column.key}
                       scope="col"
-                      aria-sort={active ? (sort.direction === 'asc' ? 'ascending' : 'descending') : undefined}
+                      aria-sort={active ? (order.direction === 'asc' ? 'ascending' : 'descending') : undefined}
                     >
-                      <button type="button" onClick={() => setSort(nextSort(sort, column.key))}>
+                      <button type="button" title={column.title} onClick={() => setSort(nextSort(order, column.key))}>
                         {column.label}
                         <span className="vocabulary__arrow" aria-hidden="true">
-                          {active ? (sort.direction === 'asc' ? '▲' : '▼') : '↕'}
+                          {active ? (order.direction === 'asc' ? '▲' : '▼') : '↕'}
                         </span>
                       </button>
                     </th>
@@ -295,12 +362,60 @@ export function VocabularyTable({
             </thead>
             <tbody>
               {pageRows.map((row) => (
-                <tr key={row.id} className={isSelected(row.id) ? 'is-selected' : undefined}>
+                <tr
+                  key={row.id}
+                  className={
+                    [
+                      isSelected(row.id) && 'is-selected',
+                      dragged === row.id && 'is-dragged',
+                      dropOn === row.id && 'is-drop-target',
+                    ]
+                      .filter(Boolean)
+                      .join(' ') || undefined
+                  }
+                  // MEM-64: drag and drop, within the page, when the whole queue is shown in order.
+                  onDragOver={(event) => {
+                    if (!queueView || !dragged || row.position === null) return;
+                    event.preventDefault();
+                    setDropOn(row.id);
+                  }}
+                  onDragLeave={() => setDropOn((current) => (current === row.id ? null : current))}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const from = rows.find((other) => other.id === dragged);
+                    setDragged(null);
+                    setDropOn(null);
+                    if (from && row.position !== null && from.id !== row.id)
+                      void move(from.id, from.english, row.position);
+                  }}
+                >
                   <td className="vocabulary__select">
                     <label className="select-box">
                       <input type="checkbox" checked={isSelected(row.id)} onChange={() => toggleRow(row.id)} />
                       <span className="visually-hidden">Sélectionner {row.english}</span>
                     </label>
+                  </td>
+                  <td className="vocabulary__position">
+                    {queueView && row.position !== null && (
+                      <span
+                        className="drag-handle"
+                        draggable
+                        title="Glisser pour déplacer dans la file"
+                        aria-hidden="true"
+                        onDragStart={(event) => {
+                          event.dataTransfer.effectAllowed = 'move';
+                          event.dataTransfer.setData('text/plain', row.id);
+                          setDragged(row.id);
+                        }}
+                        onDragEnd={() => {
+                          setDragged(null);
+                          setDropOn(null);
+                        }}
+                      >
+                        ⠿
+                      </span>
+                    )}
+                    {row.position}
                   </td>
                   <td>
                     <span lang="en" className="vocabulary__english">
@@ -326,7 +441,22 @@ export function VocabularyTable({
                   </td>
                   <td className="vocabulary__review">{reviewLabel(row, date)}</td>
                   <td>
-                    <VocabularyActions row={row} translator={translator} topics={topics} />
+                    <VocabularyActions
+                      row={row}
+                      translator={translator}
+                      topics={topics}
+                      queueMenu={
+                        row.position !== null && (
+                          <QueueMenu
+                            english={row.english}
+                            position={row.position}
+                            total={queue.length}
+                            stepwise={queueView}
+                            onMove={(position) => void move(row.id, row.english, position)}
+                          />
+                        )
+                      }
+                    />
                   </td>
                 </tr>
               ))}
@@ -348,13 +478,16 @@ export function VocabularyTable({
   );
 }
 
-/** « 40 éléments ajoutés à la file, 3 ignorés » (MEM-63). */
-function queueNotice(op: 'add' | 'remove', { changed, ignored }: { changed: number; ignored: number }): string {
+/** « 40 éléments ajoutés à la file, 3 ignorés » (MEM-63, MEM-64). */
+function queueNotice(op: 'add' | 'remove' | 'top', { changed, ignored }: { changed: number; ignored: number }): string {
   const items = (count: number) => `${count}${NBSP}élément${count > 1 ? 's' : ''}`;
+  const s = changed > 1 ? 's' : '';
   const done =
     op === 'add'
-      ? `${items(changed)} ajouté${changed > 1 ? 's' : ''} à la file d’apprentissage`
-      : `${items(changed)} retiré${changed > 1 ? 's' : ''} de la file, en attente`;
+      ? `${items(changed)} ajouté${s} à la file d’apprentissage`
+      : op === 'top'
+        ? `${items(changed)} placé${s} en tête de file`
+        : `${items(changed)} retiré${s} de la file, en attente`;
   const why = op === 'add' ? 'pas en attente' : 'pas dans la file';
   return ignored > 0 ? `${done}, ${ignored}${NBSP}ignoré${ignored > 1 ? 's' : ''} (${why}).` : `${done}.`;
 }
