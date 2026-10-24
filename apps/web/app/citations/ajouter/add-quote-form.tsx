@@ -31,15 +31,16 @@ export function AddQuoteForm({ authors }: { authors: string[] }) {
   }, [state]);
 
   const values =
-    state.values ??
-    (state.added ? { ...EMPTY, author: state.added.author, source: state.added.source } : EMPTY);
+    state.values ?? (state.added ? { ...EMPTY, author: state.added.author, source: state.added.source } : EMPTY);
   const queue = state.added?.queue ?? state.queue ?? true;
 
   return (
     <form ref={form} action={action} className="add-form" noValidate>
       {state.added && (
         <p className="notice" role="status">
-          «{NBSP}{firstWords(state.added.text, 6)}{NBSP}» ajoutée,{' '}
+          «{NBSP}
+          {firstWords(state.added.text, 6)}
+          {NBSP}» ajoutée,{' '}
           {state.added.position !== null ? (
             <>{ordinal(state.added.position)} dans la file d’apprentissage.</>
           ) : (
