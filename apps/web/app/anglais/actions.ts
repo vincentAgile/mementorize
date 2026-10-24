@@ -6,6 +6,7 @@ import {
   createVocabulary,
   deleteVocabulary,
   deleteVocabularyItems,
+  moveInLearningQueue,
   queueVocabularyItems,
   relearnVocabulary,
   savePreferences,
@@ -166,15 +167,16 @@ export async function deleteVocabularyItemsAction(ids: string[]): Promise<number
 
 /**
  * MEM-63: puts the items "En attente" among `ids` in the learning queue
- * (last, in the order of the list), or takes those of the queue out of it.
- * The others are ignored. Null when it failed.
+ * (last, in the order of the list), or takes those of the queue out of it;
+ * MEM-64 ("top"): puts those of the queue at its head, in their order. The
+ * others are ignored. Null when it failed.
  */
 export async function queueItemsAction(
-  op: 'add' | 'remove',
+  op: 'add' | 'remove' | 'top',
   ids: string[],
 ): Promise<{ changed: number; ignored: number } | null> {
   if (
-    (op !== 'add' && op !== 'remove') ||
+    !['add', 'remove', 'top'].includes(op) ||
     !Array.isArray(ids) ||
     ids.length === 0 ||
     ids.length > 10_000 ||
@@ -196,4 +198,24 @@ export async function queueItemsAction(
 /** MEM-63: the same, for one row (a form's action). */
 export async function queueRowAction(op: 'add' | 'remove', id: string): Promise<void> {
   await queueItemsAction(op, [id]);
+}
+
+/**
+ * MEM-64: moves an item of the learning queue to a position. Returns where
+ * it is now, or null when it failed (the list then shows the order before).
+ */
+export async function moveInQueueAction(
+  id: string,
+  position: number,
+): Promise<{ position: number; total: number } | null> {
+  if (typeof id !== 'string' || !Number.isInteger(position) || position < 1) throw new Error('Invalid move');
+  let result: { position: number; total: number };
+  try {
+    result = await moveInLearningQueue(id, position);
+  } catch (error) {
+    if (error instanceof ApiError) return null;
+    throw error;
+  }
+  revalidatePath('/', 'layout');
+  return result;
 }

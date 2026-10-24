@@ -194,6 +194,37 @@ export class LearningService {
     });
   }
 
+  /**
+   * MEM-64: moves an item of the learning queue to a position (1: the head;
+   * beyond the end: last); the others shift. 409 if it is not in the queue.
+   */
+  async moveInQueue(userId: string, id: string, position: number): Promise<{ position: number; total: number }> {
+    return this.prisma.$transaction(async (tx) => {
+      const queue = await queueIds(tx, userId);
+      const index = queue.indexOf(id);
+      if (index === -1) throw new ConflictException(`Item ${id} is not in the learning queue`);
+      queue.splice(index, 1);
+      const target = Math.min(Math.max(position, 1), queue.length + 1);
+      queue.splice(target - 1, 0, id);
+      await renumberQueue(tx, userId, queue);
+      return { position: target, total: queue.length };
+    });
+  }
+
+  /**
+   * MEM-64: the items of the learning queue among `ids` go to its head, in
+   * their current order; the others are ignored.
+   */
+  async moveToTopOfQueue(userId: string, ids: string[]): Promise<{ changed: number; ignored: number }> {
+    return this.prisma.$transaction(async (tx) => {
+      const queue = await queueIds(tx, userId);
+      const chosen = new Set(ids);
+      const top = queue.filter((id) => chosen.has(id));
+      await renumberQueue(tx, userId, [...top, ...queue.filter((id) => !chosen.has(id))]);
+      return { changed: top.length, ignored: ids.length - top.length };
+    });
+  }
+
   /** "Remettre en apprentissage" (MEM-22): back in the review, with the schedule it had. */
   async relearn(userId: string, itemId: string) {
     const item = await this.vocabulary(userId, itemId, ['Learned']);

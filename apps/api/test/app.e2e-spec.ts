@@ -515,6 +515,47 @@ describe('API (e2e)', () => {
     expect(b).toBeDefined();
   });
 
+  it('reorders the learning queue: a move, or a selection at its head (MEM-64)', async () => {
+    const auth = { Authorization: `Bearer ${await register('wade')}` };
+    const ids: Record<string, string> = {};
+    for (const word of ['a', 'b', 'c', 'd', 'e']) {
+      ids[word] = (await http().post('/vocabulary').set(auth).send({ word, translation: word }).expect(201)).body.id;
+    }
+    const order = async () =>
+      (await http().get('/vocabulary').set(auth).expect(200)).body
+        .filter((item: { learnPosition: number | null }) => item.learnPosition !== null)
+        .sort((x: { learnPosition: number }, y: { learnPosition: number }) => x.learnPosition - y.learnPosition)
+        .map((item: { word: string }) => item.word)
+        .join('');
+
+    const moved = await http().post('/learning/queue/move').set(auth).send({ id: ids.e, position: 2 }).expect(200);
+    expect(moved.body).toEqual({ position: 2, total: 5 });
+    expect(await order()).toBe('aebcd');
+    const last = await http().post('/learning/queue/move').set(auth).send({ id: ids.a, position: 99 }).expect(200);
+    expect(last.body).toEqual({ position: 5, total: 5 });
+    expect(await order()).toBe('ebcda');
+
+    const top = await http()
+      .post('/learning/queue/top')
+      .set(auth)
+      .send({ ids: [ids.d, ids.b, 'unknown'] })
+      .expect(200);
+    expect(top.body).toEqual({ changed: 2, ignored: 1 });
+    expect(await order()).toBe('bdeca'); // b before d: their order in the queue
+
+    // The next learning session follows it.
+    const session = await http().get('/learning/session').set(auth).expect(200);
+    expect(session.body.items.map((item: { word: string }) => item.word).join('')).toBe('bdeca');
+
+    await http()
+      .post('/learning/queue/remove')
+      .set(auth)
+      .send({ ids: [ids.c] })
+      .expect(200);
+    await http().post('/learning/queue/move').set(auth).send({ id: ids.c, position: 1 }).expect(409);
+    await http().post('/learning/queue/move').set(auth).send({ id: ids.b, position: 0 }).expect(400);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };
