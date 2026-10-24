@@ -32,7 +32,8 @@ interface QuoteTableProps {
 /**
  * The quotes of the Citations space as a table (MEM-69): the list shared
  * with the vocabulary (ItemTable), with the text, the author and the
- * source, and a single search in all three.
+ * source, and a single search in all three. The learning queue of the
+ * quotes is changed and reordered from it, as the vocabulary's (MEM-70).
  */
 export function QuoteTable({ items, now, pageSize, initialStatus }: QuoteTableProps) {
   const rows = useMemo(() => items.map(toQuoteRow), [items]);
@@ -51,9 +52,9 @@ export function QuoteTable({ items, now, pageSize, initialStatus }: QuoteTablePr
       sorts={QUOTE_SORTS}
       matches={matchesQuote}
       name={quoteName}
-      queue={false}
+      queue
       deleteTitle={deleteTitle}
-      actions={(row) => <QuoteActions row={row} authors={authors} queue={false} />}
+      actions={(row, queueMenu) => <QuoteActions row={row} authors={authors} queue queueMenu={queueMenu} />}
     />
   );
 }

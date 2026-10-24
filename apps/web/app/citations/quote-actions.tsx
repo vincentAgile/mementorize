@@ -23,7 +23,9 @@ export function QuoteActions({
 }: {
   row: QuoteRow;
   authors: string[];
+  /** Into the learning queue and out of it (MEM-70). */
   queue: boolean;
+  /** Where to move a quote of the learning queue (built by the table). */
   queueMenu?: React.ReactNode;
 }) {
   const name = quoteName(row);
