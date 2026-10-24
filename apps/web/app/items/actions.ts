@@ -63,7 +63,7 @@ export async function createItemAction(_previous: ItemFormState, formData: FormD
   return { type };
 }
 
-/** « Remettre en révision » (MEM-48): a learned quote or mind map branch goes back to the review. */
+/** « Remettre en révision » (MEM-48): a learned mind map branch goes back to the review. */
 export async function relearnCardAction(cardId: string): Promise<void> {
   if (typeof cardId !== 'string') {
     throw new Error('Invalid card');

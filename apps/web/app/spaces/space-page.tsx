@@ -8,7 +8,6 @@ import type { CardSummary, Item } from '../../lib/types';
 import { AppHeader } from '../app-header';
 import { NothingDue } from '../nothing-due';
 import { ItemForm } from '../items/item-form';
-import { RelearnCardButton } from '../items/relearn-card-button';
 
 /**
  * The page of a subject space (MEM-2): the items of a single type. Cartes
@@ -69,9 +68,6 @@ export function SpaceItems({ items, now }: { items: Item[]; now: Date }) {
                 ? item.cards.map((card) => scheduleLabel(item, card, now)).join(' · ')
                 : 'Pas encore de branche : rien à réviser'}
           </p>
-          {item.type === 'Quote' && item.cards?.[0]?.learnedAt && (
-            <RelearnCardButton cardId={item.cards[0].id} what="cette citation" />
-          )}
         </li>
       ))}
     </ul>

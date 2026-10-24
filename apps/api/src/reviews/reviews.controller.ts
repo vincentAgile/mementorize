@@ -39,7 +39,7 @@ export class ReviewsController {
     return this.reviewsService.findDue(user.id, Math.min(Math.max(limit, 1), 100), type);
   }
 
-  /** POST /reviews/:cardId/learned — « Appris »: a quote or a mind map branch leaves the review (MEM-48). */
+  /** POST /reviews/:cardId/learned — « Appris »: a mind map branch leaves the review (MEM-48). */
   @Post(':cardId/learned')
   markLearned(@CurrentUser() user: AuthUser, @Param('cardId') cardId: string) {
     return this.reviewsService.markLearned(user.id, cardId);

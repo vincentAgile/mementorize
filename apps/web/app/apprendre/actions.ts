@@ -1,6 +1,6 @@
 'use server';
 
-import { ApiError, learnVocabulary, markVocabularyLearned } from '../../lib/api';
+import { ApiError, learnVocabulary, markItemLearned } from '../../lib/api';
 import type { ReviewRating } from '../../lib/types';
 
 const RATINGS: readonly ReviewRating[] = ['Again', 'Hard', 'Good', 'Easy'];
@@ -42,7 +42,7 @@ export async function learnedAction(itemId: string): Promise<boolean> {
     throw new Error('Invalid item');
   }
   try {
-    await markVocabularyLearned(itemId);
+    await markItemLearned(itemId);
   } catch (error) {
     if (error instanceof ApiError) return false;
     throw error;

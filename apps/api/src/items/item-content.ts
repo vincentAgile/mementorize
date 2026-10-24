@@ -94,9 +94,10 @@ export function contentOf<T extends ItemType>(item: Pick<Item, 'content'> & { ty
 }
 
 /**
- * Learning state of a new item (MEM-15): a vocabulary word waits for the
- * learning process; the other types go straight to the review.
+ * Learning state of a new item (MEM-15): a vocabulary word or a quote
+ * (MEM-67) waits in the learning queue for the learning process; a mind
+ * map goes straight to the review.
  */
 export function initialLearningStatus(type: ItemType): LearningStatus {
-  return type === 'Vocabulary' ? 'ToLearn' : 'Learning';
+  return type === 'MindMap' ? 'Learning' : 'ToLearn';
 }

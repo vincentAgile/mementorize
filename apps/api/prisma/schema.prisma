@@ -64,9 +64,10 @@ enum ItemType {
   MindMap
 }
 
-/// Learning state of an item (MEM-15): a new vocabulary word is `ToLearn`
-/// until the learning process (MEM-21) moves it to `Learning`, the only
-/// state that is reviewed; `Learned` takes it out of the review (MEM-22).
+/// Learning state of an item (MEM-15): a new vocabulary word, or a new quote
+/// (MEM-67), is `ToLearn` until the learning process (MEM-21, MEM-68) moves
+/// it to `Learning`, the only state that is reviewed; `Learned` takes it out
+/// of the review (MEM-22).
 enum LearningStatus {
   /// MEM-61: not scheduled for learning yet (an import, for instance).
   Waiting
@@ -85,13 +86,13 @@ model Item {
   id        String   @id @default(uuid())
   type      ItemType
   content   Json
-  /// Where the item stands in its learning (MEM-15). Only vocabulary moves
-  /// between the three states; quotes and mind maps are always `Learning`.
+  /// Where the item stands in its learning (MEM-15). Vocabulary and quotes
+  /// (MEM-67) move between the four states; mind maps are always `Learning`.
   /// Only the cards of `Learning` items are reviewed and counted.
   learningStatus LearningStatus @default(Learning)
   /// MEM-61: position in the learning queue (1, 2, 3…), for the `ToLearn`
-  /// vocabulary items only; null otherwise. No gap, no duplicate: kept so
-  /// by src/learning/learning-queue.ts.
+  /// items only; null otherwise. One queue per type, vocabulary and quotes
+  /// (MEM-67). No gap, no duplicate: kept so by src/learning/learning-queue.ts.
   learnPosition Int?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -170,9 +171,9 @@ model Card {
   lapses        Int
   state         CardState
   lastReview    DateTime?
-  /// Quotes and mind map branches (MEM-48): when « Appris » took the card
-  /// out of the review, its schedule kept as it was. Null while reviewed.
-  /// Vocabulary is learned per item instead (Item.learningStatus, MEM-22).
+  /// Mind map branches (MEM-48): when « Appris » took the card out of the
+  /// review, its schedule kept as it was. Null while reviewed. Vocabulary and
+  /// quotes (MEM-67) are learned per item instead (Item.learningStatus).
   learnedAt     DateTime?
   reviewLogs    ReviewLog[]
   createdAt     DateTime    @default(now())

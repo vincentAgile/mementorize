@@ -8,11 +8,13 @@ const NOW = new Date('2026-09-29T08:00:00Z');
 const base = { id: 'item-1', userId: 'user-1', createdAt: NOW, updatedAt: NOW };
 
 describe('API views', () => {
-  it('flattens a quote item into the pre-phase-5 /quotes shape', () => {
+  it('flattens a quote item into the pre-phase-5 /quotes shape, with its state (MEM-67)', () => {
     const item = {
       ...base,
       type: 'Quote',
       content: { text: 'Hello', author: 'Me', source: null },
+      learningStatus: 'ToLearn',
+      learnPosition: 2,
       cards: [{ id: 'card-1', kind: 'QuoteRecall', nodeId: null, due: NOW, state: 'New', learnedAt: null }],
     } as ItemWithCards;
 
@@ -21,7 +23,9 @@ describe('API views', () => {
       text: 'Hello',
       author: 'Me',
       source: null,
-      card: { id: 'card-1', due: NOW, state: 'New', learnedAt: null }, // learnedAt: MEM-48
+      learningStatus: 'ToLearn', // MEM-67
+      learnPosition: 2,
+      card: { id: 'card-1', due: NOW, state: 'New' },
     });
   });
 
