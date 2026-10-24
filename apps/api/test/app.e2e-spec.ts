@@ -400,6 +400,37 @@ describe('API (e2e)', () => {
     expect(copied.text).toBe(exported.text);
   });
 
+  it("deletes several vocabulary items at once, only the user's own (MEM-59)", async () => {
+    const token = await register('rita');
+    const auth = { Authorization: `Bearer ${token}` };
+    const other = { Authorization: `Bearer ${await register('sam')}` };
+    const ids: string[] = [];
+    for (const word of ['one', 'two', 'three']) {
+      ids.push((await http().post('/vocabulary').set(auth).send({ word, translation: word }).expect(201)).body.id);
+    }
+    const theirs = (
+      await http().post('/vocabulary').set(other).send({ word: 'four', translation: 'quatre' }).expect(201)
+    ).body.id;
+    const quote = (await http().post('/quotes').set(auth).send({ text: 'Une citation.' }).expect(201)).body.id;
+
+    const result = await http()
+      .post('/vocabulary/delete')
+      .set(auth)
+      .send({ ids: [ids[0], ids[1], theirs, quote, 'unknown'] })
+      .expect(200);
+    expect(result.body).toEqual({ deleted: 2 });
+
+    const left = await http().get('/vocabulary').set(auth).expect(200);
+    expect(left.body.map((item: { id: string }) => item.id)).toEqual([ids[2]]);
+    await http().get(`/vocabulary/${theirs}`).set(other).expect(200);
+    await http().get(`/quotes/${quote}`).set(auth).expect(200);
+    await http().post('/vocabulary/delete').set(auth).send({ ids: [] }).expect(400);
+    await http()
+      .post('/vocabulary/delete')
+      .send({ ids: [ids[2]] })
+      .expect(401);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };
@@ -433,6 +464,7 @@ describe('API (e2e)', () => {
       translator: 'DeepL',
       showReviewDelays: false,
       csvSeparator: 'Semicolon',
+      vocabularyPageSize: 20,
     });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
@@ -442,6 +474,7 @@ describe('API (e2e)', () => {
       translator: 'DeepL',
       showReviewDelays: false,
       csvSeparator: 'Semicolon',
+      vocabularyPageSize: 20,
     });
 
     // MEM-44: the translator alone, the home space untouched.
@@ -451,6 +484,7 @@ describe('API (e2e)', () => {
       translator: 'Google',
       showReviewDelays: false,
       csvSeparator: 'Semicolon',
+      vocabularyPageSize: 20,
     });
 
     // MEM-49: the delays on the rating buttons, off by default.
@@ -460,6 +494,7 @@ describe('API (e2e)', () => {
       translator: 'Google',
       showReviewDelays: true,
       csvSeparator: 'Semicolon',
+      vocabularyPageSize: 20,
     });
     await http().put('/preferences').set(auth).send({ showReviewDelays: 'yes' }).expect(400);
 
@@ -467,6 +502,11 @@ describe('API (e2e)', () => {
     const csv = await http().put('/preferences').set(auth).send({ csvSeparator: 'Comma' }).expect(200);
     expect(csv.body).toMatchObject({ csvSeparator: 'Comma', showReviewDelays: true });
     await http().put('/preferences').set(auth).send({ csvSeparator: 'Tab' }).expect(400);
+
+    // MEM-58: items per page of the vocabulary list, 20 by default.
+    const pages = await http().put('/preferences').set(auth).send({ vocabularyPageSize: 50 }).expect(200);
+    expect(pages.body).toMatchObject({ vocabularyPageSize: 50, csvSeparator: 'Comma' });
+    await http().put('/preferences').set(auth).send({ vocabularyPageSize: 30 }).expect(400);
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);

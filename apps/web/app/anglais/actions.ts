@@ -1,7 +1,15 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { ApiError, createVocabulary, deleteVocabulary, relearnVocabulary, updateVocabulary } from '../../lib/api';
+import {
+  ApiError,
+  createVocabulary,
+  deleteVocabulary,
+  deleteVocabularyItems,
+  relearnVocabulary,
+  savePreferences,
+  updateVocabulary,
+} from '../../lib/api';
 
 export interface VocabularyEditState {
   saved?: boolean;
@@ -113,4 +121,36 @@ export async function deleteVocabularyAction(id: string): Promise<void> {
 export async function relearnAction(id: string): Promise<void> {
   await relearnVocabulary(id);
   revalidatePath('/', 'layout'); // the table and the counters
+}
+
+/**
+ * MEM-58: the number of items per page of the list, kept with the account's
+ * preferences. No revalidatePath: the table already shows the new size.
+ */
+export async function savePageSizeAction(size: number): Promise<void> {
+  if (![20, 50, 100].includes(size)) throw new Error('Invalid page size');
+  try {
+    await savePreferences({ vocabularyPageSize: size });
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error; // the table works without it
+  }
+}
+
+/**
+ * MEM-59: deletes the selected items, with their cards and history, in a
+ * single request. Returns how many were deleted, or null when it failed.
+ */
+export async function deleteVocabularyItemsAction(ids: string[]): Promise<number | null> {
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 10_000 || ids.some((id) => typeof id !== 'string')) {
+    throw new Error('Invalid selection');
+  }
+  let deleted: number;
+  try {
+    deleted = await deleteVocabularyItems(ids);
+  } catch (error) {
+    if (error instanceof ApiError) return null;
+    throw error;
+  }
+  revalidatePath('/', 'layout'); // the list, the counters, the review
+  return deleted;
 }

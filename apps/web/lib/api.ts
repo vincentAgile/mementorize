@@ -137,6 +137,16 @@ export function deleteVocabulary(id: string): Promise<void> {
   return authedFetch<void>(`/vocabulary/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
+/** MEM-59: deletes several vocabulary items at once; returns how many were deleted. */
+export async function deleteVocabularyItems(ids: string[]): Promise<number> {
+  const { deleted } = await authedFetch<{ deleted: number }>('/vocabulary/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  return deleted;
+}
+
 export function createVocabulary(input: CreateVocabularyInput): Promise<unknown> {
   return authedFetch('/vocabulary', {
     method: 'POST',

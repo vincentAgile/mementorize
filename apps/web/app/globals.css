@@ -2287,3 +2287,201 @@ kbd {
     color: #5cc3c6;
   }
 }
+
+/* --- MEM-58: pages of the vocabulary list --- */
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.pagination__size {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.pagination__size select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.pagination__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.pagination__nav button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: #147d80;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pagination__nav button:hover:not(:disabled) {
+  background: #e3f1f1;
+}
+
+.pagination__nav button:disabled {
+  color: #aaa;
+  cursor: default;
+}
+
+.pagination__nav button[aria-current='page'] {
+  border-color: #147d80;
+  background: #147d80;
+  color: #fff;
+  font-weight: 600;
+}
+
+.pagination__pages {
+  display: flex;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pagination__gap {
+  align-self: center;
+  padding: 0 0.25rem;
+  color: #888;
+}
+
+.pagination__where {
+  padding: 0 0.4rem;
+  color: #555;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* On a phone: « Précédent », « Page X sur Y », « Suivant » only. */
+@media (max-width: 640px) {
+  .pagination__pages {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .pagination__size,
+  .pagination__where {
+    color: #bbb;
+  }
+
+  .pagination__nav button {
+    color: #5cc3c6;
+  }
+
+  .pagination__nav button:hover:not(:disabled) {
+    background: #16292a;
+  }
+
+  .pagination__nav button[aria-current='page'] {
+    border-color: #147d80;
+    background: #147d80;
+    color: #fff;
+  }
+}
+
+/* --- MEM-59: selection and bulk deletion in the vocabulary list --- */
+
+.vocabulary__table .vocabulary__select {
+  width: 1px;
+  padding: 0;
+  vertical-align: middle;
+}
+
+/* A target of 44 px around the box, for a finger. */
+.select-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+
+.select-box input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: #147d80;
+  cursor: pointer;
+}
+
+.vocabulary__table tr.is-selected td {
+  background: #eef6f6;
+}
+
+.selection-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+  margin: 0.4rem 0 0.6rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  background: #e3f1f1;
+}
+
+.selection-bar__delete {
+  min-height: 2.25rem;
+  padding: 0 0.8rem;
+  border: 1px solid #b3261e;
+  border-radius: 4px;
+  background: #fff;
+  color: #b3261e;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.selection-bar__delete:hover:not(:disabled) {
+  background: #b3261e;
+  color: #fff;
+}
+
+.selection-all {
+  margin: 0 0 0.6rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 6px;
+  background: #f4f4f4;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .vocabulary__table tr.is-selected td {
+    background: #16292a;
+  }
+
+  .selection-bar {
+    background: #16292a;
+  }
+
+  .selection-bar__delete {
+    border-color: #ff8a80;
+    background: transparent;
+    color: #ff8a80;
+  }
+
+  .selection-all {
+    background: #222;
+  }
+}

@@ -165,6 +165,7 @@ export interface Preferences {
   translator: Translator;
   showReviewDelays: boolean; // MEM-49: the delays under the rating buttons
   csvSeparator: CsvSeparator; // MEM-55
+  vocabularyPageSize: number; // MEM-58: 20, 50 or 100
 }
 
 /** The separator of the CSV files, export and import (MEM-55). */
