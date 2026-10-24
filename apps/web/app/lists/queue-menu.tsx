@@ -3,7 +3,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
 interface QueueMenuProps {
-  english: string;
+  /** The item, as named to screen readers: the English of a word, the first words of a quote. */
+  name: string;
   position: number;
   total: number;
   /** « Monter » and « Descendre »: only when the list shows the whole queue, in order. */
@@ -16,7 +17,7 @@ interface QueueMenuProps {
  * every device, the keyboard and screen readers: « Monter », « Descendre »
  * (when the whole queue is shown, in order), « En premier », « En dernier ».
  */
-export function QueueMenu({ english, position, total, stepwise, onMove }: QueueMenuProps) {
+export function QueueMenu({ name, position, total, stepwise, onMove }: QueueMenuProps) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const box = useRef<HTMLDivElement>(null);
@@ -63,7 +64,7 @@ export function QueueMenu({ english, position, total, stepwise, onMove }: QueueM
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        aria-label={`Déplacer « ${english} » dans la file (position ${position} sur ${total})`}
+        aria-label={`Déplacer « ${name} » dans la file (position ${position} sur ${total})`}
         title="Déplacer dans la file"
         onClick={() => setOpen(!open)}
       >
@@ -82,7 +83,7 @@ export function QueueMenu({ english, position, total, stepwise, onMove }: QueueM
         </svg>
       </button>
       {open && (
-        <div id={menuId} role="menu" className="queue-menu__list" aria-label={`Déplacer « ${english} »`}>
+        <div id={menuId} role="menu" className="queue-menu__list" aria-label={`Déplacer « ${name} »`}>
           {choices.map(({ label, target }) => (
             <button
               key={label}

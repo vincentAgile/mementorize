@@ -1215,7 +1215,7 @@ kbd {
   opacity: 0; /* anchors for the edges, not meant to be dragged */
 }
 
-/* --- v0.3: the vocabulary table (MEM-16 to MEM-18) --- */
+/* --- v0.3: the vocabulary table (MEM-16 to MEM-18), the list of the quotes since v0.12 (MEM-69) --- */
 
 .visually-hidden {
   position: absolute;
@@ -1226,18 +1226,18 @@ kbd {
   white-space: nowrap;
 }
 
-.vocabulary {
+.item-list {
   margin-top: 1.5rem;
 }
 
-.vocabulary__filters {
+.item-list__filters {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
 
-.vocabulary__filters input,
-.vocabulary__filters select {
+.item-list__filters input,
+.item-list__filters select {
   padding: 0.45rem 0.6rem;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -1245,49 +1245,49 @@ kbd {
   font-size: 0.95rem;
 }
 
-.vocabulary__filters input {
+.item-list__filters input {
   flex: 1 1 14rem;
 }
 
-.vocabulary__count,
-.vocabulary__none {
+.item-list__count,
+.item-list__none {
   margin: 0.6rem 0;
   color: #666;
   font-size: 0.85rem;
 }
 
 /* Narrow screens: the table scrolls sideways instead of squeezing its columns */
-.vocabulary__scroll {
+.item-list__scroll {
   position: relative; /* keeps the visually hidden "Actions" header inside it, not off the page */
   overflow-x: auto;
 }
 
-.vocabulary__table {
+.item-list__table {
   width: 100%;
   min-width: 36rem;
   border-collapse: collapse;
   font-size: 0.95rem;
 }
 
-.vocabulary__table th,
-.vocabulary__table td {
+.item-list__table th,
+.item-list__table td {
   padding: 0.55rem 0.6rem;
   border-bottom: 1px solid #e3e3e3;
   text-align: left;
   vertical-align: top;
 }
 
-.vocabulary__table td {
+.item-list__table td {
   overflow-wrap: break-word; /* a long sentence wraps between words inside its cell */
 }
 
-.vocabulary__table th {
+.item-list__table th {
   padding: 0;
   font-weight: 600;
   white-space: nowrap;
 }
 
-.vocabulary__table th button {
+.item-list__table th button {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -1301,26 +1301,26 @@ kbd {
   cursor: pointer;
 }
 
-.vocabulary__table th button:hover,
-.vocabulary__table th[aria-sort] button {
+.item-list__table th button:hover,
+.item-list__table th[aria-sort] button {
   color: #147d80;
 }
 
-.vocabulary__arrow {
+.item-list__arrow {
   font-size: 0.7rem;
   opacity: 0.6;
 }
 
-.vocabulary__table th[aria-sort] .vocabulary__arrow {
+.item-list__table th[aria-sort] .item-list__arrow {
   opacity: 1;
 }
 
-.vocabulary__english {
+.item-list__main {
   display: block;
   font-weight: 600;
 }
 
-.vocabulary__example {
+.item-list__example {
   display: block;
   margin-top: 0.15rem;
   color: #666;
@@ -1328,9 +1328,40 @@ kbd {
   font-style: italic;
 }
 
-.vocabulary__review {
+.item-list__review {
   color: #666;
   white-space: nowrap;
+}
+
+/* v0.12: the list of the quotes (MEM-69) */
+.item-list__table--Quote {
+  min-width: 44rem;
+}
+
+.item-list__main--quote {
+  font-weight: 400;
+  display: inline;
+}
+
+.item-list__more {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.item-list__author,
+.item-list__source {
+  color: #555;
+}
+
+.dialog__quote {
+  margin: 0.5rem 0;
+  padding-left: 0.8rem;
+  border-left: 3px solid #147d80;
+}
+
+.dialog__quote cite {
+  color: #555;
+  font-style: normal;
 }
 
 .status {
@@ -1690,7 +1721,7 @@ kbd {
   max-width: 24rem;
 }
 
-.vocabulary__topic {
+.item-list__topic {
   color: #555;
   white-space: nowrap;
 }
@@ -1770,6 +1801,50 @@ kbd {
 
 @media (max-width: 639px) {
   .vocab-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* v0.12: the fields of a quote (MEM-69, MEM-71): the text, then the author and the source side by side */
+.quote-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem 1.25rem;
+}
+
+.quote-fields .quote-fields__text {
+  grid-column: 1 / -1;
+}
+
+.quote-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.quote-fields input,
+.quote-fields textarea {
+  min-width: 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 400;
+}
+
+.quote-fields textarea {
+  resize: vertical;
+}
+
+.quote-fields [aria-invalid='true'] {
+  border-color: #c1543a;
+}
+
+@media (max-width: 639px) {
+  .quote-fields {
     grid-template-columns: 1fr;
   }
 }
@@ -1891,8 +1966,8 @@ kbd {
     color: #f28b82;
   }
 
-  .vocabulary__table th,
-  .vocabulary__table td {
+  .item-list__table th,
+  .item-list__table td {
     border-bottom-color: #333;
   }
 
@@ -2412,7 +2487,7 @@ kbd {
 
 /* --- MEM-59: selection and bulk deletion in the vocabulary list --- */
 
-.vocabulary__table .vocabulary__select {
+.item-list__table .item-list__select {
   width: 1px;
   padding: 0;
   vertical-align: middle;
@@ -2436,7 +2511,7 @@ kbd {
   cursor: pointer;
 }
 
-.vocabulary__table tr.is-selected td {
+.item-list__table tr.is-selected td {
   background: #eef6f6;
 }
 
@@ -2494,7 +2569,7 @@ kbd {
 }
 
 @media (prefers-color-scheme: dark) {
-  .vocabulary__table tr.is-selected td {
+  .item-list__table tr.is-selected td {
     background: #16292a;
   }
 
@@ -2545,7 +2620,7 @@ kbd {
 
 /* --- MEM-64: ordering the learning queue --- */
 
-.vocabulary__table .vocabulary__position {
+.item-list__table .item-list__position {
   color: #666;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -2571,11 +2646,11 @@ kbd {
   }
 }
 
-.vocabulary__table tr.is-dragged td {
+.item-list__table tr.is-dragged td {
   opacity: 0.45;
 }
 
-.vocabulary__table tr.is-drop-target td {
+.item-list__table tr.is-drop-target td {
   box-shadow: inset 0 2px 0 #147d80;
 }
 
@@ -2627,7 +2702,7 @@ kbd {
 }
 
 @media (prefers-color-scheme: dark) {
-  .vocabulary__table .vocabulary__position,
+  .item-list__table .item-list__position,
   .queue-hint {
     color: #aaa;
   }
