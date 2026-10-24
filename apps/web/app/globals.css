@@ -2451,6 +2451,22 @@ kbd {
   background: #e3f1f1;
 }
 
+.selection-bar__action {
+  min-height: 2.25rem;
+  padding: 0 0.8rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: #fff;
+  color: #147d80;
+  font: inherit;
+  cursor: pointer;
+}
+
+.selection-bar__action:hover:not(:disabled) {
+  background: #147d80;
+  color: #fff;
+}
+
 .selection-bar__delete {
   min-height: 2.25rem;
   padding: 0 0.8rem;
@@ -2484,6 +2500,12 @@ kbd {
 
   .selection-bar {
     background: #16292a;
+  }
+
+  .selection-bar__action {
+    border-color: #5cc3c6;
+    background: transparent;
+    color: #5cc3c6;
   }
 
   .selection-bar__delete {

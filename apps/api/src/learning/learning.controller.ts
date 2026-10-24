@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import type { AuthUser } from '../auth/auth-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { ReviewDto } from '../reviews/dto/review.dto.js';
+import { QueueItemsDto } from './dto/queue-items.dto.js';
 import { LearningService } from './learning.service.js';
 
 @Controller('learning')
@@ -14,6 +15,20 @@ export class LearningController {
   @Get('session')
   session(@CurrentUser() user: AuthUser) {
     return this.learning.session(user.id);
+  }
+
+  /** POST /learning/queue/add { ids } — "En attente" → last in the learning queue, in this order (MEM-63). */
+  @Post('queue/add')
+  @HttpCode(HttpStatus.OK)
+  addToQueue(@CurrentUser() user: AuthUser, @Body() dto: QueueItemsDto) {
+    return this.learning.addToQueue(user.id, dto.ids);
+  }
+
+  /** POST /learning/queue/remove { ids } — out of the learning queue, back "En attente" (MEM-63). */
+  @Post('queue/remove')
+  @HttpCode(HttpStatus.OK)
+  removeFromQueue(@CurrentUser() user: AuthUser, @Body() dto: QueueItemsDto) {
+    return this.learning.removeFromQueue(user.id, dto.ids);
   }
 
   /** POST /learning/:itemId/learned — "Appris" in a review: the item leaves the review (MEM-22). */

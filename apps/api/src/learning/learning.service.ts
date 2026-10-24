@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { LearningStatus } from '@prisma/client';
 import { contentOf } from '../items/item-content.js';
-import { IN_QUEUE, QUEUE_ORDER, renumberQueue } from './learning-queue.js';
+import { IN_QUEUE, QUEUE_ORDER, queueIds, renumberQueue } from './learning-queue.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { type Grade, type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
 
@@ -154,6 +154,44 @@ export class LearningService {
     ]);
     if (item.learningStatus === 'ToLearn') await renumberQueue(this.prisma, userId); // MEM-61
     return { id: item.id, learningStatus: 'Learned' as const };
+  }
+
+  /**
+   * MEM-63: the items "En attente" among `ids` join the learning queue, last,
+   * in the order given (that of the list); the others are ignored. A single
+   * transaction.
+   */
+  async addToQueue(userId: string, ids: string[]): Promise<{ changed: number; ignored: number }> {
+    return this.prisma.$transaction(async (tx) => {
+      const waiting = new Set(
+        (
+          await tx.item.findMany({
+            where: { id: { in: ids }, userId, type: 'Vocabulary', learningStatus: 'Waiting' },
+            select: { id: true },
+          })
+        ).map((item) => item.id),
+      );
+      const added = [...new Set(ids)].filter((id) => waiting.has(id));
+      const queue = await queueIds(tx, userId);
+      await tx.item.updateMany({ where: { id: { in: added } }, data: { learningStatus: 'ToLearn' } });
+      await renumberQueue(tx, userId, [...queue, ...added]);
+      return { changed: added.length, ignored: ids.length - added.length };
+    });
+  }
+
+  /**
+   * MEM-63: the items of the learning queue among `ids` go back "En attente";
+   * the next ones move up. The others are ignored.
+   */
+  async removeFromQueue(userId: string, ids: string[]): Promise<{ changed: number; ignored: number }> {
+    return this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.item.updateMany({
+        where: { id: { in: ids }, ...IN_QUEUE(userId) },
+        data: { learningStatus: 'Waiting', learnPosition: null },
+      });
+      await renumberQueue(tx, userId);
+      return { changed: count, ignored: ids.length - count };
+    });
   }
 
   /** "Remettre en apprentissage" (MEM-22): back in the review, with the schedule it had. */

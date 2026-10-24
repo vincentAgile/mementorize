@@ -469,6 +469,52 @@ describe('API (e2e)', () => {
     expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['two', 'six']); // not 'five', "En attente"
   });
 
+  it('puts items in the learning queue and takes them out, in bulk, ignoring the others (MEM-63)', async () => {
+    const auth = { Authorization: `Bearer ${await register('ugo')}` };
+    const add = async (word: string, queue = true) =>
+      (await http().post('/vocabulary').set(auth).send({ word, translation: word, queue }).expect(201)).body.id;
+    const a = await add('a');
+    const b = await add('b');
+    const w1 = await add('w1', false);
+    const w2 = await add('w2', false);
+    const positions = async () =>
+      Object.fromEntries(
+        (await http().get('/vocabulary').set(auth).expect(200)).body.map(
+          (item: { word: string; learningStatus: string; learnPosition: number | null }) => [
+            item.word,
+            item.learnPosition ?? item.learningStatus,
+          ],
+        ),
+      );
+
+    // In the order given: w2 then w1, last; a is already in the queue: ignored.
+    const added = await http()
+      .post('/learning/queue/add')
+      .set(auth)
+      .send({ ids: [w2, a, w1] })
+      .expect(200);
+    expect(added.body).toEqual({ changed: 2, ignored: 1 });
+    expect(await positions()).toEqual({ a: 1, b: 2, w2: 3, w1: 4 });
+
+    const removed = await http()
+      .post('/learning/queue/remove')
+      .set(auth)
+      .send({ ids: [a, w2, 'unknown'] })
+      .expect(200);
+    expect(removed.body).toEqual({ changed: 2, ignored: 1 });
+    expect(await positions()).toEqual({ a: 'Waiting', b: 1, w2: 'Waiting', w1: 2 });
+
+    const other = { Authorization: `Bearer ${await register('vera')}` };
+    const theirs = await http()
+      .post('/learning/queue/add')
+      .set(other)
+      .send({ ids: [a] })
+      .expect(200);
+    expect(theirs.body).toEqual({ changed: 0, ignored: 1 });
+    await http().post('/learning/queue/add').set(auth).send({ ids: [] }).expect(400);
+    expect(b).toBeDefined();
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };

@@ -255,6 +255,18 @@ Un élément de vocabulaire a un état (`items.learningStatus`) : `ToLearn` à l
 
 États d'un élément de vocabulaire (MEM-61) — `POST /vocabulary` le met en fin de file, ou « En attente » avec `queue: false` (MEM-62) : `Waiting` (en attente, ni appris ni révisé), `ToLearn` (la file d'apprentissage), `Learning` (révisé), `Learned`. Les éléments `ToLearn` ont une position `learnPosition` (1, 2, 3…, sans trou ni doublon), tenue par `src/learning/learning-queue.ts` : un nouvel élément va en dernier, un élément qui quitte la file (apprentissage, « Appris », suppression) fait remonter les suivants (`renumberQueue`, deux requêtes quelle que soit la taille de la file).
 
+La file se compose depuis la Liste (MEM-63), en une transaction par requête :
+
+```bash
+# Les éléments « En attente » parmi ids rejoignent la file, en dernier, dans cet ordre ; les autres sont ignorés
+curl -X POST http://localhost:3000/learning/queue/add -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"ids":["<id1>","<id2>"]}'    # → { changed, ignored }
+
+# Les éléments de la file parmi ids repassent « En attente » ; les suivants remontent
+curl -X POST http://localhost:3000/learning/queue/remove -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"ids":["<id1>"]}'
+```
+
 Le processus d'apprentissage (`src/learning/`) fait passer les éléments de `ToLearn` à `Learning`, dans l'ordre de la file :
 
 ```bash

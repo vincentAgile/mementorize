@@ -6,6 +6,7 @@ import {
   createVocabulary,
   deleteVocabulary,
   deleteVocabularyItems,
+  queueVocabularyItems,
   relearnVocabulary,
   savePreferences,
   updateVocabulary,
@@ -161,4 +162,38 @@ export async function deleteVocabularyItemsAction(ids: string[]): Promise<number
   }
   revalidatePath('/', 'layout'); // the list, the counters, the review
   return deleted;
+}
+
+/**
+ * MEM-63: puts the items "En attente" among `ids` in the learning queue
+ * (last, in the order of the list), or takes those of the queue out of it.
+ * The others are ignored. Null when it failed.
+ */
+export async function queueItemsAction(
+  op: 'add' | 'remove',
+  ids: string[],
+): Promise<{ changed: number; ignored: number } | null> {
+  if (
+    (op !== 'add' && op !== 'remove') ||
+    !Array.isArray(ids) ||
+    ids.length === 0 ||
+    ids.length > 10_000 ||
+    ids.some((id) => typeof id !== 'string')
+  ) {
+    throw new Error('Invalid queue change');
+  }
+  let result: { changed: number; ignored: number };
+  try {
+    result = await queueVocabularyItems(op, ids);
+  } catch (error) {
+    if (error instanceof ApiError) return null;
+    throw error;
+  }
+  revalidatePath('/', 'layout'); // the list, the counter of "Apprendre"
+  return result;
+}
+
+/** MEM-63: the same, for one row (a form's action). */
+export async function queueRowAction(op: 'add' | 'remove', id: string): Promise<void> {
+  await queueItemsAction(op, [id]);
 }

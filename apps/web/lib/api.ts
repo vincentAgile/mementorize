@@ -137,6 +137,18 @@ export function deleteVocabulary(id: string): Promise<void> {
   return authedFetch<void>(`/vocabulary/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
+/** MEM-63: puts items "En attente" in the learning queue (last, in this order), or takes items out of it. */
+export function queueVocabularyItems(
+  op: 'add' | 'remove',
+  ids: string[],
+): Promise<{ changed: number; ignored: number }> {
+  return authedFetch<{ changed: number; ignored: number }>(`/learning/queue/${op}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+}
+
 /** MEM-59: deletes several vocabulary items at once; returns how many were deleted. */
 export async function deleteVocabularyItems(ids: string[]): Promise<number> {
   const { deleted } = await authedFetch<{ deleted: number }>('/vocabulary/delete', {
