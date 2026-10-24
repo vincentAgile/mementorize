@@ -70,7 +70,8 @@ export function VocabularyTable({
   // MEM-59: the items checked, or all those of the search and filters ("Gmail" selection).
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [allMatching, setAllMatching] = useState(false);
-  const [deleted, setDeleted] = useState<number | null | undefined>(undefined);
+  // The result of the last action on the selection (MEM-59, MEM-63).
+  const [notice, setNotice] = useState<{ ok: boolean; text: string } | undefined>(undefined);
   const clearSelection = () => {
     setSelected(new Set());
     setAllMatching(false);
@@ -82,7 +83,7 @@ export function VocabularyTable({
     setFilterState(next);
     setPage(1);
     clearSelection();
-    setDeleted(undefined);
+    setNotice(undefined);
   };
   const setSort = (next: Sort) => {
     setSortState(next);
@@ -103,9 +104,10 @@ export function VocabularyTable({
   const current = Math.min(page, pageCount);
   const pageRows = shown.slice((current - 1) * pageSize, current * pageSize);
 
-  // MEM-59: what is selected, among the items still there (after an edit elsewhere…).
-  const ids = useMemo(() => new Set(rows.map((row) => row.id)), [rows]);
-  const selectedIds = allMatching ? shown.map((row) => row.id) : [...selected].filter((id) => ids.has(id));
+  // In the order of the list: the queue gets them in this order (MEM-63).
+  const selectedIds = allMatching
+    ? shown.map((row) => row.id)
+    : shown.filter((row) => selected.has(row.id)).map((row) => row.id);
   const isSelected = (id: string) => allMatching || selected.has(id);
   const pageIds = pageRows.map((row) => row.id);
   const pageAll = pageIds.length > 0 && pageIds.every(isSelected);
@@ -199,11 +201,9 @@ export function VocabularyTable({
         )}
       </p>
 
-      {deleted !== undefined && (
-        <p className={deleted === null ? 'form-error' : 'notice'} role="status">
-          {deleted === null
-            ? 'La suppression a échoué : rien n’a été supprimé. Réessaie.'
-            : `${deleted}${NBSP}élément${deleted > 1 ? 's' : ''} supprimé${deleted > 1 ? 's' : ''}.`}
+      {notice && (
+        <p className={notice.ok ? 'notice' : 'form-error'} role="status">
+          {notice.text}
         </p>
       )}
 
@@ -212,8 +212,20 @@ export function VocabularyTable({
           ids={selectedIds}
           onClear={clearSelection}
           onDeleted={(count) => {
-            setDeleted(count);
+            setNotice(
+              count === null
+                ? { ok: false, text: 'La suppression a échoué : rien n’a été supprimé. Réessaie.' }
+                : { ok: true, text: `${count}${NBSP}élément${count > 1 ? 's' : ''} supprimé${count > 1 ? 's' : ''}.` },
+            );
             if (count !== null) clearSelection();
+          }}
+          onQueued={(op, result) => {
+            setNotice(
+              result === null
+                ? { ok: false, text: 'L’opération a échoué : rien n’a changé. Réessaie.' }
+                : { ok: true, text: queueNotice(op, result) },
+            );
+            if (result !== null) clearSelection();
           }}
         />
       )}
@@ -334,4 +346,15 @@ export function VocabularyTable({
       )}
     </section>
   );
+}
+
+/** « 40 éléments ajoutés à la file, 3 ignorés » (MEM-63). */
+function queueNotice(op: 'add' | 'remove', { changed, ignored }: { changed: number; ignored: number }): string {
+  const items = (count: number) => `${count}${NBSP}élément${count > 1 ? 's' : ''}`;
+  const done =
+    op === 'add'
+      ? `${items(changed)} ajouté${changed > 1 ? 's' : ''} à la file d’apprentissage`
+      : `${items(changed)} retiré${changed > 1 ? 's' : ''} de la file, en attente`;
+  const why = op === 'add' ? 'pas en attente' : 'pas dans la file';
+  return ignored > 0 ? `${done}, ${ignored}${NBSP}ignoré${ignored > 1 ? 's' : ''} (${why}).` : `${done}.`;
 }
