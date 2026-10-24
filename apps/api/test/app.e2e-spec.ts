@@ -381,11 +381,13 @@ describe('API (e2e)', () => {
       topic: 'Émotions',
       frenchExample: 'Je chéris.',
       example: 'I cherish.',
-      learningStatus: 'ToLearn',
+      learningStatus: 'Waiting', // MEM-62
+      learnPosition: null,
     });
     expect(cherish.cards).toHaveLength(2);
+    // Not in the learning queue: only the word entered by hand is to learn.
     const session = await http().get('/learning/session').set(auth).expect(200);
-    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['snag', 'to cherish', 'luggage']);
+    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['snag']);
 
     // Imported again: everything is a duplicate now.
     const again = await http().post('/vocabulary-csv/import').set(auth).send({ content }).expect(200);
@@ -453,8 +455,18 @@ describe('API (e2e)', () => {
     await http().post(`/learning/${ids[3]}/learned`).set(auth).expect(201);
     expect(await positions()).toEqual({ one: null, two: 1, four: null });
 
+    // MEM-62: entered "En attente", out of the queue.
+    const waiting = await http()
+      .post('/vocabulary')
+      .set(auth)
+      .send({ word: 'five', translation: 'cinq', queue: false })
+      .expect(201);
+    expect(waiting.body).toMatchObject({ learningStatus: 'Waiting', learnPosition: null });
+    const queued = await http().post('/vocabulary').set(auth).send({ word: 'six', translation: 'six' }).expect(201);
+    expect(queued.body).toMatchObject({ learningStatus: 'ToLearn', learnPosition: 2 });
+
     const session = await http().get('/learning/session').set(auth).expect(200);
-    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['two']);
+    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['two', 'six']); // not 'five', "En attente"
   });
 
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {

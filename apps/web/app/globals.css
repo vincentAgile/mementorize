@@ -2496,3 +2496,27 @@ kbd {
     background: #222;
   }
 }
+
+/* MEM-62: the choice of the learning queue, next to « Ajouter » */
+.add-form__actions:has(.add-form__queue) {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+}
+
+.add-form .add-form__queue {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  font-weight: 400;
+  align-items: center;
+  min-height: 2.75rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.add-form__queue input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #147d80;
+}

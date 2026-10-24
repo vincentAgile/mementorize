@@ -26,9 +26,13 @@ const MAX = { word: 200, translation: 200, example: 500, frenchExample: 500, top
 export interface VocabularyAddState {
   /**
    * The English of the item just added, for the confirmation; a new object
-   * each time. Its topic stays in the form, for the next items (MEM-51).
+   * each time. Its topic stays in the form, for the next items (MEM-51), and
+   * so does the choice of the learning queue (MEM-62); `position` is its
+   * place in the queue, null when it is "En attente".
    */
-  added?: { word: string; topic: string };
+  added?: { word: string; topic: string; queue: boolean; position: number | null };
+  /** Sent back with an error, with `values`: the choice of the learning queue (MEM-62). */
+  queue?: boolean;
   /** One message per field, shown next to it. */
   fieldErrors?: Partial<Record<'word' | 'translation' | 'example' | 'frenchExample' | 'topic', string>>;
   error?: string;
@@ -51,6 +55,8 @@ export async function addVocabularyAction(
     frenchExample: field(formData, 'frenchExample'),
     topic: field(formData, 'topic'),
   };
+  // MEM-62: the checkbox "Ajouter à la file d'apprentissage" (checked by default).
+  const queue = formData.get('queue') === 'on';
   const fieldErrors: VocabularyAddState['fieldErrors'] = {};
   if (!values.word) fieldErrors.word = 'Saisis le mot, l’expression ou la phrase en anglais.';
   else if (values.word.length > MAX.word) fieldErrors.word = `${MAX.word}\u00a0caractères au plus.`;
@@ -62,23 +68,25 @@ export async function addVocabularyAction(
     fieldErrors.frenchExample = `${MAX.frenchExample}\u00a0caractères au plus.`;
   if (values.topic.length > MAX.topic) fieldErrors.topic = `${MAX.topic}\u00a0caractères au plus.`;
   if (Object.keys(fieldErrors).length > 0) {
-    return { values, fieldErrors };
+    return { values, fieldErrors, queue };
   }
 
+  let created;
   try {
-    await createVocabulary({
+    created = await createVocabulary({
       word: values.word,
       translation: values.translation,
       example: values.example || undefined,
       frenchExample: values.frenchExample || undefined,
       topic: values.topic || undefined,
+      queue,
     });
   } catch (error) {
-    if (error instanceof ApiError) return { values, error: 'Impossible d’enregistrer l’élément. Réessaie.' };
+    if (error instanceof ApiError) return { values, queue, error: 'Impossible d’enregistrer l’élément. Réessaie.' };
     throw error; // e.g. the redirect of an expired session
   }
   revalidatePath('/', 'layout'); // the counter of the "Apprendre · Réviser" tab, the list
-  return { added: { word: values.word, topic: values.topic } };
+  return { added: { word: values.word, topic: values.topic, queue, position: created.learnPosition } };
 }
 
 /** MEM-19: same rules as when adding a word (both sides required, same lengths as the API). */

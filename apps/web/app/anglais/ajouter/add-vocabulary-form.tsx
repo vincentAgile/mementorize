@@ -14,7 +14,8 @@ const EMPTY: VocabularyValues = { word: '', example: '', translation: '', french
  * in the first field and comes back to it after each item, a message
  * recalls the item just added, and errors show next to their field
  * (aria-invalid, aria-describedby). The topic stays after an item is
- * added, for the next items of the same subject (MEM-51).
+ * added, for the next items of the same subject (MEM-51), and so does the
+ * choice of the learning queue (MEM-62), checked when the tab opens.
  */
 export function AddVocabularyForm({ translator, topics }: { translator: Translator; topics: string[] }) {
   const [state, action] = useActionState<VocabularyAddState, FormData>(addVocabularyAction, {});
@@ -31,12 +32,18 @@ export function AddVocabularyForm({ translator, topics }: { translator: Translat
   }, [state]);
 
   const values = state.values ?? (state.added ? { ...EMPTY, topic: state.added.topic } : EMPTY);
+  const queue = state.added?.queue ?? state.queue ?? true;
 
   return (
     <form ref={form} action={action} className="add-form" noValidate>
       {state.added && (
         <p className="notice" role="status">
-          <em lang="en">{state.added.word}</em> ajouté, à apprendre.
+          <em lang="en">{state.added.word}</em> ajouté,{' '}
+          {state.added.position !== null ? (
+            <>{ordinal(state.added.position)} dans la file d’apprentissage.</>
+          ) : (
+            'en attente.'
+          )}
         </p>
       )}
       {state.error && (
@@ -54,9 +61,24 @@ export function AddVocabularyForm({ translator, topics }: { translator: Translat
         topics={topics}
       />
       <div className="add-form__actions">
+        {/* MEM-62: the key puts the box back as chosen after the form is reset. */}
+        <label key={String(queue)} className="add-form__queue">
+          <input type="checkbox" name="queue" defaultChecked={queue} />
+          Ajouter à la file d’apprentissage (en dernière position)
+        </label>
         <AddButton />
       </div>
     </form>
+  );
+}
+
+/** 1ᵉʳ, 2ᵉ, 12ᵉ: the place in the learning queue. */
+function ordinal(position: number) {
+  return (
+    <>
+      {position}
+      <sup>{position === 1 ? 'er' : 'e'}</sup>
+    </>
   );
 }
 

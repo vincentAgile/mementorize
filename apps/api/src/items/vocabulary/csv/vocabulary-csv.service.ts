@@ -70,8 +70,9 @@ export class VocabularyCsvService {
   /**
    * MEM-54: imports the lines "to import" of the file, analysed again now
    * (duplicates included: the vocabulary may have changed since the
-   * preview), in a single transaction. The items are "À apprendre"
-   * (MEM-15), with their topic and examples, in the order of the file.
+   * preview), in a single transaction. The items are "En attente" (MEM-62):
+   * they join the learning queue from the list. With their topic and
+   * examples, in the order of the file.
    */
   async import(
     userId: string,
@@ -92,6 +93,8 @@ export class VocabularyCsvService {
         frenchExample: row.frenchExample || null,
         topic: row.topic || null,
       })),
+      new Date(),
+      'Waiting',
     );
     for (const item of created) this.pronunciations.request(item.id); // MEM-39, in the background
     return { ok: true, imported: created.length, duplicate: analysis.summary.duplicate, error: analysis.summary.error };

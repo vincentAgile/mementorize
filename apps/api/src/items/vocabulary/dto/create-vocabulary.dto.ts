@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateVocabularyDto {
   /** English word or expression. */
@@ -30,4 +30,12 @@ export class CreateVocabularyDto {
   @IsString()
   @MaxLength(50)
   topic?: string;
+
+  /**
+   * MEM-62, at creation only: true (by default), the item goes last in the
+   * learning queue ("À apprendre"); false, it is "En attente".
+   */
+  @IsOptional()
+  @IsBoolean()
+  queue?: boolean;
 }

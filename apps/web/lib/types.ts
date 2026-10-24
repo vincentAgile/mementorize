@@ -73,6 +73,7 @@ export interface CreateVocabularyInput {
   example?: string;
   frenchExample?: string; // MEM-42
   topic?: string; // MEM-51
+  queue?: boolean; // MEM-62: false, the item is "En attente" (true by default)
 }
 
 /** A mind map as returned by /mind-maps (title = label of the root). */
