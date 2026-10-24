@@ -381,11 +381,13 @@ describe('API (e2e)', () => {
       topic: 'Émotions',
       frenchExample: 'Je chéris.',
       example: 'I cherish.',
-      learningStatus: 'ToLearn',
+      learningStatus: 'Waiting', // MEM-62
+      learnPosition: null,
     });
     expect(cherish.cards).toHaveLength(2);
+    // Not in the learning queue: only the word entered by hand is to learn.
     const session = await http().get('/learning/session').set(auth).expect(200);
-    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['snag', 'to cherish', 'luggage']);
+    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['snag']);
 
     // Imported again: everything is a duplicate now.
     const again = await http().post('/vocabulary-csv/import').set(auth).send({ content }).expect(200);
@@ -429,6 +431,129 @@ describe('API (e2e)', () => {
       .post('/vocabulary/delete')
       .send({ ids: [ids[2]] })
       .expect(401);
+  });
+
+  it('keeps the learning queue numbered 1, 2, 3… and learns it in that order (MEM-61)', async () => {
+    const auth = { Authorization: `Bearer ${await register('tess')}` };
+    const ids: string[] = [];
+    for (const word of ['one', 'two', 'three', 'four']) {
+      const created = await http().post('/vocabulary').set(auth).send({ word, translation: word }).expect(201);
+      ids.push(created.body.id);
+      expect(created.body.learnPosition).toBe(ids.length);
+    }
+    const positions = async () =>
+      Object.fromEntries(
+        (await http().get('/vocabulary').set(auth).expect(200)).body.map(
+          (item: { word: string; learnPosition: number | null }) => [item.word, item.learnPosition],
+        ),
+      );
+
+    await http().post(`/learning/${ids[0]}`).set(auth).send({ rating: 'Good' }).expect(201);
+    expect(await positions()).toEqual({ one: null, two: 1, three: 2, four: 3 });
+    await http().delete(`/vocabulary/${ids[2]}`).set(auth).expect(204);
+    expect(await positions()).toEqual({ one: null, two: 1, four: 2 });
+    await http().post(`/learning/${ids[3]}/learned`).set(auth).expect(201);
+    expect(await positions()).toEqual({ one: null, two: 1, four: null });
+
+    // MEM-62: entered "En attente", out of the queue.
+    const waiting = await http()
+      .post('/vocabulary')
+      .set(auth)
+      .send({ word: 'five', translation: 'cinq', queue: false })
+      .expect(201);
+    expect(waiting.body).toMatchObject({ learningStatus: 'Waiting', learnPosition: null });
+    const queued = await http().post('/vocabulary').set(auth).send({ word: 'six', translation: 'six' }).expect(201);
+    expect(queued.body).toMatchObject({ learningStatus: 'ToLearn', learnPosition: 2 });
+
+    const session = await http().get('/learning/session').set(auth).expect(200);
+    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['two', 'six']); // not 'five', "En attente"
+  });
+
+  it('puts items in the learning queue and takes them out, in bulk, ignoring the others (MEM-63)', async () => {
+    const auth = { Authorization: `Bearer ${await register('ugo')}` };
+    const add = async (word: string, queue = true) =>
+      (await http().post('/vocabulary').set(auth).send({ word, translation: word, queue }).expect(201)).body.id;
+    const a = await add('a');
+    const b = await add('b');
+    const w1 = await add('w1', false);
+    const w2 = await add('w2', false);
+    const positions = async () =>
+      Object.fromEntries(
+        (await http().get('/vocabulary').set(auth).expect(200)).body.map(
+          (item: { word: string; learningStatus: string; learnPosition: number | null }) => [
+            item.word,
+            item.learnPosition ?? item.learningStatus,
+          ],
+        ),
+      );
+
+    // In the order given: w2 then w1, last; a is already in the queue: ignored.
+    const added = await http()
+      .post('/learning/queue/add')
+      .set(auth)
+      .send({ ids: [w2, a, w1] })
+      .expect(200);
+    expect(added.body).toEqual({ changed: 2, ignored: 1 });
+    expect(await positions()).toEqual({ a: 1, b: 2, w2: 3, w1: 4 });
+
+    const removed = await http()
+      .post('/learning/queue/remove')
+      .set(auth)
+      .send({ ids: [a, w2, 'unknown'] })
+      .expect(200);
+    expect(removed.body).toEqual({ changed: 2, ignored: 1 });
+    expect(await positions()).toEqual({ a: 'Waiting', b: 1, w2: 'Waiting', w1: 2 });
+
+    const other = { Authorization: `Bearer ${await register('vera')}` };
+    const theirs = await http()
+      .post('/learning/queue/add')
+      .set(other)
+      .send({ ids: [a] })
+      .expect(200);
+    expect(theirs.body).toEqual({ changed: 0, ignored: 1 });
+    await http().post('/learning/queue/add').set(auth).send({ ids: [] }).expect(400);
+    expect(b).toBeDefined();
+  });
+
+  it('reorders the learning queue: a move, or a selection at its head (MEM-64)', async () => {
+    const auth = { Authorization: `Bearer ${await register('wade')}` };
+    const ids: Record<string, string> = {};
+    for (const word of ['a', 'b', 'c', 'd', 'e']) {
+      ids[word] = (await http().post('/vocabulary').set(auth).send({ word, translation: word }).expect(201)).body.id;
+    }
+    const order = async () =>
+      (await http().get('/vocabulary').set(auth).expect(200)).body
+        .filter((item: { learnPosition: number | null }) => item.learnPosition !== null)
+        .sort((x: { learnPosition: number }, y: { learnPosition: number }) => x.learnPosition - y.learnPosition)
+        .map((item: { word: string }) => item.word)
+        .join('');
+
+    const moved = await http().post('/learning/queue/move').set(auth).send({ id: ids.e, position: 2 }).expect(200);
+    expect(moved.body).toEqual({ position: 2, total: 5 });
+    expect(await order()).toBe('aebcd');
+    const last = await http().post('/learning/queue/move').set(auth).send({ id: ids.a, position: 99 }).expect(200);
+    expect(last.body).toEqual({ position: 5, total: 5 });
+    expect(await order()).toBe('ebcda');
+
+    const top = await http()
+      .post('/learning/queue/top')
+      .set(auth)
+      .send({ ids: [ids.d, ids.b, 'unknown'] })
+      .expect(200);
+    expect(top.body).toEqual({ changed: 2, ignored: 1 });
+    expect(await order()).toBe('bdeca'); // b before d: their order in the queue
+
+    // The next learning session follows it.
+    const session = await http().get('/learning/session').set(auth).expect(200);
+    expect(session.body.items.map((item: { word: string }) => item.word).join('')).toBe('bdeca');
+
+    await http()
+      .post('/learning/queue/remove')
+      .set(auth)
+      .send({ ids: [ids.c] })
+      .expect(200);
+    await http().post('/learning/queue/move').set(auth).send({ id: ids.c, position: 1 }).expect(409);
+    await http().post('/learning/queue/move').set(auth).send({ id: ids.b, position: 0 }).expect(400);
   });
 
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {

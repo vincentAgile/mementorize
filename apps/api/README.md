@@ -253,10 +253,36 @@ curl -X PUT http://localhost:3000/profile -H "Authorization: Bearer $TOKEN" \
 
 Un élément de vocabulaire a un état (`items.learningStatus`) : `ToLearn` à la saisie, `Learning` une fois appris, `Learned` quand on le sort de la révision. Seules les cartes des éléments `Learning` sont révisées et comptées (`src/reviews/in-review.ts`) ; citations et cartes mentales sont toujours `Learning`.
 
-Le processus d'apprentissage (`src/learning/`) fait passer les éléments de `ToLearn` à `Learning` :
+États d'un élément de vocabulaire (MEM-61) — `POST /vocabulary` le met en fin de file, ou « En attente » avec `queue: false` (MEM-62) : `Waiting` (en attente, ni appris ni révisé), `ToLearn` (la file d'apprentissage), `Learning` (révisé), `Learned`. Les éléments `ToLearn` ont une position `learnPosition` (1, 2, 3…, sans trou ni doublon), tenue par `src/learning/learning-queue.ts` : un nouvel élément va en dernier, un élément qui quitte la file (apprentissage, « Appris », suppression) fait remonter les suivants (`renumberQueue`, deux requêtes quelle que soit la taille de la file).
+
+La file se compose depuis la Liste (MEM-63), en une transaction par requête :
 
 ```bash
-# Jusqu'à cinq éléments à apprendre, les plus anciens d'abord (+ prochaine échéance pour chaque note)
+# Les éléments « En attente » parmi ids rejoignent la file, en dernier, dans cet ordre ; les autres sont ignorés
+curl -X POST http://localhost:3000/learning/queue/add -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"ids":["<id1>","<id2>"]}'    # → { changed, ignored }
+
+# Les éléments de la file parmi ids repassent « En attente » ; les suivants remontent
+curl -X POST http://localhost:3000/learning/queue/remove -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"ids":["<id1>"]}'
+```
+
+Et s'ordonne (MEM-64) :
+
+```bash
+# Déplace un élément de la file à une position (1 : en tête ; au-delà de la fin : en dernier) → { position, total }
+curl -X POST http://localhost:3000/learning/queue/move -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"id":"<id>","position":3}'
+
+# Les éléments de la file parmi ids passent en tête, dans leur ordre actuel → { changed, ignored }
+curl -X POST http://localhost:3000/learning/queue/top -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"ids":["<id1>","<id2>"]}'
+```
+
+Le processus d'apprentissage (`src/learning/`) fait passer les éléments de `ToLearn` à `Learning`, dans l'ordre de la file :
+
+```bash
+# Jusqu'à cinq éléments à apprendre, les premiers de la file (+ prochaine échéance pour chaque note)
 curl http://localhost:3000/learning/session -H "Authorization: Bearer $TOKEN"
 
 # Étape 2 : première révision de la carte français → anglais ; l'élément passe à Learning
@@ -315,7 +341,7 @@ L'import se fait en deux temps. `POST /vocabulary-csv/preview { content }` (MEM-
 - un doublon est une expression anglaise **ou** française déjà présente, dans le vocabulaire ou plus haut dans le fichier, sans tenir compte des majuscules ni des espaces en début et fin ; les accents comptent ;
 - un fichier illisible renvoie `{ ok: false, problem }` (`empty`, `tooManyLines`, `syntax`, ou `wrongSeparator` quand les lignes n'ont de sens qu'avec l'autre séparateur).
 
-Puis `POST /vocabulary-csv/import { content }` (MEM-54) analyse le fichier à nouveau (le vocabulaire a pu changer depuis l'aperçu) et crée les lignes `new` en une seule transaction (`ItemsService.createMany`, tout ou rien) : éléments « À apprendre », avec leur thématique et leurs exemples, dans l'ordre du fichier ; leur prononciation est générée en arrière-plan. Réponse : `{ ok: true, imported, duplicate, error }`.
+Puis `POST /vocabulary-csv/import { content }` (MEM-54) analyse le fichier à nouveau (le vocabulaire a pu changer depuis l'aperçu) et crée les lignes `new` en une seule transaction (`ItemsService.createMany`, tout ou rien) : éléments « En attente » (MEM-62), avec leur thématique et leurs exemples, dans l'ordre du fichier ; leur prononciation est générée en arrière-plan. Réponse : `{ ok: true, imported, duplicate, error }`.
 
 Le JSON des requêtes peut atteindre 3 Mo (`main.ts`), pour un fichier de 1 Mo.
 

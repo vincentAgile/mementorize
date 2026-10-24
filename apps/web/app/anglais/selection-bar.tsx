@@ -2,7 +2,7 @@
 
 import { useRef, useTransition } from 'react';
 import { NBSP } from '../../lib/format';
-import { deleteVocabularyItemsAction } from './actions';
+import { deleteVocabularyItemsAction, queueItemsAction } from './actions';
 
 const items = (count: number) => `${count}${NBSP}élément${count > 1 ? 's' : ''}`;
 
@@ -12,16 +12,22 @@ interface SelectionBarProps {
   onClear: () => void;
   /** After the deletion: how many items were deleted (null: it failed). */
   onDeleted: (count: number | null) => void;
+  /** MEM-63: after « Ajouter à la file » or « Retirer de la file ». */
+  onQueued: (op: 'add' | 'remove' | 'top', result: { changed: number; ignored: number } | null) => void;
 }
 
 /**
  * MEM-59: above the table as soon as an item is checked. « Supprimer » asks
  * for a confirmation, then deletes them all in a single request.
  */
-export function SelectionBar({ ids, onClear, onDeleted }: SelectionBarProps) {
+export function SelectionBar({ ids, onClear, onDeleted, onQueued }: SelectionBarProps) {
   const confirm = useRef<HTMLDialogElement>(null);
   const [pending, startTransition] = useTransition();
   const count = ids.length;
+
+  function queue(op: 'add' | 'remove' | 'top') {
+    startTransition(async () => onQueued(op, await queueItemsAction(op, ids)));
+  }
 
   function remove() {
     confirm.current?.close();
@@ -34,6 +40,17 @@ export function SelectionBar({ ids, onClear, onDeleted }: SelectionBarProps) {
         {items(count)} sélectionné{count > 1 ? 's' : ''}
       </strong>
       <span aria-hidden="true"> · </span>
+      {/* MEM-63: in the order of the list; the items in another state are ignored. */}
+      <button type="button" className="selection-bar__action" disabled={pending} onClick={() => queue('add')}>
+        Ajouter à la file
+      </button>
+      <button type="button" className="selection-bar__action" disabled={pending} onClick={() => queue('remove')}>
+        Retirer de la file
+      </button>
+      {/* MEM-64: the items "À apprendre" selected, in their order in the queue. */}
+      <button type="button" className="selection-bar__action" disabled={pending} onClick={() => queue('top')}>
+        Placer en tête de file
+      </button>
       <button
         type="button"
         className="selection-bar__delete"

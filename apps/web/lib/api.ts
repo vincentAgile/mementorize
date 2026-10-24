@@ -137,6 +137,31 @@ export function deleteVocabulary(id: string): Promise<void> {
   return authedFetch<void>(`/vocabulary/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
+/**
+ * MEM-63: puts items "En attente" in the learning queue (last, in this
+ * order), or takes items out of it; MEM-64: puts items of the queue at its
+ * head ("top").
+ */
+export function queueVocabularyItems(
+  op: 'add' | 'remove' | 'top',
+  ids: string[],
+): Promise<{ changed: number; ignored: number }> {
+  return authedFetch<{ changed: number; ignored: number }>(`/learning/queue/${op}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+}
+
+/** MEM-64: moves an item of the learning queue to a position (1: the head). */
+export function moveInLearningQueue(id: string, position: number): Promise<{ position: number; total: number }> {
+  return authedFetch<{ position: number; total: number }>('/learning/queue/move', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, position }),
+  });
+}
+
 /** MEM-59: deletes several vocabulary items at once; returns how many were deleted. */
 export async function deleteVocabularyItems(ids: string[]): Promise<number> {
   const { deleted } = await authedFetch<{ deleted: number }>('/vocabulary/delete', {
@@ -147,8 +172,14 @@ export async function deleteVocabularyItems(ids: string[]): Promise<number> {
   return deleted;
 }
 
-export function createVocabulary(input: CreateVocabularyInput): Promise<unknown> {
-  return authedFetch('/vocabulary', {
+/** The item created: where it went (MEM-62). */
+export interface CreatedVocabulary {
+  learningStatus: 'ToLearn' | 'Waiting';
+  learnPosition: number | null;
+}
+
+export function createVocabulary(input: CreateVocabularyInput): Promise<CreatedVocabulary> {
+  return authedFetch<CreatedVocabulary>('/vocabulary', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),

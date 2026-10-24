@@ -6,6 +6,8 @@ import {
   createVocabulary,
   deleteVocabulary,
   deleteVocabularyItems,
+  moveInLearningQueue,
+  queueVocabularyItems,
   relearnVocabulary,
   savePreferences,
   updateVocabulary,
@@ -26,9 +28,13 @@ const MAX = { word: 200, translation: 200, example: 500, frenchExample: 500, top
 export interface VocabularyAddState {
   /**
    * The English of the item just added, for the confirmation; a new object
-   * each time. Its topic stays in the form, for the next items (MEM-51).
+   * each time. Its topic stays in the form, for the next items (MEM-51), and
+   * so does the choice of the learning queue (MEM-62); `position` is its
+   * place in the queue, null when it is "En attente".
    */
-  added?: { word: string; topic: string };
+  added?: { word: string; topic: string; queue: boolean; position: number | null };
+  /** Sent back with an error, with `values`: the choice of the learning queue (MEM-62). */
+  queue?: boolean;
   /** One message per field, shown next to it. */
   fieldErrors?: Partial<Record<'word' | 'translation' | 'example' | 'frenchExample' | 'topic', string>>;
   error?: string;
@@ -51,6 +57,8 @@ export async function addVocabularyAction(
     frenchExample: field(formData, 'frenchExample'),
     topic: field(formData, 'topic'),
   };
+  // MEM-62: the checkbox "Ajouter à la file d'apprentissage" (checked by default).
+  const queue = formData.get('queue') === 'on';
   const fieldErrors: VocabularyAddState['fieldErrors'] = {};
   if (!values.word) fieldErrors.word = 'Saisis le mot, l’expression ou la phrase en anglais.';
   else if (values.word.length > MAX.word) fieldErrors.word = `${MAX.word}\u00a0caractères au plus.`;
@@ -62,23 +70,25 @@ export async function addVocabularyAction(
     fieldErrors.frenchExample = `${MAX.frenchExample}\u00a0caractères au plus.`;
   if (values.topic.length > MAX.topic) fieldErrors.topic = `${MAX.topic}\u00a0caractères au plus.`;
   if (Object.keys(fieldErrors).length > 0) {
-    return { values, fieldErrors };
+    return { values, fieldErrors, queue };
   }
 
+  let created;
   try {
-    await createVocabulary({
+    created = await createVocabulary({
       word: values.word,
       translation: values.translation,
       example: values.example || undefined,
       frenchExample: values.frenchExample || undefined,
       topic: values.topic || undefined,
+      queue,
     });
   } catch (error) {
-    if (error instanceof ApiError) return { values, error: 'Impossible d’enregistrer l’élément. Réessaie.' };
+    if (error instanceof ApiError) return { values, queue, error: 'Impossible d’enregistrer l’élément. Réessaie.' };
     throw error; // e.g. the redirect of an expired session
   }
   revalidatePath('/', 'layout'); // the counter of the "Apprendre · Réviser" tab, the list
-  return { added: { word: values.word, topic: values.topic } };
+  return { added: { word: values.word, topic: values.topic, queue, position: created.learnPosition } };
 }
 
 /** MEM-19: same rules as when adding a word (both sides required, same lengths as the API). */
@@ -153,4 +163,59 @@ export async function deleteVocabularyItemsAction(ids: string[]): Promise<number
   }
   revalidatePath('/', 'layout'); // the list, the counters, the review
   return deleted;
+}
+
+/**
+ * MEM-63: puts the items "En attente" among `ids` in the learning queue
+ * (last, in the order of the list), or takes those of the queue out of it;
+ * MEM-64 ("top"): puts those of the queue at its head, in their order. The
+ * others are ignored. Null when it failed.
+ */
+export async function queueItemsAction(
+  op: 'add' | 'remove' | 'top',
+  ids: string[],
+): Promise<{ changed: number; ignored: number } | null> {
+  if (
+    !['add', 'remove', 'top'].includes(op) ||
+    !Array.isArray(ids) ||
+    ids.length === 0 ||
+    ids.length > 10_000 ||
+    ids.some((id) => typeof id !== 'string')
+  ) {
+    throw new Error('Invalid queue change');
+  }
+  let result: { changed: number; ignored: number };
+  try {
+    result = await queueVocabularyItems(op, ids);
+  } catch (error) {
+    if (error instanceof ApiError) return null;
+    throw error;
+  }
+  revalidatePath('/', 'layout'); // the list, the counter of "Apprendre"
+  return result;
+}
+
+/** MEM-63: the same, for one row (a form's action). */
+export async function queueRowAction(op: 'add' | 'remove', id: string): Promise<void> {
+  await queueItemsAction(op, [id]);
+}
+
+/**
+ * MEM-64: moves an item of the learning queue to a position. Returns where
+ * it is now, or null when it failed (the list then shows the order before).
+ */
+export async function moveInQueueAction(
+  id: string,
+  position: number,
+): Promise<{ position: number; total: number } | null> {
+  if (typeof id !== 'string' || !Number.isInteger(position) || position < 1) throw new Error('Invalid move');
+  let result: { position: number; total: number };
+  try {
+    result = await moveInLearningQueue(id, position);
+  } catch (error) {
+    if (error instanceof ApiError) return null;
+    throw error;
+  }
+  revalidatePath('/', 'layout');
+  return result;
 }

@@ -14,6 +14,7 @@ describe('LearningService', () => {
 
   const prismaMock = {
     item: { count: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+    $executeRaw: vi.fn(), // the renumbering of the learning queue (MEM-61)
     card: { update: vi.fn() },
     reviewLog: { create: vi.fn() },
     $transaction: vi.fn((operations: Promise<unknown>[]) => Promise.all(operations)),
@@ -49,7 +50,7 @@ describe('LearningService', () => {
   });
 
   describe('session', () => {
-    it('picks the five oldest vocabulary items to learn, with the rating previews of their French → English card', async () => {
+    it('picks the five first items of the learning queue, with the rating previews of their French → English card', async () => {
       prismaMock.item.count.mockResolvedValue(7);
       prismaMock.item.findMany.mockResolvedValue([{ ...word(), cards: [card('fr-en', 'FrenchToEnglish', NOW)] }]);
 
@@ -58,7 +59,7 @@ describe('LearningService', () => {
       expect(prismaMock.item.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId, type: 'Vocabulary', learningStatus: 'ToLearn' },
-          orderBy: { createdAt: 'asc' },
+          orderBy: [{ learnPosition: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }, { id: 'asc' }],
           take: 5,
         }),
       );
@@ -89,8 +90,9 @@ describe('LearningService', () => {
       expect(prismaMock.card.update).toHaveBeenCalledWith({ where: { id: 'en-fr' }, data: { due: NOW } });
       expect(prismaMock.item.update).toHaveBeenCalledWith({
         where: { id: 'item-1' },
-        data: { learningStatus: 'Learning' },
+        data: { learningStatus: 'Learning', learnPosition: null },
       });
+      expect(prismaMock.$executeRaw).toHaveBeenCalled(); // the next ones of the queue move up
       expect(result).toEqual({
         id: 'item-1',
         learningStatus: 'Learning',
@@ -124,7 +126,7 @@ describe('LearningService', () => {
       expect(prismaMock.card.update).not.toHaveBeenCalled();
       expect(prismaMock.item.update).toHaveBeenCalledWith({
         where: { id: 'item-1' },
-        data: { learningStatus: 'Learned' },
+        data: { learningStatus: 'Learned', learnPosition: null },
       });
     });
 
@@ -137,8 +139,9 @@ describe('LearningService', () => {
       expect(prismaMock.card.update).not.toHaveBeenCalled();
       expect(prismaMock.item.update).toHaveBeenCalledWith({
         where: { id: 'item-1' },
-        data: { learningStatus: 'Learned' },
+        data: { learningStatus: 'Learned', learnPosition: null },
       });
+      expect(prismaMock.$executeRaw).toHaveBeenCalled(); // it left the queue
     });
 
     it('refuses an item already learned', async () => {

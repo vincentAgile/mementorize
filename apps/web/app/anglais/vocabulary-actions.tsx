@@ -5,10 +5,11 @@ import { useFormStatus } from 'react-dom';
 import type { Translator } from '../../lib/types';
 import type { VocabularyRow } from '../../lib/vocabulary-table';
 import { VocabularyFields } from './vocabulary-fields';
-import { deleteVocabularyAction, relearnAction, updateVocabularyAction } from './actions';
+import { deleteVocabularyAction, queueRowAction, relearnAction, updateVocabularyAction } from './actions';
 
 /**
- * The actions of a row of the vocabulary table: modify (MEM-19) and delete
+ * The actions of a row of the vocabulary table: into the learning queue or
+ * out of it (MEM-63), back in learning (MEM-22), modify (MEM-19) and delete
  * (MEM-20). Each one opens a modal <dialog>: Escape or "Annuler" close it,
  * and the browser keeps the focus inside while it is open.
  */
@@ -16,10 +17,13 @@ export function VocabularyActions({
   row,
   translator,
   topics,
+  queueMenu,
 }: {
   row: VocabularyRow;
   translator: Translator;
   topics: string[];
+  /** MEM-64: where to move an item of the learning queue (built by the table). */
+  queueMenu?: React.ReactNode;
 }) {
   const editRef = useRef<HTMLDialogElement>(null);
   const deleteRef = useRef<HTMLDialogElement>(null);
@@ -28,6 +32,26 @@ export function VocabularyActions({
 
   return (
     <div className="row-actions">
+      {queueMenu}
+      {row.status === 'Waiting' && (
+        // MEM-63: last in the learning queue.
+        <form action={queueRowAction.bind(null, 'add', row.id)}>
+          <IconSubmit
+            label={`Ajouter « ${row.english} » à la file d’apprentissage`}
+            title="Ajouter à la file d’apprentissage"
+          >
+            <QueueAddIcon />
+          </IconSubmit>
+        </form>
+      )}
+      {row.status === 'ToLearn' && (
+        // MEM-63: back "En attente"; the next ones of the queue move up.
+        <form action={queueRowAction.bind(null, 'remove', row.id)}>
+          <IconSubmit label={`Retirer « ${row.english} » de la file d’apprentissage`} title="Retirer de la file">
+            <QueueRemoveIcon />
+          </IconSubmit>
+        </form>
+      )}
       {row.status === 'Learned' && (
         // MEM-22: back in the review, with its previous schedule.
         <form action={relearnAction.bind(null, row.id)}>
@@ -160,6 +184,36 @@ function RelearnButton({ english }: { english: string }) {
     >
       <RelearnIcon />
     </button>
+  );
+}
+
+/** An icon button that submits its form, disabled while it is sent. */
+function IconSubmit({ label, title, children }: { label: string; title: string; children: React.ReactNode }) {
+  const { pending } = useFormStatus();
+  return (
+    <button type="submit" className="row-actions__icon" aria-label={label} title={title} disabled={pending}>
+      {children}
+    </button>
+  );
+}
+
+/** A list with a plus: into the learning queue (MEM-63). */
+function QueueAddIcon() {
+  return (
+    <svg {...ICON}>
+      <path d="M4 6h10M4 12h10M4 18h6" />
+      <path d="M18 14v6M15 17h6" />
+    </svg>
+  );
+}
+
+/** A list with a minus: out of the learning queue (MEM-63). */
+function QueueRemoveIcon() {
+  return (
+    <svg {...ICON}>
+      <path d="M4 6h10M4 12h10M4 18h6" />
+      <path d="M15 17h6" />
+    </svg>
   );
 }
 
