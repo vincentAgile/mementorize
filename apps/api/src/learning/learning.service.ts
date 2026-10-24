@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { ItemType, LearningStatus } from '@prisma/client';
+import type { Card, CardKind, ItemType, LearningStatus } from '@prisma/client';
 import { contentOf } from '../items/item-content.js';
 import { IN_QUEUE, QUEUE_ORDER, type QueueType, queueIds, renumberQueue } from './learning-queue.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -8,7 +8,7 @@ import { type Grade, type NextDueByRating, SchedulerService } from '../schedulin
 /** The types learned per item (MEM-22, MEM-67): the item leaves the review, not a card. */
 const LEARNED_PER_ITEM: ItemType[] = ['Vocabulary', 'Quote'];
 
-/** Number of vocabulary items in a learning session (MEM-21). */
+/** Number of items in a learning session (MEM-21, MEM-68). */
 export const SESSION_SIZE = 5;
 
 export interface LearningItem {
@@ -36,11 +36,39 @@ export interface LearningSession {
   items: LearningItem[];
 }
 
+/** A quote of a learning session (MEM-68): learned in a single step, as it is reviewed. */
+export interface QuoteLearningItem {
+  id: string;
+  /** Its card: rated at once, and reviewed directly when it comes back in the session (MEM-47). */
+  cardId: string;
+  text: string;
+  author: string | null;
+  source: string | null;
+  /** When the card comes back, for each of the four ratings. */
+  nextDue: NextDueByRating;
+  /** The same, once rated « À revoir » (the answers are only sent at the end of the session). */
+  nextDueAfterAgain: NextDueByRating;
+}
+
+export interface QuoteLearningSession {
+  /** All the quotes still to learn. */
+  total: number;
+  items: QuoteLearningItem[];
+}
+
+/** The card whose rating is the first review of a learned item (MEM-21, MEM-68). */
+const FIRST_CARD = { Vocabulary: 'FrenchToEnglish', Quote: 'QuoteRecall' } as const satisfies Record<
+  QueueType,
+  CardKind
+>;
+
 /**
- * The learning process of the vocabulary (MEM-21), as opposed to the review
- * process: it moves new items from `ToLearn` to `Learning`. A session shows
- * up to five items, the first ones of the learning queue (MEM-61), and the
- * rating of step 2 is the first review of their French → English card.
+ * The learning process of the vocabulary (MEM-21) and of the quotes
+ * (MEM-68), as opposed to the review process: it moves new items from
+ * `ToLearn` to `Learning`. A session shows up to five items, the first ones
+ * of the learning queue of their type (MEM-61, MEM-67), and their first
+ * rating is the first review of their card (French → English for the
+ * vocabulary).
  */
 @Injectable()
 export class LearningService {
@@ -50,79 +78,103 @@ export class LearningService {
   ) {}
 
   async session(userId: string, now = new Date()): Promise<LearningSession> {
-    const where = IN_QUEUE(userId, 'Vocabulary');
+    const [total, items] = await this.firstOfQueue(userId, 'Vocabulary');
+    return {
+      total,
+      items: items.map((item) => {
+        const { word, translation, example, frenchExample } = contentOf({ ...item, type: 'Vocabulary' as const });
+        return {
+          id: item.id,
+          word,
+          translation,
+          example,
+          frenchExample: frenchExample ?? null,
+          ...this.previews(item.cards[0], now),
+        };
+      }),
+    };
+  }
+
+  /** MEM-68: up to five quotes to learn, the first ones of their learning queue. */
+  async quoteSession(userId: string, now = new Date()): Promise<QuoteLearningSession> {
+    const [total, items] = await this.firstOfQueue(userId, 'Quote');
+    return {
+      total,
+      items: items.map((item) => {
+        const { text, author, source } = contentOf({ ...item, type: 'Quote' as const });
+        return { id: item.id, text, author, source, ...this.previews(item.cards[0], now) };
+      }),
+    };
+  }
+
+  /** How many items of this type are to learn, and the first ones of the queue, with the card first rated. */
+  private async firstOfQueue(userId: string, type: QueueType) {
+    const where = IN_QUEUE(userId, type);
     const [total, items] = await Promise.all([
       this.prisma.item.count({ where }),
       this.prisma.item.findMany({
         where,
-        include: { cards: { where: { kind: 'FrenchToEnglish' } } },
+        include: { cards: { where: { kind: FIRST_CARD[type] } } },
         orderBy: QUEUE_ORDER, // MEM-61: the first ones of the learning queue
         take: SESSION_SIZE,
       }),
     ]);
+    return [total, items.filter((item) => item.cards.length > 0)] as const;
+  }
 
+  /** The card of a session's item, and when it comes back for each rating, then once rated « À revoir ». */
+  private previews(card: Card, now: Date) {
     return {
-      total,
-      items: items
-        .filter((item) => item.cards.length > 0)
-        .map((item) => {
-          const { word, translation, example, frenchExample } = contentOf({ ...item, type: 'Vocabulary' as const });
-          return {
-            id: item.id,
-            cardId: item.cards[0].id,
-            word,
-            translation,
-            example,
-            frenchExample: frenchExample ?? null,
-            nextDue: this.scheduler.preview(item.cards[0], now),
-            nextDueAfterAgain: this.scheduler.preview(this.scheduler.review(item.cards[0], 'Again', now).card, now),
-          };
-        }),
+      cardId: card.id,
+      nextDue: this.scheduler.preview(card, now),
+      nextDueAfterAgain: this.scheduler.preview(this.scheduler.review(card, 'Again', now).card, now),
     };
   }
 
   /**
-   * Step 2 of a session: the rating is recorded as the first review of the
-   * French → English card, the item moves to `Learning`, and its English →
-   * French card, not rated yet, becomes due at once, as a new card.
+   * The first rating of an item to learn: recorded as the first review of
+   * its card (French → English for the vocabulary, step 2 of a session; the
+   * card of a quote, MEM-68), and the item moves to `Learning`. The English →
+   * French card of a vocabulary item, not rated yet, becomes due at once, as
+   * a new card.
    */
   async learn(userId: string, itemId: string, rating: Grade, now = new Date()) {
     const item = await this.prisma.item.findFirst({
-      where: { id: itemId, userId, type: 'Vocabulary' },
+      where: { id: itemId, userId, type: { in: LEARNED_PER_ITEM } },
       include: { cards: true },
     });
     if (!item) {
-      throw new NotFoundException(`Vocabulary item ${itemId} not found`);
+      throw new NotFoundException(`Item ${itemId} not found`);
     }
     if (item.learningStatus !== 'ToLearn') {
-      throw new ConflictException(`Vocabulary item ${itemId} is not to learn`);
+      throw new ConflictException(`Item ${itemId} is not to learn`);
     }
-    const frenchToEnglish = item.cards.find((card) => card.kind === 'FrenchToEnglish');
-    const englishToFrench = item.cards.find((card) => card.kind === 'EnglishToFrench');
-    if (!frenchToEnglish || !englishToFrench) {
-      throw new ConflictException(`Vocabulary item ${itemId} has no cards to learn`);
+    const type = item.type as QueueType;
+    const first = item.cards.find((card) => card.kind === FIRST_CARD[type]);
+    if (!first) {
+      throw new ConflictException(`Item ${itemId} has no card to learn`);
     }
+    const others = item.cards.filter((card) => card.id !== first.id);
 
-    const { card: next, log } = this.scheduler.review(frenchToEnglish, rating, now);
+    const { card: next, log } = this.scheduler.review(first, rating, now);
 
     // All or nothing: the item never ends up `Learning` without its first review.
     await this.prisma.$transaction([
-      this.prisma.card.update({ where: { id: frenchToEnglish.id }, data: next }),
-      this.prisma.reviewLog.create({ data: { ...log, cardId: frenchToEnglish.id } }),
-      this.prisma.card.update({
-        where: { id: englishToFrench.id },
-        data: { due: englishToFrench.due < now ? englishToFrench.due : now },
-      }),
+      this.prisma.card.update({ where: { id: first.id }, data: next }),
+      this.prisma.reviewLog.create({ data: { ...log, cardId: first.id } }),
+      ...others.map((card) =>
+        this.prisma.card.update({ where: { id: card.id }, data: { due: card.due < now ? card.due : now } }),
+      ),
       this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learning', learnPosition: null } }),
     ]);
-    await renumberQueue(this.prisma, userId, 'Vocabulary'); // MEM-61: it left the queue, the next ones move up
+    await renumberQueue(this.prisma, userId, type); // MEM-61: it left the queue, the next ones move up
 
     return {
       id: item.id,
       learningStatus: 'Learning' as const,
       nextDue: next.due,
       // MEM-47: after « À revoir », the card comes back at the end of the session.
-      nextDueByRating: this.scheduler.preview({ ...frenchToEnglish, ...next }, now),
+      nextDueByRating: this.scheduler.preview({ ...first, ...next }, now),
     };
   }
 

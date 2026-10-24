@@ -8,8 +8,7 @@ import type { LearningItem, LearningSession } from '../../lib/types';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
 import { type Answer, answerOfKey, RatingButtons } from '../review/rating-buttons';
-import { reviewAction } from '../review/actions';
-import { learnAction, learnedAction } from './actions';
+import { sendAnswers } from './send-answers';
 
 type Phase = 'discover' | 'rate' | 'done';
 
@@ -94,19 +93,10 @@ export function LearningSessionView({ session, now, showDelays }: LearningSessio
   async function save(all: Record<string, Answer[]>) {
     setSending(true);
     for (const it of items) {
-      const [first, ...next] = all[it.id] ?? [];
-      if (!first) continue;
-      // « Appris » at once: straight from "À apprendre" to "Appris". Otherwise
-      // the first rating moves the item to "En cours d'apprentissage", and
-      // the next answers are reviews of its card (or « Appris » in the end).
-      let ok = first === 'Learned' ? await learnedAction(it.id) : (await learnAction(it.id, first)) !== null;
-      for (const answer of next) {
-        if (!ok) break;
-        ok = answer === 'Learned' ? await learnedAction(it.id) : (await reviewAction(it.cardId, answer)) !== null;
-      }
-      if (!ok) setFailed((count) => count + 1);
-      else if ([first, ...next].at(-1) === 'Learned') setKnown((done) => [...done, it]);
-      else setLearned((done) => [...done, it]);
+      const outcome = await sendAnswers(it.id, it.cardId, all[it.id] ?? []);
+      if (outcome === 'failed') setFailed((count) => count + 1);
+      else if (outcome === 'learned') setKnown((done) => [...done, it]);
+      else if (outcome === 'learning') setLearned((done) => [...done, it]);
     }
     setSending(false);
     setPhase('done');

@@ -3,13 +3,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getDueReviews, getPreferences } from '../../lib/api';
-import { firstWords, formatDelay } from '../../lib/format';
+import { formatDelay } from '../../lib/format';
 import { subtreeIds } from '../../lib/mind-map';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { findSpace } from '../../lib/spaces';
 import type { DueItem } from '../../lib/types';
 import { AppHeader } from '../app-header';
 import { MindMapViewer } from '../mind-maps/mind-map-viewer';
+import { quoteFaces } from './quote-faces';
 import type { CardFace } from './review-card';
 import { ReviewSession, type SessionCard } from './review-session';
 
@@ -53,18 +54,7 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
   }
 
   if (item.type === 'Quote') {
-    const heading = item.content.author ?? 'Auteur inconnu';
-    const subheading = item.content.source;
-    return {
-      front: {
-        heading,
-        subheading,
-        main: firstWords(item.content.text),
-        prompt: 'Récite la suite de tête, puis vérifie.',
-      },
-      back: { heading, subheading, main: item.content.text },
-      repeatFront: false,
-    };
+    return { ...quoteFaces(item.content), repeatFront: false };
   }
 
   const { word, translation, example, frenchExample } = item.content;

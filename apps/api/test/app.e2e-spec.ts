@@ -324,6 +324,53 @@ describe('API (e2e)', () => {
     expect(await positions('/vocabulary')).toEqual({ two: 1 });
   });
 
+  it('learns the quotes in one step, the first ones of their queue (MEM-68)', async () => {
+    const auth = { Authorization: `Bearer ${await register('rose')}` };
+    const ids: string[] = [];
+    for (const text of ['Un', 'Deux', 'Trois', 'Quatre', 'Cinq', 'Six']) {
+      ids.push((await http().post('/quotes').set(auth).send({ text, author: 'Moi' }).expect(201)).body.id);
+    }
+    await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201);
+    await http().post('/learning/queue/move').set(auth).send({ type: 'Quote', id: ids[5], position: 1 }).expect(200);
+
+    const session = await http().get('/learning/session?type=Quote').set(auth).expect(200);
+    expect(session.body.total).toBe(6);
+    expect(session.body.items.map((item: { text: string }) => item.text)).toEqual([
+      'Six',
+      'Un',
+      'Deux',
+      'Trois',
+      'Quatre',
+    ]);
+    expect(session.body.items[0]).toMatchObject({ author: 'Moi', source: null });
+    expect(Object.keys(session.body.items[0].nextDueAfterAgain)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
+    await http().get('/learning/session?type=MindMap').set(auth).expect(400);
+    // The vocabulary session is not mixed with it.
+    const words = await http().get('/learning/session').set(auth).expect(200);
+    expect(words.body.items.map((item: { word: string }) => item.word)).toEqual(['snag']);
+
+    // « Bien »: into the review, its card scheduled; « Appris »: straight out of it.
+    const learned = await http().post(`/learning/${ids[5]}`).set(auth).send({ rating: 'Good' }).expect(201);
+    expect(learned.body.learningStatus).toBe('Learning');
+    await http().post(`/learning/${ids[0]}/learned`).set(auth).expect(201);
+    await http().post(`/learning/${ids[5]}`).set(auth).send({ rating: 'Good' }).expect(409);
+
+    const after = await http().get('/learning/session?type=Quote').set(auth).expect(200);
+    expect(after.body.total).toBe(4);
+    const quotes = (await http().get('/quotes').set(auth).expect(200)).body as {
+      text: string;
+      learningStatus: string;
+      learnPosition: number | null;
+      card: { state: string };
+    }[];
+    const byText = Object.fromEntries(quotes.map((quote) => [quote.text, quote]));
+    expect(byText.Six).toMatchObject({ learningStatus: 'Learning', learnPosition: null });
+    expect(byText.Six.card.state).not.toBe('New');
+    expect(byText.Un).toMatchObject({ learningStatus: 'Learned', learnPosition: null });
+    expect(byText.Deux.learnPosition).toBe(1);
+    expect(byText.Cinq.learnPosition).toBe(4);
+  });
+
   it('takes a word still to learn straight to "Learned", out of the review (MEM-46)', async () => {
     const token = await register('lena');
     const auth = { Authorization: `Bearer ${token}` };
