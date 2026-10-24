@@ -253,10 +253,12 @@ curl -X PUT http://localhost:3000/profile -H "Authorization: Bearer $TOKEN" \
 
 Un élément de vocabulaire a un état (`items.learningStatus`) : `ToLearn` à la saisie, `Learning` une fois appris, `Learned` quand on le sort de la révision. Seules les cartes des éléments `Learning` sont révisées et comptées (`src/reviews/in-review.ts`) ; citations et cartes mentales sont toujours `Learning`.
 
-Le processus d'apprentissage (`src/learning/`) fait passer les éléments de `ToLearn` à `Learning` :
+États d'un élément de vocabulaire (MEM-61) : `Waiting` (en attente, ni appris ni révisé), `ToLearn` (la file d'apprentissage), `Learning` (révisé), `Learned`. Les éléments `ToLearn` ont une position `learnPosition` (1, 2, 3…, sans trou ni doublon), tenue par `src/learning/learning-queue.ts` : un nouvel élément va en dernier, un élément qui quitte la file (apprentissage, « Appris », suppression) fait remonter les suivants (`renumberQueue`, deux requêtes quelle que soit la taille de la file).
+
+Le processus d'apprentissage (`src/learning/`) fait passer les éléments de `ToLearn` à `Learning`, dans l'ordre de la file :
 
 ```bash
-# Jusqu'à cinq éléments à apprendre, les plus anciens d'abord (+ prochaine échéance pour chaque note)
+# Jusqu'à cinq éléments à apprendre, les premiers de la file (+ prochaine échéance pour chaque note)
 curl http://localhost:3000/learning/session -H "Authorization: Bearer $TOKEN"
 
 # Étape 2 : première révision de la carte français → anglais ; l'élément passe à Learning

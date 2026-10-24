@@ -13,6 +13,7 @@ export function toVocabularyView(item: ItemWithCards) {
     frenchExample: frenchExample ?? null, // none on the items created before MEM-42
     topic: topic ?? null, // MEM-51
     learningStatus: item.learningStatus,
+    learnPosition: item.learnPosition, // MEM-61: in the learning queue, or null
     userId: item.userId,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,

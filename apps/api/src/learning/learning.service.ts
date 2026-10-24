@@ -1,6 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { LearningStatus } from '@prisma/client';
 import { contentOf } from '../items/item-content.js';
+import { IN_QUEUE, QUEUE_ORDER, renumberQueue } from './learning-queue.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { type Grade, type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
 
@@ -34,8 +35,8 @@ export interface LearningSession {
 
 /**
  * The learning process of the vocabulary (MEM-21), as opposed to the review
- * process: it moves new items from `ToLearn` to `Learning`. In this first
- * version, a session shows up to five items (the oldest first), and the
+ * process: it moves new items from `ToLearn` to `Learning`. A session shows
+ * up to five items, the first ones of the learning queue (MEM-61), and the
  * rating of step 2 is the first review of their French → English card.
  */
 @Injectable()
@@ -46,13 +47,13 @@ export class LearningService {
   ) {}
 
   async session(userId: string, now = new Date()): Promise<LearningSession> {
-    const where = { userId, type: 'Vocabulary', learningStatus: 'ToLearn' } as const;
+    const where = IN_QUEUE(userId);
     const [total, items] = await Promise.all([
       this.prisma.item.count({ where }),
       this.prisma.item.findMany({
         where,
         include: { cards: { where: { kind: 'FrenchToEnglish' } } },
-        orderBy: { createdAt: 'asc' },
+        orderBy: QUEUE_ORDER, // MEM-61: the first ones of the learning queue
         take: SESSION_SIZE,
       }),
     ]);
@@ -109,8 +110,9 @@ export class LearningService {
         where: { id: englishToFrench.id },
         data: { due: englishToFrench.due < now ? englishToFrench.due : now },
       }),
-      this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learning' } }),
+      this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learning', learnPosition: null } }),
     ]);
+    await renumberQueue(this.prisma, userId); // MEM-61: it left the queue, the next ones move up
 
     return {
       id: item.id,
@@ -148,8 +150,9 @@ export class LearningService {
           },
         }),
       ),
-      this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learned' } }),
+      this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learned', learnPosition: null } }),
     ]);
+    if (item.learningStatus === 'ToLearn') await renumberQueue(this.prisma, userId); // MEM-61
     return { id: item.id, learningStatus: 'Learned' as const };
   }
 

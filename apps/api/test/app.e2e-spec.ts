@@ -431,6 +431,32 @@ describe('API (e2e)', () => {
       .expect(401);
   });
 
+  it('keeps the learning queue numbered 1, 2, 3… and learns it in that order (MEM-61)', async () => {
+    const auth = { Authorization: `Bearer ${await register('tess')}` };
+    const ids: string[] = [];
+    for (const word of ['one', 'two', 'three', 'four']) {
+      const created = await http().post('/vocabulary').set(auth).send({ word, translation: word }).expect(201);
+      ids.push(created.body.id);
+      expect(created.body.learnPosition).toBe(ids.length);
+    }
+    const positions = async () =>
+      Object.fromEntries(
+        (await http().get('/vocabulary').set(auth).expect(200)).body.map(
+          (item: { word: string; learnPosition: number | null }) => [item.word, item.learnPosition],
+        ),
+      );
+
+    await http().post(`/learning/${ids[0]}`).set(auth).send({ rating: 'Good' }).expect(201);
+    expect(await positions()).toEqual({ one: null, two: 1, three: 2, four: 3 });
+    await http().delete(`/vocabulary/${ids[2]}`).set(auth).expect(204);
+    expect(await positions()).toEqual({ one: null, two: 1, four: 2 });
+    await http().post(`/learning/${ids[3]}/learned`).set(auth).expect(201);
+    expect(await positions()).toEqual({ one: null, two: 1, four: null });
+
+    const session = await http().get('/learning/session').set(auth).expect(200);
+    expect(session.body.items.map((item: { word: string }) => item.word)).toEqual(['two']);
+  });
+
   it('saves the first name and last name of the profile, trimmed, and clears them when empty', async () => {
     const token = await register('frank');
     const auth = { Authorization: `Bearer ${token}` };

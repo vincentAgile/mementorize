@@ -13,7 +13,14 @@ describe('ItemsService', () => {
   const userId = 'user-1';
 
   const prismaMock = {
-    item: { create: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn(), delete: vi.fn() },
+    item: {
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      aggregate: vi.fn(),
+    },
   };
 
   const anItem = (overrides = {}) => ({
@@ -59,10 +66,15 @@ describe('ItemsService', () => {
     });
 
     it('gives a vocabulary word one card per direction, the reverse one starting a day later', async () => {
+      prismaMock.item.aggregate.mockResolvedValue({ _max: { learnPosition: 11 } });
       await service.create(userId, 'Vocabulary', { word: 'to cherish', translation: 'chérir', example: null }, NOW);
 
-      // MEM-15: a new word waits for the learning process before being reviewed.
-      expect(prismaMock.item.create.mock.calls[0][0].data.learningStatus).toBe('ToLearn');
+      // MEM-15: a new word waits for the learning process before being reviewed,
+      // last in the learning queue (MEM-61).
+      expect(prismaMock.item.create.mock.calls[0][0].data).toMatchObject({
+        learningStatus: 'ToLearn',
+        learnPosition: 12,
+      });
       expect(createdCards()).toEqual([
         { kind: 'EnglishToFrench', nodeId: null, ...scheduler.newCard(NOW) },
         { kind: 'FrenchToEnglish', nodeId: null, ...scheduler.newCard(TOMORROW) },
