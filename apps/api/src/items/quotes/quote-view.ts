@@ -3,7 +3,8 @@ import type { ItemWithCards } from '../items.service.js';
 
 /**
  * Flattens an item back into the shape GET /quotes returned before phase 5,
- * so existing API clients keep working even though the storage changed.
+ * so existing API clients keep working even though the storage changed;
+ * with its learning state and its place in the learning queue (MEM-67).
  */
 export function toQuoteView(item: ItemWithCards) {
   const { text, author, source } = contentOf(item as ItemWithCards & { type: 'Quote' });
@@ -13,9 +14,11 @@ export function toQuoteView(item: ItemWithCards) {
     text,
     author,
     source,
+    learningStatus: item.learningStatus,
+    learnPosition: item.learnPosition,
     userId: item.userId,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
-    card: card ? { id: card.id, due: card.due, state: card.state, learnedAt: card.learnedAt } : null,
+    card: card ? { id: card.id, due: card.due, state: card.state } : null,
   };
 }

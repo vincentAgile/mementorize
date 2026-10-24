@@ -251,17 +251,17 @@ export function learnVocabulary(itemId: string, rating: ReviewRating): Promise<R
   });
 }
 
-/** "Appris" in a review (MEM-22): the item leaves the review. */
-export function markVocabularyLearned(itemId: string): Promise<unknown> {
+/** "Appris" in a review (MEM-22): the item leaves the review; a vocabulary item or a quote (MEM-67). */
+export function markItemLearned(itemId: string): Promise<unknown> {
   return authedFetch(`/learning/${encodeURIComponent(itemId)}/learned`, { method: 'POST' });
 }
 
-/** "Remettre en apprentissage" (MEM-22): a learned item goes back to the review. */
-export function relearnVocabulary(itemId: string): Promise<unknown> {
+/** "Remettre en apprentissage" (MEM-22), « Remettre en révision » (quotes, MEM-67): back in the review. */
+export function relearnItem(itemId: string): Promise<unknown> {
   return authedFetch(`/learning/${encodeURIComponent(itemId)}/relearn`, { method: 'POST' });
 }
 
-/** « Appris » for a quote or a mind map branch (MEM-48): the card leaves the review. */
+/** « Appris » for a mind map branch (MEM-48): the card leaves the review. */
 export function markCardLearned(cardId: string): Promise<unknown> {
   return authedFetch(`/reviews/${encodeURIComponent(cardId)}/learned`, { method: 'POST' });
 }

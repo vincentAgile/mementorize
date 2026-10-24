@@ -52,15 +52,25 @@ describe('ItemsService', () => {
   const createdCards = () => prismaMock.item.create.mock.calls[0][0].data.cards.create;
 
   describe('create', () => {
-    it('gives a quote a single card, due now', async () => {
+    it('gives a quote a single card, due now, last in the learning queue of the quotes (MEM-67)', async () => {
+      prismaMock.item.aggregate.mockResolvedValue({ _max: { learnPosition: 3 } });
       const content = { text: 'Hello', author: null, source: null };
 
       await service.create(userId, 'Quote', content, NOW);
 
       expect(prismaMock.item.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ userId, type: 'Quote', content, learningStatus: 'Learning' }),
+          data: expect.objectContaining({
+            userId,
+            type: 'Quote',
+            content,
+            learningStatus: 'ToLearn',
+            learnPosition: 4,
+          }),
         }),
+      );
+      expect(prismaMock.item.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId, type: 'Quote', learningStatus: 'ToLearn' } }),
       );
       expect(createdCards()).toEqual([{ kind: 'QuoteRecall', nodeId: null, ...scheduler.newCard(NOW) }]);
     });

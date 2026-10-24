@@ -138,7 +138,8 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
             cards={due.items.map((next): SessionCard => ({
               cardId: next.card.id,
               ...facesOf(next),
-              learned: next.item.type === 'Vocabulary' ? { itemId: next.item.id } : { cardId: next.card.id },
+              // Learned per item, except a mind map: per branch (MEM-48, MEM-67).
+              learned: next.item.type === 'MindMap' ? { cardId: next.card.id } : { itemId: next.item.id },
               nextDue: next.nextDue,
             }))}
             total={due.total}

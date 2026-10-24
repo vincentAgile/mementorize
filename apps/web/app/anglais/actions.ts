@@ -8,7 +8,7 @@ import {
   deleteVocabularyItems,
   moveInLearningQueue,
   queueVocabularyItems,
-  relearnVocabulary,
+  relearnItem,
   savePreferences,
   updateVocabulary,
 } from '../../lib/api';
@@ -129,7 +129,7 @@ export async function deleteVocabularyAction(id: string): Promise<void> {
 
 /** MEM-22: a learned item goes back to the review, with the schedule it had. */
 export async function relearnAction(id: string): Promise<void> {
-  await relearnVocabulary(id);
+  await relearnItem(id);
   revalidatePath('/', 'layout'); // the table and the counters
 }
 

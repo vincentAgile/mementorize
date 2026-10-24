@@ -16,8 +16,8 @@ export interface SessionCard {
   back: CardFace;
   repeatFront: boolean;
   /**
-   * What « Appris » takes out of the review: the vocabulary item (MEM-22),
-   * or only this card for a quote or a mind map branch (MEM-48).
+   * What « Appris » takes out of the review: the vocabulary item (MEM-22) or
+   * the quote (MEM-67), or only this card for a mind map branch (MEM-48).
    */
   learned: { itemId: string } | { cardId: string };
   /** When the card comes back with each rating (ISO dates). */

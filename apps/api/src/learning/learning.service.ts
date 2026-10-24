@@ -1,9 +1,12 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { LearningStatus } from '@prisma/client';
+import type { ItemType, LearningStatus } from '@prisma/client';
 import { contentOf } from '../items/item-content.js';
-import { IN_QUEUE, QUEUE_ORDER, queueIds, renumberQueue } from './learning-queue.js';
+import { IN_QUEUE, QUEUE_ORDER, type QueueType, queueIds, renumberQueue } from './learning-queue.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { type Grade, type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
+
+/** The types learned per item (MEM-22, MEM-67): the item leaves the review, not a card. */
+const LEARNED_PER_ITEM: ItemType[] = ['Vocabulary', 'Quote'];
 
 /** Number of vocabulary items in a learning session (MEM-21). */
 export const SESSION_SIZE = 5;
@@ -47,7 +50,7 @@ export class LearningService {
   ) {}
 
   async session(userId: string, now = new Date()): Promise<LearningSession> {
-    const where = IN_QUEUE(userId);
+    const where = IN_QUEUE(userId, 'Vocabulary');
     const [total, items] = await Promise.all([
       this.prisma.item.count({ where }),
       this.prisma.item.findMany({
@@ -112,7 +115,7 @@ export class LearningService {
       }),
       this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learning', learnPosition: null } }),
     ]);
-    await renumberQueue(this.prisma, userId); // MEM-61: it left the queue, the next ones move up
+    await renumberQueue(this.prisma, userId, 'Vocabulary'); // MEM-61: it left the queue, the next ones move up
 
     return {
       id: item.id,
@@ -124,15 +127,16 @@ export class LearningService {
   }
 
   /**
-   * "Appris" in a review (MEM-22): the item leaves the review, both its cards
+   * "Appris" in a review (MEM-22): the item leaves the review, its cards
    * with it. Each card gets a `Learned` entry in its history, with its
    * schedule as it stands: nothing is rescheduled, so that putting the item
    * back in learning finds the same schedule.
    * Also at step 2 of a learning session (MEM-46): an item still to learn
    * goes straight to `Learned`, without ever entering the review.
+   * A vocabulary item, or a quote (MEM-67).
    */
   async markLearned(userId: string, itemId: string, now = new Date()) {
-    const item = await this.vocabulary(userId, itemId, ['ToLearn', 'Learning']);
+    const item = await this.learnable(userId, itemId, ['ToLearn', 'Learning']);
 
     await this.prisma.$transaction([
       ...item.cards.map((card) =>
@@ -152,29 +156,29 @@ export class LearningService {
       ),
       this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learned', learnPosition: null } }),
     ]);
-    if (item.learningStatus === 'ToLearn') await renumberQueue(this.prisma, userId); // MEM-61
+    if (item.learningStatus === 'ToLearn') await renumberQueue(this.prisma, userId, item.type); // MEM-61
     return { id: item.id, learningStatus: 'Learned' as const };
   }
 
   /**
-   * MEM-63: the items "En attente" among `ids` join the learning queue, last,
-   * in the order given (that of the list); the others are ignored. A single
-   * transaction.
+   * MEM-63: the items "En attente" among `ids` join the learning queue of
+   * their type, last, in the order given (that of the list); the others are
+   * ignored, those of the other type too (MEM-67). A single transaction.
    */
-  async addToQueue(userId: string, ids: string[]): Promise<{ changed: number; ignored: number }> {
+  async addToQueue(userId: string, type: QueueType, ids: string[]): Promise<{ changed: number; ignored: number }> {
     return this.prisma.$transaction(async (tx) => {
       const waiting = new Set(
         (
           await tx.item.findMany({
-            where: { id: { in: ids }, userId, type: 'Vocabulary', learningStatus: 'Waiting' },
+            where: { id: { in: ids }, userId, type, learningStatus: 'Waiting' },
             select: { id: true },
           })
         ).map((item) => item.id),
       );
       const added = [...new Set(ids)].filter((id) => waiting.has(id));
-      const queue = await queueIds(tx, userId);
+      const queue = await queueIds(tx, userId, type);
       await tx.item.updateMany({ where: { id: { in: added } }, data: { learningStatus: 'ToLearn' } });
-      await renumberQueue(tx, userId, [...queue, ...added]);
+      await renumberQueue(tx, userId, type, [...queue, ...added]);
       return { changed: added.length, ignored: ids.length - added.length };
     });
   }
@@ -183,13 +187,13 @@ export class LearningService {
    * MEM-63: the items of the learning queue among `ids` go back "En attente";
    * the next ones move up. The others are ignored.
    */
-  async removeFromQueue(userId: string, ids: string[]): Promise<{ changed: number; ignored: number }> {
+  async removeFromQueue(userId: string, type: QueueType, ids: string[]): Promise<{ changed: number; ignored: number }> {
     return this.prisma.$transaction(async (tx) => {
       const { count } = await tx.item.updateMany({
-        where: { id: { in: ids }, ...IN_QUEUE(userId) },
+        where: { id: { in: ids }, ...IN_QUEUE(userId, type) },
         data: { learningStatus: 'Waiting', learnPosition: null },
       });
-      await renumberQueue(tx, userId);
+      await renumberQueue(tx, userId, type);
       return { changed: count, ignored: ids.length - count };
     });
   }
@@ -198,15 +202,20 @@ export class LearningService {
    * MEM-64: moves an item of the learning queue to a position (1: the head;
    * beyond the end: last); the others shift. 409 if it is not in the queue.
    */
-  async moveInQueue(userId: string, id: string, position: number): Promise<{ position: number; total: number }> {
+  async moveInQueue(
+    userId: string,
+    type: QueueType,
+    id: string,
+    position: number,
+  ): Promise<{ position: number; total: number }> {
     return this.prisma.$transaction(async (tx) => {
-      const queue = await queueIds(tx, userId);
+      const queue = await queueIds(tx, userId, type);
       const index = queue.indexOf(id);
       if (index === -1) throw new ConflictException(`Item ${id} is not in the learning queue`);
       queue.splice(index, 1);
       const target = Math.min(Math.max(position, 1), queue.length + 1);
       queue.splice(target - 1, 0, id);
-      await renumberQueue(tx, userId, queue);
+      await renumberQueue(tx, userId, type, queue);
       return { position: target, total: queue.length };
     });
   }
@@ -215,35 +224,45 @@ export class LearningService {
    * MEM-64: the items of the learning queue among `ids` go to its head, in
    * their current order; the others are ignored.
    */
-  async moveToTopOfQueue(userId: string, ids: string[]): Promise<{ changed: number; ignored: number }> {
+  async moveToTopOfQueue(
+    userId: string,
+    type: QueueType,
+    ids: string[],
+  ): Promise<{ changed: number; ignored: number }> {
     return this.prisma.$transaction(async (tx) => {
-      const queue = await queueIds(tx, userId);
+      const queue = await queueIds(tx, userId, type);
       const chosen = new Set(ids);
       const top = queue.filter((id) => chosen.has(id));
-      await renumberQueue(tx, userId, [...top, ...queue.filter((id) => !chosen.has(id))]);
+      await renumberQueue(tx, userId, type, [...top, ...queue.filter((id) => !chosen.has(id))]);
       return { changed: top.length, ignored: ids.length - top.length };
     });
   }
 
-  /** "Remettre en apprentissage" (MEM-22): back in the review, with the schedule it had. */
+  /**
+   * "Remettre en apprentissage" (MEM-22), « Remettre en révision » for a
+   * quote (MEM-67): back in the review, with the schedule it had.
+   */
   async relearn(userId: string, itemId: string) {
-    const item = await this.vocabulary(userId, itemId, ['Learned']);
+    const item = await this.learnable(userId, itemId, ['Learned']);
     await this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learning' } });
     return { id: item.id, learningStatus: 'Learning' as const };
   }
 
-  /** The user's vocabulary item, in one of the expected states: 404 or 409 otherwise. */
-  private async vocabulary(userId: string, itemId: string, expected: LearningStatus[]) {
+  /**
+   * The user's vocabulary item or quote (MEM-67), the types learned per
+   * item, in one of the expected states: 404 or 409 otherwise.
+   */
+  private async learnable(userId: string, itemId: string, expected: LearningStatus[]) {
     const item = await this.prisma.item.findFirst({
-      where: { id: itemId, userId, type: 'Vocabulary' },
+      where: { id: itemId, userId, type: { in: LEARNED_PER_ITEM } },
       include: { cards: true },
     });
     if (!item) {
-      throw new NotFoundException(`Vocabulary item ${itemId} not found`);
+      throw new NotFoundException(`Item ${itemId} not found`);
     }
     if (!expected.includes(item.learningStatus)) {
-      throw new ConflictException(`Vocabulary item ${itemId} is not ${expected.join(' or ')}`);
+      throw new ConflictException(`Item ${itemId} is not ${expected.join(' or ')}`);
     }
-    return item;
+    return item as typeof item & { type: QueueType };
   }
 }

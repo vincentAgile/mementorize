@@ -1,7 +1,7 @@
 export type ItemType = 'Quote' | 'Vocabulary' | 'MindMap';
 export type CardKind = 'QuoteRecall' | 'EnglishToFrench' | 'FrenchToEnglish' | 'BranchRecall';
 export type CardState = 'New' | 'Learning' | 'Review' | 'Relearning';
-/** Learning state of an item (MEM-15); only vocabulary leaves `Learning`. */
+/** Learning state of an item (MEM-15): vocabulary and quotes (MEM-67); mind maps are always `Learning`. */
 export type LearningStatus = 'Waiting' | 'ToLearn' | 'Learning' | 'Learned'; // Waiting: MEM-61
 export type ReviewRating = 'Again' | 'Hard' | 'Good' | 'Easy';
 
@@ -39,7 +39,7 @@ export interface CardSummary {
   nodeId: string | null; // mind maps: the branch this card asks about
   due: string;
   state: CardState;
-  learnedAt?: string | null; // quotes and mind map branches marked « Appris » (MEM-48)
+  learnedAt?: string | null; // mind map branches marked « Appris » (MEM-48)
 }
 
 interface ItemBase {

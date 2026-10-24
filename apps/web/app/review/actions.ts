@@ -1,6 +1,6 @@
 'use server';
 
-import { ApiError, markCardLearned, markVocabularyLearned, submitReview } from '../../lib/api';
+import { ApiError, markCardLearned, markItemLearned, submitReview } from '../../lib/api';
 import type { ReviewRating } from '../../lib/types';
 
 const RATINGS: readonly ReviewRating[] = ['Again', 'Hard', 'Good', 'Easy'];
@@ -32,9 +32,8 @@ export async function reviewAction(cardId: string, rating: ReviewRating): Promis
 }
 
 /**
- * "Appris": for vocabulary, the item and its two cards leave the review
- * (MEM-22); for a quote or a mind map branch, only this card (MEM-48).
- * False when refused.
+ * "Appris": for vocabulary and quotes, the item leaves the review (MEM-22,
+ * MEM-67); for a mind map branch, only this card (MEM-48). False when refused.
  */
 export async function learnedAction(target: { itemId: string } | { cardId: string }): Promise<boolean> {
   const itemId = 'itemId' in target ? target.itemId : undefined;
@@ -43,7 +42,7 @@ export async function learnedAction(target: { itemId: string } | { cardId: strin
     throw new Error('Invalid item');
   }
   try {
-    if (itemId !== undefined) await markVocabularyLearned(itemId);
+    if (itemId !== undefined) await markItemLearned(itemId);
     else await markCardLearned(cardId!);
   } catch (error) {
     if (error instanceof ApiError) return false;
