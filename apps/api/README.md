@@ -253,7 +253,7 @@ curl -X PUT http://localhost:3000/profile -H "Authorization: Bearer $TOKEN" \
 
 Un élément de vocabulaire a un état (`items.learningStatus`) : `ToLearn` à la saisie, `Learning` une fois appris, `Learned` quand on le sort de la révision. Seules les cartes des éléments `Learning` sont révisées et comptées (`src/reviews/in-review.ts`) ; citations et cartes mentales sont toujours `Learning`.
 
-États d'un élément de vocabulaire (MEM-61) : `Waiting` (en attente, ni appris ni révisé), `ToLearn` (la file d'apprentissage), `Learning` (révisé), `Learned`. Les éléments `ToLearn` ont une position `learnPosition` (1, 2, 3…, sans trou ni doublon), tenue par `src/learning/learning-queue.ts` : un nouvel élément va en dernier, un élément qui quitte la file (apprentissage, « Appris », suppression) fait remonter les suivants (`renumberQueue`, deux requêtes quelle que soit la taille de la file).
+États d'un élément de vocabulaire (MEM-61) — `POST /vocabulary` le met en fin de file, ou « En attente » avec `queue: false` (MEM-62) : `Waiting` (en attente, ni appris ni révisé), `ToLearn` (la file d'apprentissage), `Learning` (révisé), `Learned`. Les éléments `ToLearn` ont une position `learnPosition` (1, 2, 3…, sans trou ni doublon), tenue par `src/learning/learning-queue.ts` : un nouvel élément va en dernier, un élément qui quitte la file (apprentissage, « Appris », suppression) fait remonter les suivants (`renumberQueue`, deux requêtes quelle que soit la taille de la file).
 
 Le processus d'apprentissage (`src/learning/`) fait passer les éléments de `ToLearn` à `Learning`, dans l'ordre de la file :
 
@@ -317,7 +317,7 @@ L'import se fait en deux temps. `POST /vocabulary-csv/preview { content }` (MEM-
 - un doublon est une expression anglaise **ou** française déjà présente, dans le vocabulaire ou plus haut dans le fichier, sans tenir compte des majuscules ni des espaces en début et fin ; les accents comptent ;
 - un fichier illisible renvoie `{ ok: false, problem }` (`empty`, `tooManyLines`, `syntax`, ou `wrongSeparator` quand les lignes n'ont de sens qu'avec l'autre séparateur).
 
-Puis `POST /vocabulary-csv/import { content }` (MEM-54) analyse le fichier à nouveau (le vocabulaire a pu changer depuis l'aperçu) et crée les lignes `new` en une seule transaction (`ItemsService.createMany`, tout ou rien) : éléments « À apprendre », avec leur thématique et leurs exemples, dans l'ordre du fichier ; leur prononciation est générée en arrière-plan. Réponse : `{ ok: true, imported, duplicate, error }`.
+Puis `POST /vocabulary-csv/import { content }` (MEM-54) analyse le fichier à nouveau (le vocabulaire a pu changer depuis l'aperçu) et crée les lignes `new` en une seule transaction (`ItemsService.createMany`, tout ou rien) : éléments « En attente » (MEM-62), avec leur thématique et leurs exemples, dans l'ordre du fichier ; leur prononciation est générée en arrière-plan. Réponse : `{ ok: true, imported, duplicate, error }`.
 
 Le JSON des requêtes peut atteindre 3 Mo (`main.ts`), pour un fichier de 1 Mo.
 

@@ -31,16 +31,25 @@ export class VocabularyController {
     private readonly pronunciations: PronunciationService,
   ) {}
 
-  /** Creates the word and its two cards (English → French, French → English). */
+  /**
+   * Creates the word and its two cards (English → French, French → English):
+   * last in the learning queue, or "En attente" with { queue: false } (MEM-62).
+   */
   @Post()
   async create(@CurrentUser() user: AuthUser, @Body() dto: CreateVocabularyDto) {
-    const item = await this.items.create(user.id, 'Vocabulary', {
-      word: dto.word,
-      translation: dto.translation,
-      example: dto.example ?? null,
-      frenchExample: dto.frenchExample?.trim() || null,
-      topic: dto.topic?.trim() || null,
-    });
+    const item = await this.items.create(
+      user.id,
+      'Vocabulary',
+      {
+        word: dto.word,
+        translation: dto.translation,
+        example: dto.example ?? null,
+        frenchExample: dto.frenchExample?.trim() || null,
+        topic: dto.topic?.trim() || null,
+      },
+      new Date(),
+      dto.queue === false ? 'Waiting' : 'ToLearn',
+    );
     this.pronunciations.request(item.id); // MEM-39, in the background
     return toVocabularyView(item);
   }

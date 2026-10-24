@@ -87,7 +87,8 @@ export function ImportSection({ separator }: { separator: CsvSeparator }) {
       <p>
         Un fichier CSV au format de l’export : expression française, expression anglaise, puis, facultatives, la
         thématique et les phrases d’exemple en français et en anglais. Séparateur : {SEPARATOR_NAMES[separator]}. La
-        première ligne, celle des en-têtes, est ignorée. Les éléments importés seront « À apprendre ».
+        première ligne, celle des en-têtes, est ignorée. Les éléments importés seront « En attente » : vous les
+        ajouterez à la file d’apprentissage depuis la Liste.
       </p>
 
       {done && 'result' in done && done.result.ok && <Imported result={done.result} onAgain={reset} />}
@@ -305,8 +306,8 @@ function Preview({ analysis, fileName, filter, onFilter, onReset, onImport, impo
       <dialog ref={confirm} className="dialog" aria-labelledby="import-confirm-title">
         <h3 id="import-confirm-title">Importer {plural(summary.new, 'élément')} ?</h3>
         <p>
-          {summary.new > 1 ? `${summary.new}\u00a0éléments seront importés` : '1\u00a0élément sera importé'}, « À
-          apprendre ».
+          {summary.new > 1 ? `${summary.new}\u00a0éléments seront importés` : '1\u00a0élément sera importé'}, en
+          attente, à ajouter ensuite à la file d’apprentissage depuis la Liste.
           {left.length > 0 &&
             ` ${capitalize(left.join(' et '))} ne ${summary.duplicate + summary.error > 1 ? 'seront' : 'sera'} pas intégré${summary.duplicate + summary.error > 1 ? 's' : ''}.`}
         </p>
@@ -350,12 +351,13 @@ function Imported({
               ? '1\u00a0élément importé'
               : 'Aucun élément importé'}
         </strong>
-        {result.imported > 0 && ', « À apprendre »'}.
+        {result.imported > 0 && ', en attente. Ajoutez-les à la file d’apprentissage depuis la Liste'}.
         {result.duplicate + result.error > 0 &&
           ` ${plural(result.duplicate, 'doublon')} et ${plural(result.error, 'ligne')} en erreur laissés de côté.`}
       </p>
       <p className="import-done__links">
-        <Link href="/anglais/liste">Voir la liste</Link>
+        {/* MEM-62: the list filtered on the items "En attente", where they join the queue. */}
+        <Link href="/anglais/liste?etat=Waiting">Voir les éléments en attente</Link>
         <Link href="/anglais">Apprendre · Réviser</Link>
         <button type="button" className="link-button" onClick={onAgain}>
           Importer un autre fichier

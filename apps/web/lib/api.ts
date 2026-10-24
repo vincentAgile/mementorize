@@ -147,8 +147,14 @@ export async function deleteVocabularyItems(ids: string[]): Promise<number> {
   return deleted;
 }
 
-export function createVocabulary(input: CreateVocabularyInput): Promise<unknown> {
-  return authedFetch('/vocabulary', {
+/** The item created: where it went (MEM-62). */
+export interface CreatedVocabulary {
+  learningStatus: 'ToLearn' | 'Waiting';
+  learnPosition: number | null;
+}
+
+export function createVocabulary(input: CreateVocabularyInput): Promise<CreatedVocabulary> {
+  return authedFetch<CreatedVocabulary>('/vocabulary', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
