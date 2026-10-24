@@ -121,7 +121,25 @@ export interface LearningItem {
 
 export interface LearningSession {
   total: number; // all the items still to learn
-  items: LearningItem[]; // up to five, the oldest first
+  items: LearningItem[]; // up to five, the first ones of the learning queue
+}
+
+/** A quote of a learning session (MEM-68): learned in a single step, as it is reviewed. */
+export interface QuoteLearningItem {
+  id: string;
+  cardId: string; // reviewed directly when it comes back in the session (MEM-47)
+  text: string;
+  author: string | null;
+  source: string | null;
+  /** When the card comes back, for each rating. */
+  nextDue: Record<ReviewRating, string>;
+  /** The same once rated « À revoir »: the answers are only sent at the end of the session. */
+  nextDueAfterAgain: Record<ReviewRating, string>;
+}
+
+export interface QuoteLearningSession {
+  total: number; // all the quotes still to learn
+  items: QuoteLearningItem[]; // up to five, the first ones of their learning queue
 }
 
 /** Answer of POST /reviews/:cardId and POST /learning/:itemId: when the card comes back next time. */

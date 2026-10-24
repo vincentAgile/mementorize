@@ -1,10 +1,22 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseEnumPipe,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import type { AuthUser } from '../auth/auth-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { ReviewDto } from '../reviews/dto/review.dto.js';
 import { MoveInQueueDto } from './dto/move-in-queue.dto.js';
 import { QueueItemsDto } from './dto/queue-items.dto.js';
+import type { QueueType } from './learning-queue.js';
 import { LearningService } from './learning.service.js';
 
 @Controller('learning')
@@ -12,10 +24,17 @@ import { LearningService } from './learning.service.js';
 export class LearningController {
   constructor(private readonly learning: LearningService) {}
 
-  /** GET /learning/session — up to five vocabulary items to learn, the oldest first. */
+  /**
+   * GET /learning/session — up to five vocabulary items to learn, the first
+   * ones of the learning queue; ?type=Quote: up to five quotes (MEM-68).
+   */
   @Get('session')
-  session(@CurrentUser() user: AuthUser) {
-    return this.learning.session(user.id);
+  session(
+    @CurrentUser() user: AuthUser,
+    @Query('type', new ParseEnumPipe({ Vocabulary: 'Vocabulary', Quote: 'Quote' }, { optional: true }))
+    type?: QueueType,
+  ) {
+    return type === 'Quote' ? this.learning.quoteSession(user.id) : this.learning.session(user.id);
   }
 
   // The queue routes take { type }: "Vocabulary" (by default) or "Quote" (MEM-67).
@@ -63,7 +82,10 @@ export class LearningController {
     return this.learning.relearn(user.id, itemId);
   }
 
-  /** POST /learning/:itemId { rating } — step 2: first review, the item moves to `Learning`. */
+  /**
+   * POST /learning/:itemId { rating } — the first review of an item to learn
+   * (step 2 for the vocabulary; a quote, MEM-68): it moves to `Learning`.
+   */
   @Post(':itemId')
   learn(@CurrentUser() user: AuthUser, @Param('itemId') itemId: string, @Body() dto: ReviewDto) {
     return this.learning.learn(user.id, itemId, dto.rating);

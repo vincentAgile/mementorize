@@ -12,6 +12,7 @@ import type {
   ImportResult,
   LearningSession,
   Item,
+  QuoteLearningSession,
   ItemType,
   MindMap,
   MindMapNode,
@@ -237,13 +238,21 @@ export function savePreferences(input: Partial<Preferences>): Promise<Preference
   });
 }
 
-/** Up to five vocabulary items to learn, the oldest first (MEM-21). */
+/** Up to five vocabulary items to learn, the first ones of the learning queue (MEM-21). */
 export function getLearningSession(): Promise<LearningSession> {
   return authedFetch<LearningSession>('/learning/session');
 }
 
-/** Step 2 of a learning session: the first review of the French → English card. */
-export function learnVocabulary(itemId: string, rating: ReviewRating): Promise<RatedCard> {
+/** Up to five quotes to learn, the first ones of their learning queue (MEM-68). */
+export function getQuoteLearningSession(): Promise<QuoteLearningSession> {
+  return authedFetch<QuoteLearningSession>('/learning/session?type=Quote');
+}
+
+/**
+ * The first rating of an item to learn, the first review of its card: step 2
+ * of a vocabulary session (French → English), or a quote (MEM-68).
+ */
+export function learnItem(itemId: string, rating: ReviewRating): Promise<RatedCard> {
   return authedFetch<RatedCard>(`/learning/${encodeURIComponent(itemId)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

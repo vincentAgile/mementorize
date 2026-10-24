@@ -37,6 +37,15 @@ describe('LearningService', () => {
     cards: [card('en-fr', 'EnglishToFrench', LATER), card('fr-en', 'FrenchToEnglish', LATER)],
   });
 
+  const quote = (learningStatus = 'ToLearn') => ({
+    id: 'item-1',
+    userId,
+    type: 'Quote',
+    learningStatus,
+    content: { text: 'Connais-toi toi-même.', author: 'Socrate', source: null },
+    cards: [card('q-card', 'QuoteRecall', NOW)],
+  });
+
   beforeEach(async () => {
     vi.clearAllMocks();
     const module = await Test.createTestingModule({
@@ -78,7 +87,59 @@ describe('LearningService', () => {
     });
   });
 
+  describe('quoteSession (MEM-68)', () => {
+    it('picks the five first quotes of their own learning queue, with the previews of their card', async () => {
+      prismaMock.item.count.mockResolvedValue(2);
+      const quoteCard = card('q-card', 'QuoteRecall', NOW);
+      prismaMock.item.findMany.mockResolvedValue([
+        { ...quote(), cards: [quoteCard] },
+        { ...quote(), id: 'item-2', cards: [] }, // no card: left out
+      ]);
+
+      const session = await service.quoteSession(userId, NOW);
+
+      expect(prismaMock.item.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId, type: 'Quote', learningStatus: 'ToLearn' },
+          include: { cards: { where: { kind: 'QuoteRecall' } } },
+          take: 5,
+        }),
+      );
+      expect(session).toEqual({
+        total: 2,
+        items: [
+          {
+            id: 'item-1',
+            cardId: 'q-card',
+            text: 'Connais-toi toi-même.',
+            author: 'Socrate',
+            source: null,
+            nextDue: scheduler.preview(quoteCard, NOW),
+            nextDueAfterAgain: scheduler.preview(scheduler.review(quoteCard, 'Again', NOW).card, NOW),
+          },
+        ],
+      });
+    });
+  });
+
   describe('learn', () => {
+    it('rates the card of a quote and moves it to Learning, the queue of the quotes renumbered (MEM-68)', async () => {
+      prismaMock.item.findFirst.mockResolvedValue(quote());
+
+      const result = await service.learn(userId, 'item-1', 'Hard', NOW);
+
+      const expected = scheduler.review(quote().cards[0], 'Hard', NOW);
+      expect(prismaMock.card.update).toHaveBeenCalledTimes(1);
+      expect(prismaMock.card.update).toHaveBeenCalledWith({ where: { id: 'q-card' }, data: expected.card });
+      expect(prismaMock.reviewLog.create).toHaveBeenCalledWith({ data: { ...expected.log, cardId: 'q-card' } });
+      expect(prismaMock.item.update).toHaveBeenCalledWith({
+        where: { id: 'item-1' },
+        data: { learningStatus: 'Learning', learnPosition: null },
+      });
+      expect(prismaMock.$executeRaw.mock.calls[0].slice(1)).toContain('Quote');
+      expect(result).toMatchObject({ id: 'item-1', learningStatus: 'Learning', nextDue: expected.card.due });
+    });
+
     it('rates the French → English card, makes the other one due now, and moves the item to Learning', async () => {
       prismaMock.item.findFirst.mockResolvedValue(word());
 
