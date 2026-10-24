@@ -68,6 +68,8 @@ enum ItemType {
 /// until the learning process (MEM-21) moves it to `Learning`, the only
 /// state that is reviewed; `Learned` takes it out of the review (MEM-22).
 enum LearningStatus {
+  /// MEM-61: not scheduled for learning yet (an import, for instance).
+  Waiting
   ToLearn
   Learning
   Learned
@@ -87,6 +89,10 @@ model Item {
   /// between the three states; quotes and mind maps are always `Learning`.
   /// Only the cards of `Learning` items are reviewed and counted.
   learningStatus LearningStatus @default(Learning)
+  /// MEM-61: position in the learning queue (1, 2, 3…), for the `ToLearn`
+  /// vocabulary items only; null otherwise. No gap, no duplicate: kept so
+  /// by src/learning/learning-queue.ts.
+  learnPosition Int?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   cards     Card[]

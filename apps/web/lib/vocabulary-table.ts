@@ -20,6 +20,8 @@ export interface VocabularyRow {
   /** MEM-51 */
   topic: string | null;
   status: LearningStatus;
+  /** MEM-61: position in the learning queue, for an item "À apprendre"; null otherwise. */
+  position: number | null;
   createdAt: number;
   /** Due date of the French → English card (MEM-40: the only one reviewed), for an item being learned; null otherwise. */
   nextDue: number | null;
@@ -37,6 +39,7 @@ export function toRow(item: VocabularyItem): VocabularyRow {
     frenchExample: item.content.frenchExample ?? null,
     topic: item.content.topic ?? null,
     status: item.learningStatus,
+    position: item.learningStatus === 'ToLearn' ? (item.learnPosition ?? null) : null,
     createdAt: new Date(item.createdAt).getTime(),
     nextDue: item.learningStatus === 'Learning' && dues.length > 0 ? Math.min(...dues) : null,
   };
@@ -60,7 +63,7 @@ export interface Sort {
 
 // Alphabetical order ignoring case and accents ("élan" next to "elan").
 const collator = new Intl.Collator('fr', { sensitivity: 'base', numeric: true });
-const STATUS_ORDER: Record<LearningStatus, number> = { ToLearn: 0, Learning: 1, Learned: 2 };
+const STATUS_ORDER: Record<LearningStatus, number> = { Waiting: 0, ToLearn: 1, Learning: 2, Learned: 3 };
 
 const COMPARE: Record<SortKey, (a: VocabularyRow, b: VocabularyRow) => number> = {
   english: (a, b) => collator.compare(a.english, b.english),

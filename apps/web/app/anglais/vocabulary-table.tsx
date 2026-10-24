@@ -44,6 +44,8 @@ interface VocabularyTableProps {
   translator: Translator;
   /** Items per page (MEM-58), from the account's preferences. */
   pageSize: number;
+  /** Opened filtered on a state (?etat=Waiting, MEM-61). */
+  initialStatus?: LearningStatus;
 }
 
 /**
@@ -54,9 +56,15 @@ interface VocabularyTableProps {
  * are rendered. The state survives the refresh after an edit or a
  * deletion (same component): same page, same search, filters and sort.
  */
-export function VocabularyTable({ items, now, translator, pageSize: initialPageSize }: VocabularyTableProps) {
+export function VocabularyTable({
+  items,
+  now,
+  translator,
+  pageSize: initialPageSize,
+  initialStatus,
+}: VocabularyTableProps) {
   const [sort, setSortState] = useState<Sort | null>(null);
-  const [filter, setFilterState] = useState<Filter>(NO_FILTER);
+  const [filter, setFilterState] = useState<Filter>({ ...NO_FILTER, status: initialStatus ?? 'all' });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(initialPageSize);
   // MEM-59: the items checked, or all those of the search and filters ("Gmail" selection).

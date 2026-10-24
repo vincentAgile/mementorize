@@ -20,6 +20,7 @@ const plural = (count: number, one: string, many: string) => `${count}${NBSP}${c
 export default async function EnglishLearnReviewPage() {
   const [items, due] = await Promise.all([getItems('Vocabulary'), getDueReviews(1, 'Vocabulary')]);
   const toLearn = items.filter((item) => item.learningStatus === 'ToLearn').length;
+  const waiting = items.filter((item) => item.learningStatus === 'Waiting').length; // MEM-61
 
   if (items.length === 0) {
     return (
@@ -43,6 +44,12 @@ export default async function EnglishLearnReviewPage() {
               Apprendre <span className="space__review-count">{toLearn}</span>
             </Link>
           </>
+        ) : waiting > 0 ? (
+          // MEM-61: the items "En attente" are not learned until they join the queue.
+          <p className="learn-review__none">
+            Rien à apprendre · {plural(waiting, 'élément en attente', 'éléments en attente')}.{' '}
+            <Link href="/anglais/liste?etat=Waiting">Voir les éléments en attente</Link>
+          </p>
         ) : (
           <p className="learn-review__none">
             Rien à apprendre. <Link href="/anglais/ajouter">Ajouter des éléments</Link>
