@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { spaceOf } from '../../lib/spaces';
-import { SpacePage } from '../spaces/space-page';
+import { LearnReview } from '../spaces/learn-review';
 
-export const metadata: Metadata = { title: 'Citations' };
+export const metadata: Metadata = { title: 'Apprendre · Réviser · Citations' };
 
-export default function CitationsPage() {
-  return <SpacePage space={spaceOf('Quote')} />;
+/** Tab "Apprendre · Réviser" of the Citations space (MEM-66), the default one: as in the Anglais space. */
+export default function QuotesLearnReviewPage() {
+  return <LearnReview space={spaceOf('Quote')} />;
 }

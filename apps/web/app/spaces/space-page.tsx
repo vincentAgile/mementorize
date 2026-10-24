@@ -11,9 +11,9 @@ import { ItemForm } from '../items/item-form';
 import { RelearnCardButton } from '../items/relearn-card-button';
 
 /**
- * The page of a subject space (MEM-2): the items of a single type. Citations
- * and Cartes mentales use it (each route only says which space it is); the
- * Anglais space has its own tabs since v0.4 (app/anglais/layout.tsx).
+ * The page of a subject space (MEM-2): the items of a single type. Cartes
+ * mentales uses it; the Anglais space has its own tabs since v0.4
+ * (app/anglais/layout.tsx), the Citations space since v0.12 (MEM-66).
  *
  * Server Component: the data is fetched on the Next.js server (with the
  * session's token), and the browser receives ready-made HTML.
@@ -48,26 +48,33 @@ export async function SpacePage({ space }: { space: Space }) {
         {items.length === 0 ? (
           <p className="space__empty">{space.emptyText}</p>
         ) : (
-          <ul className="items__list">
-            {items.map((item) => (
-              <li key={item.id}>
-                <ItemContent item={item} />
-                <p className="items__schedule">
-                  {item.learningStatus !== 'Learning'
-                    ? LEARNING_STATUS_LABELS[item.learningStatus] // not reviewed: no schedule to show (MEM-15)
-                    : item.cards?.length
-                      ? item.cards.map((card) => scheduleLabel(item, card, now)).join(' · ')
-                      : 'Pas encore de branche : rien à réviser'}
-                </p>
-                {item.type === 'Quote' && item.cards?.[0]?.learnedAt && (
-                  <RelearnCardButton cardId={item.cards[0].id} what="cette citation" />
-                )}
-              </li>
-            ))}
-          </ul>
+          <SpaceItems items={items} now={now} />
         )}
       </main>
     </>
+  );
+}
+
+/** The items of a space, each with its schedule. */
+export function SpaceItems({ items, now }: { items: Item[]; now: Date }) {
+  return (
+    <ul className="items__list">
+      {items.map((item) => (
+        <li key={item.id}>
+          <ItemContent item={item} />
+          <p className="items__schedule">
+            {item.learningStatus !== 'Learning'
+              ? LEARNING_STATUS_LABELS[item.learningStatus] // not reviewed: no schedule to show (MEM-15)
+              : item.cards?.length
+                ? item.cards.map((card) => scheduleLabel(item, card, now)).join(' · ')
+                : 'Pas encore de branche : rien à réviser'}
+          </p>
+          {item.type === 'Quote' && item.cards?.[0]?.learnedAt && (
+            <RelearnCardButton cardId={item.cards[0].id} what="cette citation" />
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 
