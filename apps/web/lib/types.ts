@@ -67,6 +67,7 @@ export interface CreateQuoteInput {
   text: string;
   author?: string;
   source?: string;
+  queue?: boolean; // MEM-71: false, the quote is "En attente" (true by default)
 }
 
 export interface CreateVocabularyInput {
