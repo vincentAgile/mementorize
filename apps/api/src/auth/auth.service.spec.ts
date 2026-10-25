@@ -1,17 +1,27 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import bcrypt from 'bcryptjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ActivityService } from '../users/activity.service.js';
 import { UsersService } from '../users/users.service.js';
 import { AuthService } from './auth.service.js';
+import { SessionsService } from './sessions.service.js';
 
 describe('AuthService', () => {
   let service: AuthService;
 
   const usersMock = {
     findByEmail: vi.fn(),
+    findById: vi.fn(),
     create: vi.fn(),
+  };
+  const activityMock = { touch: vi.fn().mockResolvedValue(undefined) };
+  const EXPIRES = new Date('2026-11-24T18:00:00Z');
+  const sessionsMock = {
+    start: vi.fn(),
+    renew: vi.fn(),
+    revoke: vi.fn(),
   };
   const jwtMock = {
     signAsync: vi.fn().mockResolvedValue('signed.jwt.token'),
@@ -20,12 +30,15 @@ describe('AuthService', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     jwtMock.signAsync.mockResolvedValue('signed.jwt.token');
+    sessionsMock.start.mockResolvedValue({ refreshToken: 'refresh-1', refreshExpiresAt: EXPIRES });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: UsersService, useValue: usersMock },
         { provide: JwtService, useValue: jwtMock },
+        { provide: ActivityService, useValue: activityMock },
+        { provide: SessionsService, useValue: sessionsMock },
       ],
     }).compile();
 
@@ -41,14 +54,16 @@ describe('AuthService', () => {
         passwordHash,
       }));
 
-      const result = await service.register({ email: ' Vincent@Example.com ', password: 'correct horse' });
+      const result = await service.register({ email: ' Vincent@Example.com ', password: 'correct horse' }, 'Firefox');
 
       const [email, passwordHash] = usersMock.create.mock.calls[0];
       expect(email).toBe('vincent@example.com'); // normalized
       expect(passwordHash).not.toBe('correct horse');
       expect(await bcrypt.compare('correct horse', passwordHash)).toBe(true);
       expect(jwtMock.signAsync).toHaveBeenCalledWith({ sub: 'user-1', email: 'vincent@example.com' });
-      expect(result).toEqual({ accessToken: 'signed.jwt.token' });
+      // MEM-85: a session, with its renewal token, for this browser.
+      expect(result).toEqual({ accessToken: 'signed.jwt.token', refreshToken: 'refresh-1', refreshExpiresAt: EXPIRES });
+      expect(sessionsMock.start).toHaveBeenCalledWith('user-1', 'Firefox');
     });
 
     it('refuses an email that is already taken', async () => {
@@ -84,6 +99,36 @@ describe('AuthService', () => {
       usersMock.findByEmail.mockResolvedValue(null);
 
       expect(await service.validateUser('nobody@example.com', 'correct horse')).toBeNull();
+    });
+  });
+
+  describe('login', () => {
+    it('records the activity of the user (MEM-83)', async () => {
+      await service.login({ id: 'user-1', email: 'a@b.c' });
+      expect(activityMock.touch).toHaveBeenCalledWith('user-1');
+    });
+  });
+
+  describe('refresh (MEM-85)', () => {
+    it('gives a new access token and a new renewal token, and records the activity (MEM-83)', async () => {
+      sessionsMock.renew.mockResolvedValue({ userId: 'user-1', refreshToken: 'refresh-2', refreshExpiresAt: EXPIRES });
+      usersMock.findById.mockResolvedValue({ id: 'user-1', email: 'a@b.c' });
+
+      const session = await service.refresh('refresh-1');
+
+      expect(session).toEqual({
+        accessToken: 'signed.jwt.token',
+        refreshToken: 'refresh-2',
+        refreshExpiresAt: EXPIRES,
+      });
+      expect(jwtMock.signAsync).toHaveBeenCalledWith({ sub: 'user-1', email: 'a@b.c' });
+      expect(activityMock.touch).toHaveBeenCalledWith('user-1');
+    });
+
+    it('refuses when the account no longer exists', async () => {
+      sessionsMock.renew.mockResolvedValue({ userId: 'gone', refreshToken: 'r', refreshExpiresAt: EXPIRES });
+      usersMock.findById.mockResolvedValue(null);
+      await expect(service.refresh('refresh-1')).rejects.toThrow(UnauthorizedException);
     });
   });
 });

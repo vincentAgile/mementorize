@@ -196,6 +196,15 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
 
 Avec `COMPOSE_FILE`, un simple `docker compose …` utilise les deux fichiers, sans avoir à taper `-f docker-compose.yml -f docker-compose.prod.yml` à chaque fois. `WEB_PORT` ne sert pas en production.
 
+**Durée des sessions** (facultatif, MEM-85) : l'utilisateur reste connecté tant qu'il utilise l'application. Un jeton d'accès court, renouvelé sans qu'il le voie, et un jeton de renouvellement long, prolongé à chaque utilisation. Valeurs par défaut, en secondes :
+
+```bash
+ACCESS_TOKEN_TTL=900         # jeton d'accès : 15 minutes
+REFRESH_TOKEN_TTL=2592000    # sans aucune utilisation pendant 30 jours : nouvelle connexion
+```
+
+L'ancienne variable `JWT_EXPIRES_IN` n'est plus lue : elle peut être retirée de `.env`.
+
 Le mot de passe de la base n'est lu qu'à la **création** du volume : le changer ensuite dans `.env` ne change pas celui de la base existante.
 
 ## 9. Préparer le déploiement continu
@@ -516,6 +525,35 @@ Le conteneur `kokoro` génère la prononciation de chaque élément de vocabulai
 - **Désactiver** : `KOKORO_URL=` (vide) dans `.env`, puis `docker rollout api` ; l'audio déjà généré n'est plus produit pour les nouveaux éléments, les voix du navigateur prennent le relais. `docker compose stop kokoro` libère la mémoire.
 - **Journaux** : avertissements et erreurs seulement (`API_LOG_LEVEL: WARNING`), plus une ligne par requête ; au plus 3 × 10 Mo sur le disque. Pour tout voir le temps d'un diagnostic, `API_LOG_LEVEL: DEBUG` dans `docker-compose.yml`.
 - **Mettre à jour Kokoro** : changer la version de l'image dans `docker-compose.yml` ; le déploiement suivant la télécharge et recrée le conteneur.
+
+## Console d'administration (MEM-82)
+
+Une console séparée de l'application, à l'adresse `https://<domaine>/admin`. Aucun lien n'y mène depuis l'application. Elle a ses propres comptes, sans rapport avec ceux des utilisateurs : un compte utilisateur ne l'ouvre jamais.
+
+**Activer la console** : un secret à elle, différent de `JWT_SECRET`. Sans ce secret, la console reste fermée et sa page de connexion le dit.
+
+```bash
+openssl rand -hex 32    # → ADMIN_JWT_SECRET
+nano .env
+#   ADMIN_JWT_SECRET="<résultat>"
+#   ADMIN_SESSION_TTL=7200        # facultatif : durée d'une session, en secondes (2 h)
+docker compose up -d api
+```
+
+**Les comptes** : uniquement en ligne de commande, sur le serveur. Aucune page ne permet d'en créer. Le mot de passe (12 caractères au moins) est demandé deux fois, sans s'afficher.
+
+```bash
+docker compose exec api node dist/admin/admin-cli.js create admin@exemple.fr
+docker compose exec api node dist/admin/admin-cli.js password admin@exemple.fr   # changer le mot de passe
+docker compose exec api node dist/admin/admin-cli.js delete admin@exemple.fr     # supprimer : l'accès cesse aussitôt
+docker compose exec api node dist/admin/admin-cli.js list
+```
+
+**Sécurité** :
+
+- la session dure 2 heures, sans prolongation ; « Déconnexion » la termine ;
+- après 5 échecs de connexion en 15 minutes depuis une même adresse, les connexions depuis cette adresse sont refusées le temps que les échecs sortent de la fenêtre ;
+- les pages ne sont ni indexées ni mises en cache.
 
 ## Sauvegarder et restaurer
 

@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
+import { PrismaService } from '../src/prisma/prisma.service.js';
 
 /**
  * End-to-end: the whole Nest application, on a real PostgreSQL database
@@ -53,6 +54,67 @@ describe('API (e2e)', () => {
 
     const me = await http().get('/auth/me').set('Authorization', `Bearer ${token}`).expect(200);
     expect(me.body.email).toBe(`alice-${unique}@e2e.test`);
+  });
+
+  it('keeps a sliding session with renewal tokens, rotated, revoked on reuse and at logout (MEM-85)', async () => {
+    const login = await http()
+      .post('/auth/register')
+      .set('User-Agent', 'Firefox e2e')
+      .send({ email: `slide-${unique}@e2e.test`, password: 'password123' })
+      .expect(201);
+    expect(login.body).toEqual({
+      accessToken: expect.any(String),
+      refreshToken: expect.stringMatching(/^[0-9a-f-]{36}\./),
+      refreshExpiresAt: expect.any(String),
+    });
+
+    // Renewed: a new access token that works, and a new renewal token.
+    const renewed = await http().post('/auth/refresh').send({ refreshToken: login.body.refreshToken }).expect(200);
+    expect(renewed.body.refreshToken).not.toBe(login.body.refreshToken);
+    await http().get('/auth/me').set('Authorization', `Bearer ${renewed.body.accessToken}`).expect(200);
+    const stored = await app.get(PrismaService).refreshToken.findMany({
+      where: { user: { email: `slide-${unique}@e2e.test` } },
+    });
+    expect(stored).toHaveLength(2);
+    expect(stored[0].device).toBe('Firefox e2e');
+
+    // A second login, on another device.
+    const other = await http()
+      .post('/auth/login')
+      .send({ email: `slide-${unique}@e2e.test`, password: 'password123' })
+      .expect(200);
+
+    // The first token, already used, comes back long after: the session of that device ends.
+    await app
+      .get(PrismaService)
+      .refreshToken.updateMany({ where: { id: login.body.refreshToken.split('.')[0] }, data: { usedAt: new Date(0) } });
+    await http().post('/auth/refresh').send({ refreshToken: login.body.refreshToken }).expect(401);
+    await http().post('/auth/refresh').send({ refreshToken: renewed.body.refreshToken }).expect(401);
+    // Not the other device's.
+    const otherRenewed = await http().post('/auth/refresh').send({ refreshToken: other.body.refreshToken }).expect(200);
+
+    // Logout: that session is over.
+    await http().post('/auth/logout').send({ refreshToken: otherRenewed.body.refreshToken }).expect(204);
+    await http().post('/auth/refresh').send({ refreshToken: otherRenewed.body.refreshToken }).expect(401);
+    await http().post('/auth/refresh').send({}).expect(400);
+    await http().post('/auth/logout').send({ refreshToken: 'unknown.token' }).expect(204);
+  });
+
+  it('records the last activity of a user, to the hour (MEM-83)', async () => {
+    const prisma = app.get(PrismaService);
+    const before = Date.now();
+    const token = await register('activity');
+    const email = `activity-${unique}@e2e.test`;
+    const lastActive = async () =>
+      (await prisma.user.findUniqueOrThrow({ where: { email }, select: { lastActiveAt: true } })).lastActiveAt;
+
+    const registered = await lastActive();
+    expect(registered!.getTime()).toBeGreaterThanOrEqual(before - 1000); // the registration
+
+    // An authenticated call within the hour: not rewritten.
+    await http().get('/items').set('Authorization', `Bearer ${token}`).expect(200);
+    await new Promise((resolve) => setTimeout(resolve, 100)); // recorded in the background
+    expect(await lastActive()).toEqual(registered);
   });
 
   it("creates an item with its review card, and keeps it out of other users' reach", async () => {

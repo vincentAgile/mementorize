@@ -5,6 +5,8 @@ import { PassportModule } from '@nestjs/passport';
 import { UsersModule } from '../users/users.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
+import { DEFAULT_ACCESS_TOKEN_TTL } from './auth-user.js';
+import { SessionsService } from './sessions.service.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { LocalStrategy } from './strategies/local.strategy.js';
 
@@ -20,14 +22,15 @@ import { LocalStrategy } from './strategies/local.strategy.js';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.getOrThrow<string>('JWT_SECRET'),
-        signOptions: { expiresIn: Number(config.get('JWT_EXPIRES_IN') ?? 3600) },
+        // MEM-85: short, renewed silently with the renewal token.
+        signOptions: { expiresIn: Number(config.get('ACCESS_TOKEN_TTL') ?? DEFAULT_ACCESS_TOKEN_TTL) },
       }),
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [AuthService, SessionsService, LocalStrategy, JwtStrategy],
   // Modules that use JwtAuthGuard (e.g. QuotesModule) import AuthModule:
   // the guard needs PassportModule's configuration to be visible there.
-  exports: [PassportModule],
+  exports: [PassportModule, SessionsService],
 })
 export class AuthModule {}

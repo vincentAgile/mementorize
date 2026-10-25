@@ -67,7 +67,15 @@ Sans token (ou avec un token expiré) : `401 Unauthorized`.
 
 - `POST /auth/register` : le mot de passe est haché avec **bcryptjs** (coût 12) ; seul le hash est stocké (`users.passwordHash`).
 - `POST /auth/login` : `LocalAuthGuard` déclenche la `LocalStrategy` de Passport, qui compare le mot de passe au hash.
-- Dans les deux cas l'API renvoie un **JWT** signé avec `JWT_SECRET`, valable `JWT_EXPIRES_IN` secondes.
+- Dans les deux cas l'API renvoie une **session** (MEM-85) :
+  - un **jeton d'accès** (JWT signé avec `JWT_SECRET`), valable `ACCESS_TOKEN_TTL` secondes (15 min) ;
+  - un **jeton de renouvellement** valable `REFRESH_TOKEN_TTL` secondes (30 jours). Il est stocké haché dans `refresh_tokens`, avec le navigateur d'origine.
+- `POST /auth/refresh` échange le jeton de renouvellement contre une nouvelle paire. L'ancien jeton devient inutilisable : c'est ce qui rend la session glissante.
+  - Présenté de nouveau plus de 30 s après (signe de vol), il révoque toute la session de cet appareil.
+  - Le serveur Next.js fait ce renouvellement de façon transparente, dans `proxy.ts`.
+- `POST /auth/logout` révoque la session de l'appareil.
+- `SessionsService.revokeAll` révoque toutes les sessions d'un utilisateur.
+- Les jetons expirés ou révoqués sont purgés chaque nuit.
 - Les routes protégées utilisent `JwtAuthGuard` → `JwtStrategy` vérifie la signature et l'expiration du token, puis place `{ id, email }` dans `request.user` (lu via le décorateur `@CurrentUser()`).
 - `QuotesService` filtre toujours par `userId` : la quote d'un autre utilisateur renvoie un 404, comme si elle n'existait pas.
 
