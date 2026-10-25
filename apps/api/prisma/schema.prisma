@@ -280,5 +280,28 @@ model AdminAccount {
   createdAt    DateTime  @default(now())
   lastLoginAt  DateTime?
 
+  /// MEM-86: the TOTP secret of the two-step login, encrypted
+  /// (ADMIN_TOTP_ENCRYPTION_KEY). Null until it is activated.
+  totpSecret       String?
+  totpEnabledAt    DateTime?
+  /// The time step (30 s) of the last code accepted: a code is never accepted twice.
+  totpLastStep     Int?
+  /// The secret shown while it is being activated, encrypted, until a first code confirms it.
+  totpPendingSecret String?
+  recoveryCodes    AdminRecoveryCode[]
+
   @@map("admin_accounts")
+}
+
+/// MEM-86: the single-use codes of an administrator who lost their phone.
+/// Stored hashed; shown once, at the activation of the two-step login.
+model AdminRecoveryCode {
+  id        String       @id @default(uuid())
+  adminId   String
+  admin     AdminAccount @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  codeHash  String
+  usedAt    DateTime?
+
+  @@index([adminId])
+  @@map("admin_recovery_codes")
 }

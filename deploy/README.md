@@ -530,21 +530,31 @@ Le conteneur `kokoro` génère la prononciation de chaque élément de vocabulai
 
 Une console séparée de l'application, à l'adresse `https://<domaine>/admin`. Aucun lien n'y mène depuis l'application. Elle a ses propres comptes, sans rapport avec ceux des utilisateurs : un compte utilisateur ne l'ouvre jamais.
 
-**Activer la console** : un secret à elle, différent de `JWT_SECRET`. Sans ce secret, la console reste fermée et sa page de connexion le dit.
+**Activer la console** : deux valeurs à elle.
+
+- `ADMIN_JWT_SECRET` signe ses sessions ; il doit différer de `JWT_SECRET`.
+- `ADMIN_TOTP_ENCRYPTION_KEY` chiffre les clés de double authentification en base (MEM-86).
+
+Sans l'une ou l'autre, la console reste fermée et sa page de connexion le dit.
 
 ```bash
 openssl rand -hex 32    # → ADMIN_JWT_SECRET
+openssl rand -hex 32    # → ADMIN_TOTP_ENCRYPTION_KEY
 nano .env
-#   ADMIN_JWT_SECRET="<résultat>"
+#   ADMIN_JWT_SECRET="<1er résultat>"
+#   ADMIN_TOTP_ENCRYPTION_KEY="<2e résultat>"
 #   ADMIN_SESSION_TTL=7200        # facultatif : durée d'une session, en secondes (2 h)
 docker compose up -d api
 ```
+
+**Garder `ADMIN_TOTP_ENCRYPTION_KEY`** avec la sauvegarde du `.env`. Si elle est perdue ou changée, les clés enregistrées deviennent illisibles : il faut alors réinitialiser la double authentification de chaque compte (`reset-2fa`, ci-dessous).
 
 **Les comptes** : uniquement en ligne de commande, sur le serveur. Aucune page ne permet d'en créer. Le mot de passe (12 caractères au moins) est demandé deux fois, sans s'afficher.
 
 ```bash
 docker compose exec api node dist/admin/admin-cli.js create admin@exemple.fr
 docker compose exec api node dist/admin/admin-cli.js password admin@exemple.fr   # changer le mot de passe
+docker compose exec api node dist/admin/admin-cli.js reset-2fa admin@exemple.fr  # téléphone et codes de secours perdus
 docker compose exec api node dist/admin/admin-cli.js delete admin@exemple.fr     # supprimer : l'accès cesse aussitôt
 docker compose exec api node dist/admin/admin-cli.js list
 ```
@@ -552,7 +562,7 @@ docker compose exec api node dist/admin/admin-cli.js list
 **Sécurité** :
 
 - la session dure 2 heures, sans prolongation ; « Déconnexion » la termine ;
-- après 5 échecs de connexion en 15 minutes depuis une même adresse, les connexions depuis cette adresse sont refusées le temps que les échecs sortent de la fenêtre ;
+- après 5 échecs (mot de passe ou code) en 15 minutes depuis une même adresse, les connexions depuis cette adresse sont refusées le temps que les échecs sortent de la fenêtre ;
 - les pages ne sont ni indexées ni mises en cache.
 
 ## Sauvegarder et restaurer

@@ -13,6 +13,9 @@ export const REFRESH_COOKIE = 'mementorize_refresh';
 /** MEM-82: the session of the administration console, under /admin only. */
 export const ADMIN_COOKIE = 'mementorize_admin';
 
+/** MEM-86: the step between the password and the code (5 minutes), under /admin only. */
+export const ADMIN_STEP_COOKIE = 'mementorize_admin_step';
+
 /** What the API gives at login, registration and renewal. */
 export interface ApiSession {
   accessToken: string;

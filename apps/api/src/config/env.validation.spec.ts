@@ -50,5 +50,7 @@ describe('validateEnv', () => {
     expect(validateEnv({ ...valid, ADMIN_JWT_SECRET: 'another-secret', ADMIN_SESSION_TTL: '7200' })).toBeTruthy();
     expect(() => validateEnv({ ...valid, ADMIN_JWT_SECRET: valid.JWT_SECRET })).toThrow(/must differ/);
     expect(() => validateEnv({ ...valid, ADMIN_SESSION_TTL: '0' })).toThrow(/ADMIN_SESSION_TTL/);
+    expect(validateEnv({ ...valid, ADMIN_TOTP_ENCRYPTION_KEY: 'ab'.repeat(32) })).toBeTruthy(); // MEM-86
+    expect(() => validateEnv({ ...valid, ADMIN_TOTP_ENCRYPTION_KEY: 'short' })).toThrow(/64 hexadecimal/);
   });
 });

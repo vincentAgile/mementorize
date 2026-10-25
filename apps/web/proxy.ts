@@ -55,8 +55,9 @@ export async function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-/** Where the console is reachable without its session. */
-const ADMIN_PUBLIC_PATHS = ['/admin/connexion', '/admin/session-expiree'];
+/** Where the console is reachable without its session: its login (password, code, activation). */
+const isAdminPublic = (pathname: string) =>
+  pathname === '/admin/session-expiree' || pathname === '/admin/connexion' || pathname.startsWith('/admin/connexion/');
 
 /**
  * MEM-82: the administration console has nothing to do with the users'
@@ -66,7 +67,7 @@ const ADMIN_PUBLIC_PATHS = ['/admin/connexion', '/admin/session-expiree'];
 function admin(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
   const response =
-    !ADMIN_PUBLIC_PATHS.includes(pathname) && !request.cookies.has(ADMIN_COOKIE)
+    !isAdminPublic(pathname) && !request.cookies.has(ADMIN_COOKIE)
       ? NextResponse.redirect(new URL('/admin/connexion', request.url))
       : NextResponse.next();
   response.headers.set('X-Robots-Tag', 'noindex, nofollow');

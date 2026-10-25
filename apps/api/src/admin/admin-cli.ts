@@ -4,6 +4,7 @@
  *
  *   docker compose exec api node dist/admin/admin-cli.js create <e-mail>
  *   docker compose exec api node dist/admin/admin-cli.js password <e-mail>
+ *   docker compose exec api node dist/admin/admin-cli.js reset-2fa <e-mail>
  *   docker compose exec api node dist/admin/admin-cli.js delete <e-mail>
  *   docker compose exec api node dist/admin/admin-cli.js list
  *
@@ -19,6 +20,7 @@ const BCRYPT_ROUNDS = 12;
 const USAGE = `Usage : node dist/admin/admin-cli.js <commande>
   create <e-mail>     crée un compte d'administration (mot de passe demandé)
   password <e-mail>   change son mot de passe
+  reset-2fa <e-mail>  réinitialise sa double authentification (téléphone perdu)
   delete <e-mail>     supprime le compte
   list                liste les comptes`;
 
@@ -84,6 +86,20 @@ export async function run(args: string[], prisma: PrismaService, prompt = newPas
       await prisma.adminAccount.update({ where: { email }, data: { passwordHash } });
       return `Mot de passe changé : ${email}. Ses sessions en cours restent valables jusqu'à leur expiration (2 h au plus).`;
     }
+    case 'reset-2fa': {
+      // MEM-86: phone and recovery codes lost. The account activates it again at its next login.
+      const email = normalized(argument);
+      const account = await prisma.adminAccount.findUnique({ where: { email } });
+      if (!account) throw new Error(`Aucun compte ${email}.`);
+      await prisma.$transaction([
+        prisma.adminAccount.update({
+          where: { email },
+          data: { totpSecret: null, totpEnabledAt: null, totpLastStep: null, totpPendingSecret: null },
+        }),
+        prisma.adminRecoveryCode.deleteMany({ where: { adminId: account.id } }),
+      ]);
+      return `Double authentification réinitialisée : ${email}. Ses sessions en cours sont terminées ; à la prochaine connexion, elle sera activée de nouveau.`;
+    }
     case 'delete': {
       const email = normalized(argument);
       const { count } = await prisma.adminAccount.deleteMany({ where: { email } });
@@ -95,7 +111,11 @@ export async function run(args: string[], prisma: PrismaService, prompt = newPas
       if (accounts.length === 0) return "Aucun compte d'administration.";
       const date = (value: Date | null) => value?.toISOString().slice(0, 16).replace('T', ' ') ?? 'jamais';
       return accounts
-        .map((one) => `${one.email}  (créé le ${date(one.createdAt)}, dernière connexion : ${date(one.lastLoginAt)})`)
+        .map(
+          (one) =>
+            `${one.email}  (créé le ${date(one.createdAt)}, dernière connexion : ${date(one.lastLoginAt)}, ` +
+            `double authentification : ${one.totpEnabledAt ? 'active' : 'à activer'})`,
+        )
         .join('\n');
     }
     default:

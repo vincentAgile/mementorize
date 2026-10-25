@@ -74,6 +74,8 @@ services:
       REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-2592000}
       # Administration console (MEM-82): off without ADMIN_JWT_SECRET.
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:-}
+      # Encrypts the two-step login keys (MEM-86); the console is off without it.
+      ADMIN_TOTP_ENCRYPTION_KEY: ${ADMIN_TOTP_ENCRYPTION_KEY:-}
       ADMIN_SESSION_TTL: ${ADMIN_SESSION_TTL:-7200}
       PORT: 3000
       # E-mail reminders (phase 11). Without SMTP_HOST, nothing is sent.

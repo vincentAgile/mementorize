@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { run } from '../src/admin/admin-cli.js';
+import { timeStep, totpCode } from '../src/admin/totp.js';
 import { AppModule } from '../src/app.module.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 
@@ -15,9 +16,47 @@ describe('Administration console (e2e)', () => {
   const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const email = `admin-${unique}@e2e.test`;
   const password = 'a long admin password';
+  /** The key of the authenticator app, once the two-step login is activated (MEM-86). */
+  let totpSecret = '';
+  /**
+   * A code of the app, as if 30 s had passed since the last one: a code is
+   * accepted once per 30 s step (anti-replay), and these tests log in more
+   * often than that. The replay itself is tested without this.
+   */
+  async function nextCode(): Promise<string> {
+    const step = timeStep(new Date());
+    await prisma.adminAccount.updateMany({
+      where: { email, totpLastStep: { gte: step - 1 } },
+      data: { totpLastStep: step - 2 },
+    });
+    return totpCode(totpSecret, step);
+  }
+
+  /** Password, then code (or the activation, the first time): a session (MEM-86). */
+  async function adminSession(ip: string): Promise<{ Authorization: string }> {
+    const client = { 'X-Admin-Client-IP': ip };
+    const login = await http().post('/admin/auth/login').set(client).send({ email, password }).expect(200);
+    if (login.body.step === 'activation') {
+      const { challenge } = login.body;
+      totpSecret = (await http().post('/admin/auth/enrollment').send({ challenge }).expect(200)).body.secret;
+      const activated = await http()
+        .post('/admin/auth/activate')
+        .set(client)
+        .send({ challenge, code: await nextCode() })
+        .expect(200);
+      return { Authorization: `Bearer ${activated.body.accessToken}` };
+    }
+    const verified = await http()
+      .post('/admin/auth/verify')
+      .set(client)
+      .send({ challenge: login.body.challenge, code: await nextCode() })
+      .expect(200);
+    return { Authorization: `Bearer ${verified.body.accessToken}` };
+  }
 
   beforeAll(async () => {
     process.env.ADMIN_JWT_SECRET = 'e2e-admin-secret';
+    process.env.ADMIN_TOTP_ENCRYPTION_KEY = 'e2e0'.repeat(16);
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = moduleRef.createNestApplication<NestExpressApplication>();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -45,12 +84,10 @@ describe('Administration console (e2e)', () => {
 
   it('logs an administrator in, and keeps the users out', async () => {
     const client = { 'X-Admin-Client-IP': `10.0.0.${Math.floor(Math.random() * 200)}` };
-    const login = await http().post('/admin/auth/login').set(client).send({ email, password }).expect(200);
-    expect(login.body).toMatchObject({ email, accessToken: expect.any(String), expiresAt: expect.any(String) });
-    const admin = { Authorization: `Bearer ${login.body.accessToken}` };
+    const admin = await adminSession(client['X-Admin-Client-IP']);
 
     const me = await http().get('/admin/auth/me').set(admin).expect(200);
-    expect(me.body).toEqual({ id: expect.any(String), email });
+    expect(me.body).toEqual({ id: expect.any(String), email, recoveryCodesLeft: 10 });
     await http().get('/admin/auth/me').expect(401);
     expect((await prisma.adminAccount.findUniqueOrThrow({ where: { email } })).lastLoginAt).not.toBeNull();
 
@@ -84,13 +121,65 @@ describe('Administration console (e2e)', () => {
     await http().post('/admin/auth/login').set(client).send({ email, password }).expect(429);
   });
 
-  it('lists the users with their counters, never the content of their items (MEM-84)', async () => {
-    const login = await http()
-      .post('/admin/auth/login')
-      .set('X-Admin-Client-IP', '10.3.0.1')
-      .send({ email, password })
+  it('asks for the code of the authenticator app, once only per code, or a recovery code (MEM-86)', async () => {
+    const client = { 'X-Admin-Client-IP': '10.4.0.1' };
+    await adminSession('10.4.0.9'); // activated, if not yet
+    const login = await http().post('/admin/auth/login').set(client).send({ email, password }).expect(200);
+    expect(login.body).toEqual({ step: 'code', challenge: expect.any(String), expiresAt: expect.any(String) });
+    const { challenge } = login.body;
+    // The step is not a session.
+    await http().get('/admin/auth/me').set('Authorization', `Bearer ${challenge}`).expect(401);
+    await http().post('/admin/auth/verify').set(client).send({ challenge, code: '000000' }).expect(401);
+    const code = await nextCode();
+    await http().post('/admin/auth/verify').set(client).send({ challenge, code }).expect(200);
+    await http().post('/admin/auth/verify').set(client).send({ challenge, code }).expect(401); // replayed
+    await http()
+      .post('/admin/auth/verify')
+      .set(client)
+      .send({ challenge: 'forged', code: await nextCode() })
+      .expect(410);
+    await http().post('/admin/auth/enrollment').send({ challenge }).expect(410); // a login step, not an activation
+
+    // A recovery code: the codes were given at the activation; here, a new set by a reset.
+    expect(await run(['reset-2fa', email], prisma)).toContain(email);
+    const again = await http().post('/admin/auth/login').set(client).send({ email, password }).expect(200);
+    expect(again.body.step).toBe('activation'); // to be activated again
+    totpSecret = (await http().post('/admin/auth/enrollment').send({ challenge: again.body.challenge }).expect(200))
+      .body.secret;
+    const activated = await http()
+      .post('/admin/auth/activate')
+      .set(client)
+      .send({ challenge: again.body.challenge, code: await nextCode() })
       .expect(200);
-    const admin = { Authorization: `Bearer ${login.body.accessToken}` };
+    const recovery: string[] = activated.body.recoveryCodes;
+    expect(recovery).toHaveLength(10);
+
+    const third = await http().post('/admin/auth/login').set(client).send({ email, password }).expect(200);
+    const rescued = await http()
+      .post('/admin/auth/verify')
+      .set(client)
+      .send({ challenge: third.body.challenge, code: recovery[0] })
+      .expect(200);
+    expect(rescued.body.recoveryCodesLeft).toBe(9);
+    await http()
+      .post('/admin/auth/verify')
+      .set(client)
+      .send({ challenge: third.body.challenge, code: recovery[0] })
+      .expect(401); // used up
+    const stored = await prisma.adminRecoveryCode.findMany({ where: { admin: { email } } });
+    expect(JSON.stringify(stored)).not.toContain(recovery[1]);
+    const account = await prisma.adminAccount.findUniqueOrThrow({ where: { email } });
+    expect(account.totpSecret).not.toContain(totpSecret); // encrypted
+
+    // The reset ends the sessions in progress.
+    const admin = { Authorization: `Bearer ${rescued.body.accessToken}` };
+    await http().get('/admin/auth/me').set(admin).expect(200);
+    await run(['reset-2fa', email], prisma);
+    await http().get('/admin/auth/me').set(admin).expect(401);
+  });
+
+  it('lists the users with their counters, never the content of their items (MEM-84)', async () => {
+    const admin = await adminSession('10.3.0.1');
 
     const reader = await http()
       .post('/auth/register')
@@ -164,12 +253,8 @@ describe('Administration console (e2e)', () => {
   });
 
   it('ends the access of a deleted account', async () => {
-    const login = await http()
-      .post('/admin/auth/login')
-      .set('X-Admin-Client-IP', '10.2.0.1')
-      .send({ email, password })
-      .expect(200);
+    const admin = await adminSession('10.2.0.1');
     expect(await run(['delete', email], prisma)).toContain(email);
-    await http().get('/admin/auth/me').set('Authorization', `Bearer ${login.body.accessToken}`).expect(401);
+    await http().get('/admin/auth/me').set(admin).expect(401);
   });
 });
