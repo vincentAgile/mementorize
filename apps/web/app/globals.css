@@ -2085,6 +2085,85 @@ kbd {
   font-size: 0.9rem;
 }
 
+/* MEM-79: a setting and, next to it, the status of its saving */
+.settings__field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.3rem 0.9rem;
+}
+
+.settings__field:has(.settings__check) {
+  align-items: center;
+}
+
+.settings__form input[type='text'],
+.settings__form input[type='number'],
+.settings__form input[type='time'] {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.settings__form input[aria-invalid='true'] {
+  border-color: #c1543a;
+}
+
+.save-status {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-height: 1.3em;
+  padding-bottom: 0.45rem;
+  font-size: 0.85rem;
+}
+
+.settings__field:has(.settings__check) .save-status {
+  padding-bottom: 0;
+}
+
+.save-status__text {
+  color: #666;
+}
+
+.save-status--saved {
+  color: #2e7d32;
+  animation: save-status-out 0.6s ease-in 2.4s forwards; /* fades out before it is removed */
+}
+
+.save-status--invalid,
+.save-status--failed {
+  color: #b3261e;
+}
+
+@keyframes save-status-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .save-status--saved {
+    animation: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .save-status__text {
+    color: #aaa;
+  }
+
+  .save-status--saved {
+    color: #81c784;
+  }
+
+  .save-status--invalid,
+  .save-status--failed {
+    color: #f28b82;
+  }
+}
+
 .settings__form .settings__check {
   flex-direction: row;
   align-items: center;

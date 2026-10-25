@@ -1,16 +1,21 @@
 'use client';
 
-import { useActionState, useSyncExternalStore } from 'react';
+import { useActionState, useId, useState, useSyncExternalStore } from 'react';
 import type { ReminderSettings } from '../../lib/types';
 import { saveRemindersAction, sendTestAction } from './actions';
+import { SaveStatus, useAutoSave } from './auto-save';
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 
 // The browser's time zone doesn't change while the page is open.
 const subscribeToNothing = () => () => {};
 
+/**
+ * The daily reminder e-mail (phase 11): on or off, and its hour. Both are
+ * saved together, as soon as one changes (MEM-79), with the browser's time
+ * zone; the status shows next to the one changed.
+ */
 export function ReminderForm({ settings }: { settings: ReminderSettings }) {
-  const [saveState, saveAction, saving] = useActionState(saveRemindersAction, {});
   const [testState, testAction, testing] = useActionState(sendTestAction, {});
 
   // The hour is understood in the browser's time zone, sent along with it.
@@ -20,6 +25,21 @@ export function ReminderForm({ settings }: { settings: ReminderSettings }) {
     subscribeToNothing,
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
     () => settings.timeZone,
+  );
+  const reminder = useAutoSave({ enabled: settings.enabled, hour: settings.hour }, (value) =>
+    saveRemindersAction({ ...value, timeZone }),
+  );
+  // Where the status of the last change shows: next to the control changed.
+  const [changed, setChanged] = useState<'enabled' | 'hour' | null>(null);
+  const enabledStatus = useId();
+  const hourStatus = useId();
+  const status = (field: 'enabled' | 'hour', id: string) => (
+    <SaveStatus
+      id={id}
+      status={changed === field ? reminder.status : 'idle'}
+      message={reminder.message}
+      onRetry={reminder.retry}
+    />
   );
 
   return (
@@ -33,37 +53,47 @@ export function ReminderForm({ settings }: { settings: ReminderSettings }) {
         <p className="notice">L’envoi d’e-mails n’est pas encore configuré sur ce serveur : aucun rappel ne partira.</p>
       )}
 
-      {/* After saving, React resets the form to its default values; the key
-          remounts it with the saved ones (a <select> ignores a new defaultValue). */}
-      <form key={`${settings.enabled}-${settings.hour}`} action={saveAction} className="settings__form">
-        <label className="settings__check">
-          <input type="checkbox" name="enabled" defaultChecked={settings.enabled} />
-          M’envoyer un rappel des révisions du jour
-        </label>
-        <label>
-          Heure du rappel
-          <select name="hour" defaultValue={settings.hour}>
-            {HOURS.map((hour) => (
-              <option key={hour} value={hour}>
-                {String(hour).padStart(2, '0')}
-                {'\u00a0'}h
-              </option>
-            ))}
-          </select>
-        </label>
-        <input type="hidden" name="timeZone" value={timeZone} />
+      <div className="settings__form">
+        <div className="settings__field">
+          <label className="settings__check">
+            <input
+              type="checkbox"
+              name="enabled"
+              checked={reminder.value.enabled}
+              aria-describedby={enabledStatus}
+              onChange={(event) => {
+                setChanged('enabled');
+                reminder.commit({ ...reminder.value, enabled: event.target.checked });
+              }}
+            />
+            M’envoyer un rappel des révisions du jour
+          </label>
+          {status('enabled', enabledStatus)}
+        </div>
+        <div className="settings__field">
+          <label>
+            Heure du rappel
+            <select
+              name="hour"
+              value={reminder.value.hour}
+              aria-describedby={hourStatus}
+              onChange={(event) => {
+                setChanged('hour');
+                reminder.commit({ ...reminder.value, hour: Number(event.target.value) });
+              }}
+            >
+              {HOURS.map((hour) => (
+                <option key={hour} value={hour}>
+                  {String(hour).padStart(2, '0')}
+                  {' '}h
+                </option>
+              ))}
+            </select>
+          </label>
+          {status('hour', hourStatus)}
+        </div>
         <p className="settings__hint">Fuseau horaire : {timeZone}</p>
-
-        {saveState.error && (
-          <p role="alert" className="form-error">
-            {saveState.error}
-          </p>
-        )}
-        {saveState.message && <p className="notice">{saveState.message}</p>}
-        <button type="submit" disabled={saving}>
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
-      </form>
+      </div>
 
       <form action={testAction} className="settings__form">
         <p className="settings__hint">Pour vérifier que les e-mails arrivent bien, sans attendre l’heure du rappel :</p>

@@ -2,38 +2,84 @@
 
 import { revalidatePath } from 'next/cache';
 import { ApiError, savePreferences, saveReminderSettings, sendTestReminder } from '../../lib/api';
-import { TRANSLATOR_NAMES } from '../../lib/translate-url';
-import { CSV_SEPARATORS, SEPARATOR_NAMES } from '../../lib/csv-separator';
-import type { CsvSeparator, Translator } from '../../lib/types';
+import { CSV_SEPARATORS } from '../../lib/csv-separator';
 import { findSpace } from '../../lib/spaces';
+import type { CsvSeparator, ItemType, Preferences, Translator } from '../../lib/types';
+import type { SaveResult } from './save-result';
 
-export interface SettingsFormState {
+// MEM-79: each setting is saved as soon as its change is confirmed. A Server
+// Action is a public endpoint: the values are checked here, an invalid one
+// is not saved.
+
+const FAILED = 'L’enregistrement a échoué.';
+
+/** Saves preferences; `revalidate`: the pages that show them. */
+async function save(preferences: Partial<Preferences>, revalidate: 'settings' | 'all'): Promise<SaveResult> {
+  try {
+    await savePreferences(preferences);
+  } catch (error) {
+    if (error instanceof ApiError) return { failed: FAILED };
+    throw error; // e.g. the redirect of an expired session
+  }
+  if (revalidate === 'all') revalidatePath('/', 'layout');
+  else revalidatePath('/reglages', 'layout'); // every tab of the Settings
+  return { ok: true };
+}
+
+/** The space opened on arrival (MEM-6). */
+export async function saveHomeSpaceAction(homeSpace: ItemType): Promise<SaveResult> {
+  if (!findSpace(homeSpace)) return { invalid: 'Page d’accueil invalide.' };
+  return save({ homeSpace }, 'settings');
+}
+
+const TRANSLATORS: Translator[] = ['DeepL', 'Google'];
+
+/** The service of the translate buttons of the vocabulary forms (MEM-44). */
+export async function saveTranslatorAction(translator: Translator): Promise<SaveResult> {
+  if (!TRANSLATORS.includes(translator)) return { invalid: 'Service de traduction invalide.' };
+  return save({ translator }, 'all'); // the forms of the Anglais space use it
+}
+
+/** Show the delays under the rating buttons (MEM-49). */
+export async function saveReviewDelaysAction(showReviewDelays: boolean): Promise<SaveResult> {
+  if (typeof showReviewDelays !== 'boolean') return { invalid: 'Réglage invalide.' };
+  return save({ showReviewDelays }, 'settings');
+}
+
+/** The separator of the CSV files, export and import (MEM-55). */
+export async function saveCsvSeparatorAction(csvSeparator: CsvSeparator): Promise<SaveResult> {
+  if (!CSV_SEPARATORS.includes(csvSeparator)) return { invalid: 'Séparateur invalide.' };
+  return save({ csvSeparator }, 'all'); // the Import / export tabs use it
+}
+
+/** The daily reminder e-mail (phase 11): on or off, its hour, in the browser's time zone. */
+export async function saveRemindersAction(settings: {
+  enabled: boolean;
+  hour: number;
+  timeZone: string;
+}): Promise<SaveResult> {
+  const { enabled, hour, timeZone } = settings ?? {};
+  if (typeof enabled !== 'boolean' || !Number.isInteger(hour) || hour < 0 || hour > 23) {
+    return { invalid: 'Heure invalide.' };
+  }
+  if (typeof timeZone !== 'string' || !timeZone) return { invalid: 'Fuseau horaire inconnu.' };
+  try {
+    await saveReminderSettings({ enabled, hour, timeZone });
+  } catch (error) {
+    if (error instanceof ApiError) return { failed: FAILED };
+    throw error;
+  }
+  revalidatePath('/reglages', 'layout');
+  return { ok: true };
+}
+
+export interface TestEmailState {
   message?: string;
   error?: string;
 }
 
-export async function saveRemindersAction(
-  _previous: SettingsFormState,
-  formData: FormData,
-): Promise<SettingsFormState> {
-  const enabled = formData.get('enabled') === 'on';
-  const hour = Number(formData.get('hour'));
-  const timeZone = String(formData.get('timeZone') ?? '');
-  if (!Number.isInteger(hour) || hour < 0 || hour > 23 || !timeZone) {
-    return { error: 'Réglages invalides.' };
-  }
-
-  try {
-    await saveReminderSettings({ enabled, hour, timeZone });
-  } catch (error) {
-    if (error instanceof ApiError) return { error: "Impossible d'enregistrer les réglages." };
-    throw error; // e.g. the redirect of an expired session
-  }
-  revalidatePath('/reglages', 'layout'); // every tab of the Settings
-  return { message: enabled ? `Rappel enregistré : chaque jour vers ${hour}\u00a0h.` : 'Rappels désactivés.' };
-}
-
-export async function sendTestAction(): Promise<SettingsFormState> {
+/** Sends the reminder e-mail now, to check that it arrives: an action, not a setting. */
+export async function sendTestAction(): Promise<TestEmailState> {
   try {
     await sendTestReminder();
   } catch (error) {
@@ -46,79 +92,4 @@ export async function sendTestAction(): Promise<SettingsFormState> {
     return { error: reasons[error.status] ?? "L'envoi a échoué." };
   }
   return { message: 'E-mail de test envoyé : regarde ta boîte de réception (et les indésirables).' };
-}
-
-export async function saveHomeSpaceAction(
-  _previous: SettingsFormState,
-  formData: FormData,
-): Promise<SettingsFormState> {
-  const space = findSpace(String(formData.get('homeSpace') ?? ''));
-  if (!space) return { error: 'Page d’accueil invalide.' };
-
-  try {
-    await savePreferences({ homeSpace: space.type });
-  } catch (error) {
-    if (error instanceof ApiError) return { error: "Impossible d'enregistrer la page d'accueil." };
-    throw error;
-  }
-  revalidatePath('/reglages', 'layout'); // every tab of the Settings
-  return { message: `Page d’accueil enregistrée : ${space.label}.` };
-}
-
-const TRANSLATORS: Translator[] = ['DeepL', 'Google'];
-
-/** The service of the translate buttons of the vocabulary forms (MEM-44). */
-export async function saveTranslatorAction(
-  _previous: SettingsFormState,
-  formData: FormData,
-): Promise<SettingsFormState> {
-  const translator = String(formData.get('translator') ?? '') as Translator;
-  if (!TRANSLATORS.includes(translator)) return { error: 'Service de traduction invalide.' };
-
-  try {
-    await savePreferences({ translator });
-  } catch (error) {
-    if (error instanceof ApiError) return { error: "Impossible d'enregistrer le service de traduction." };
-    throw error;
-  }
-  revalidatePath('/', 'layout'); // the forms of the Anglais space use it
-  return { message: `Service de traduction enregistré : ${TRANSLATOR_NAMES[translator]}.` };
-}
-
-/** Show the delays under the rating buttons (MEM-49). */
-export async function saveReviewDelaysAction(
-  _previous: SettingsFormState,
-  formData: FormData,
-): Promise<SettingsFormState> {
-  const showReviewDelays = formData.get('showReviewDelays') === 'on';
-  try {
-    await savePreferences({ showReviewDelays });
-  } catch (error) {
-    if (error instanceof ApiError) return { error: "Impossible d'enregistrer le réglage de la révision." };
-    throw error;
-  }
-  revalidatePath('/reglages', 'layout'); // every tab of the Settings
-  return {
-    message: showReviewDelays
-      ? 'Les boutons de révision affichent le délai avant la prochaine révision.'
-      : 'Les boutons de révision n’affichent plus que leur libellé.',
-  };
-}
-
-/** The separator of the CSV files, export and import (MEM-55). */
-export async function saveCsvSeparatorAction(
-  _previous: SettingsFormState,
-  formData: FormData,
-): Promise<SettingsFormState> {
-  const csvSeparator = String(formData.get('csvSeparator') ?? '') as CsvSeparator;
-  if (!CSV_SEPARATORS.includes(csvSeparator)) return { error: 'Séparateur invalide.' };
-
-  try {
-    await savePreferences({ csvSeparator });
-  } catch (error) {
-    if (error instanceof ApiError) return { error: "Impossible d'enregistrer le séparateur." };
-    throw error;
-  }
-  revalidatePath('/', 'layout'); // the Import / export tab uses it
-  return { message: `Séparateur enregistré : ${SEPARATOR_NAMES[csvSeparator]}.` };
 }
