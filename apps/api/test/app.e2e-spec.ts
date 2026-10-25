@@ -11,6 +11,9 @@ import { AppModule } from '../src/app.module.js';
  * `prisma migrate deploy` before the tests). Each run registers new,
  * unique users, so it doesn't depend on what's already in the database.
  */
+/** The target retentions of a new account (MEM-75). */
+const RETENTIONS_90 = { vocabularyRetention: 90, quoteRetention: 90, mindMapRetention: 90 };
+
 describe('API (e2e)', () => {
   let app: NestExpressApplication;
   const http = () => request(app.getHttpServer());
@@ -785,6 +788,7 @@ describe('API (e2e)', () => {
       showReviewDelays: false,
       csvSeparator: ';',
       vocabularyPageSize: 20,
+      ...RETENTIONS_90,
     });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
@@ -795,6 +799,7 @@ describe('API (e2e)', () => {
       showReviewDelays: false,
       csvSeparator: ';',
       vocabularyPageSize: 20,
+      ...RETENTIONS_90,
     });
 
     // MEM-44: the translator alone, the home space untouched.
@@ -805,6 +810,7 @@ describe('API (e2e)', () => {
       showReviewDelays: false,
       csvSeparator: ';',
       vocabularyPageSize: 20,
+      ...RETENTIONS_90,
     });
 
     // MEM-49: the delays on the rating buttons, off by default.
@@ -815,6 +821,7 @@ describe('API (e2e)', () => {
       showReviewDelays: true,
       csvSeparator: ';',
       vocabularyPageSize: 20,
+      ...RETENTIONS_90,
     });
     await http().put('/preferences').set(auth).send({ showReviewDelays: 'yes' }).expect(400);
 
@@ -831,6 +838,14 @@ describe('API (e2e)', () => {
     const pages = await http().put('/preferences').set(auth).send({ vocabularyPageSize: 50 }).expect(200);
     expect(pages.body).toMatchObject({ vocabularyPageSize: 50, csvSeparator: ',' });
     await http().put('/preferences').set(auth).send({ vocabularyPageSize: 30 }).expect(400);
+
+    // MEM-75: the target retention of each space, 90 % by default.
+    const retention = await http().put('/preferences').set(auth).send({ quoteRetention: 95 }).expect(200);
+    expect(retention.body).toMatchObject({ vocabularyRetention: 90, quoteRetention: 95, mindMapRetention: 90 });
+    await http().put('/preferences').set(auth).send({ mindMapRetention: 85, vocabularyRetention: 95 }).expect(200);
+    for (const refused of [80, 92, '90', null]) {
+      await http().put('/preferences').set(auth).send({ quoteRetention: refused }).expect(400);
+    }
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);

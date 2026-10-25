@@ -3,7 +3,8 @@ import type { Card, CardKind, ItemType, LearningStatus } from '@prisma/client';
 import { contentOf } from '../items/item-content.js';
 import { IN_QUEUE, QUEUE_ORDER, type QueueType, queueIds, renumberQueue } from './learning-queue.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { type Grade, type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
+import { userRetentions } from '../scheduling/retention.js';
+import { type Grade, type NextDueByRating, type Retention, SchedulerService } from '../scheduling/scheduler.service.js';
 
 /** The types learned per item (MEM-22, MEM-67): the item leaves the review, not a card. */
 const LEARNED_PER_ITEM: ItemType[] = ['Vocabulary', 'Quote'];
@@ -78,7 +79,10 @@ export class LearningService {
   ) {}
 
   async session(userId: string, now = new Date()): Promise<LearningSession> {
-    const [total, items] = await this.firstOfQueue(userId, 'Vocabulary');
+    const [[total, items], retentions] = await Promise.all([
+      this.firstOfQueue(userId, 'Vocabulary'),
+      userRetentions(this.prisma, userId), // MEM-75
+    ]);
     return {
       total,
       items: items.map((item) => {
@@ -89,7 +93,7 @@ export class LearningService {
           translation,
           example,
           frenchExample: frenchExample ?? null,
-          ...this.previews(item.cards[0], now),
+          ...this.previews(item.cards[0], now, retentions.Vocabulary),
         };
       }),
     };
@@ -97,12 +101,15 @@ export class LearningService {
 
   /** MEM-68: up to five quotes to learn, the first ones of their learning queue. */
   async quoteSession(userId: string, now = new Date()): Promise<QuoteLearningSession> {
-    const [total, items] = await this.firstOfQueue(userId, 'Quote');
+    const [[total, items], retentions] = await Promise.all([
+      this.firstOfQueue(userId, 'Quote'),
+      userRetentions(this.prisma, userId), // MEM-75
+    ]);
     return {
       total,
       items: items.map((item) => {
         const { text, author, source } = contentOf({ ...item, type: 'Quote' as const });
-        return { id: item.id, text, author, source, ...this.previews(item.cards[0], now) };
+        return { id: item.id, text, author, source, ...this.previews(item.cards[0], now, retentions.Quote) };
       }),
     };
   }
@@ -123,11 +130,15 @@ export class LearningService {
   }
 
   /** The card of a session's item, and when it comes back for each rating, then once rated « À revoir ». */
-  private previews(card: Card, now: Date) {
+  private previews(card: Card, now: Date, retention: Retention) {
     return {
       cardId: card.id,
-      nextDue: this.scheduler.preview(card, now),
-      nextDueAfterAgain: this.scheduler.preview(this.scheduler.review(card, 'Again', now).card, now),
+      nextDue: this.scheduler.preview(card, now, retention),
+      nextDueAfterAgain: this.scheduler.preview(
+        this.scheduler.review(card, 'Again', now, retention).card,
+        now,
+        retention,
+      ),
     };
   }
 
@@ -156,7 +167,8 @@ export class LearningService {
     }
     const others = item.cards.filter((card) => card.id !== first.id);
 
-    const { card: next, log } = this.scheduler.review(first, rating, now);
+    const retention = (await userRetentions(this.prisma, userId))[type]; // MEM-75
+    const { card: next, log } = this.scheduler.review(first, rating, now, retention);
 
     // All or nothing: the item never ends up `Learning` without its first review.
     await this.prisma.$transaction([
@@ -174,7 +186,7 @@ export class LearningService {
       learningStatus: 'Learning' as const,
       nextDue: next.due,
       // MEM-47: after « À revoir », the card comes back at the end of the session.
-      nextDueByRating: this.scheduler.preview({ ...first, ...next }, now),
+      nextDueByRating: this.scheduler.preview({ ...first, ...next }, now, retention),
     };
   }
 

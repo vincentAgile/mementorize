@@ -15,6 +15,7 @@ describe('LearningService', () => {
   const prismaMock = {
     item: { count: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
     $executeRaw: vi.fn(), // the renumbering of the learning queue (MEM-61)
+    user: { findUnique: vi.fn().mockResolvedValue(null) }, // the target retentions (MEM-75): 90 %
     card: { update: vi.fn() },
     reviewLog: { create: vi.fn() },
     $transaction: vi.fn((operations: Promise<unknown>[]) => Promise.all(operations)),

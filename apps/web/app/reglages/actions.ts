@@ -53,6 +53,20 @@ export async function saveCsvSeparatorAction(csvSeparator: string): Promise<Save
   return save({ csvSeparator }, 'all'); // the Import / export tabs use it
 }
 
+/** The target retentions (MEM-75): 85, 90 or 95 %, for each space. */
+const RETENTIONS = [85, 90, 95];
+const RETENTION_FIELDS = {
+  Vocabulary: 'vocabularyRetention',
+  Quote: 'quoteRetention',
+  MindMap: 'mindMapRetention',
+} as const satisfies Record<ItemType, keyof Preferences>;
+
+/** The target retention of a space (MEM-75): applied from the next review of each card. */
+export async function saveRetentionAction(type: ItemType, retention: number): Promise<SaveResult> {
+  if (!(type in RETENTION_FIELDS) || !RETENTIONS.includes(retention)) return { invalid: 'Rétention invalide.' };
+  return save({ [RETENTION_FIELDS[type]]: retention }, 'settings');
+}
+
 /** The daily reminder e-mail (phase 11): on or off, its hour, in the browser's time zone. */
 export async function saveRemindersAction(settings: {
   enabled: boolean;

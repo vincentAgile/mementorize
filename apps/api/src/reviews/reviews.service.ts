@@ -3,6 +3,7 @@ import type { Card, Item, ItemType } from '@prisma/client';
 import { ITEM_TYPES } from '../items/item-content.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { IN_REVIEW, REVIEWED_CARD } from './in-review.js';
+import { userRetentions } from '../scheduling/retention.js';
 import { type Grade, type NextDueByRating, SchedulerService } from '../scheduling/scheduler.service.js';
 
 export interface DueItem {
@@ -51,7 +52,7 @@ export class ReviewsService {
   async findDue(userId: string, limit = 20, type?: ItemType, now = new Date()): Promise<DueReviews> {
     const item = { userId, ...(type && { type }), ...IN_REVIEW };
     const where = { due: { lte: now }, ...REVIEWED_CARD, item };
-    const [total, cards, upcoming] = await Promise.all([
+    const [total, cards, upcoming, retentions] = await Promise.all([
       this.prisma.card.count({ where }),
       this.prisma.card.findMany({ where, include: { item: true }, orderBy: { due: 'asc' }, take: limit }),
       this.prisma.card.findFirst({
@@ -59,6 +60,7 @@ export class ReviewsService {
         orderBy: { due: 'asc' },
         select: { due: true },
       }),
+      userRetentions(this.prisma, userId), // MEM-75: the delays of each card, with the retention of its space
     ]);
 
     return {
@@ -67,7 +69,7 @@ export class ReviewsService {
       items: cards.map(({ item, ...card }) => ({
         item,
         card,
-        nextDue: this.scheduler.preview(card, now),
+        nextDue: this.scheduler.preview(card, now, retentions[item.type]),
       })),
     };
   }
@@ -75,7 +77,8 @@ export class ReviewsService {
   /**
    * Records a self-assessment and reschedules the card. Returned with its
    * new previews: a card rated « À revoir » comes back at the end of the
-   * session (MEM-47), with these delays on its buttons.
+   * session (MEM-47), with these delays on its buttons. Scheduled with the
+   * target retention of the card's space (MEM-75).
    */
   async review(
     userId: string,
@@ -83,19 +86,24 @@ export class ReviewsService {
     rating: Grade,
     now = new Date(),
   ): Promise<Card & { nextDueByRating: NextDueByRating }> {
-    const card = await this.prisma.card.findFirst({ where: { id: cardId, item: { userId } } });
-    if (!card) {
+    const found = await this.prisma.card.findFirst({
+      where: { id: cardId, item: { userId } },
+      include: { item: { select: { type: true } } },
+    });
+    if (!found) {
       throw new NotFoundException(`Card ${cardId} not found`);
     }
+    const { item, ...card } = found;
+    const retention = (await userRetentions(this.prisma, userId))[item.type];
 
-    const { card: next, log } = this.scheduler.review(card, rating, now);
+    const { card: next, log } = this.scheduler.review(card, rating, now, retention);
 
     // Both writes succeed or neither does: no log without its card update.
     const [updated] = await this.prisma.$transaction([
       this.prisma.card.update({ where: { id: card.id }, data: next }),
       this.prisma.reviewLog.create({ data: { ...log, cardId: card.id } }),
     ]);
-    return { ...updated, nextDueByRating: this.scheduler.preview(updated, now) };
+    return { ...updated, nextDueByRating: this.scheduler.preview(updated, now, retention) };
   }
 
   /**

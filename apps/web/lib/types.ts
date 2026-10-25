@@ -189,6 +189,10 @@ export interface Preferences {
   showReviewDelays: boolean; // MEM-49: the delays under the rating buttons
   csvSeparator: string; // MEM-55: any single character since MEM-80
   vocabularyPageSize: number; // MEM-58: 20, 50 or 100
+  /** MEM-75: the target retention of each space, in percent: 85, 90 or 95. */
+  vocabularyRetention: number;
+  quoteRetention: number;
+  mindMapRetention: number;
 }
 
 export interface ReminderSettings extends ReminderSettingsInput {

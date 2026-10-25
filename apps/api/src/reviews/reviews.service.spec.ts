@@ -14,6 +14,8 @@ describe('ReviewsService', () => {
   const prismaMock = {
     card: { count: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
     reviewLog: { create: vi.fn() },
+    // The target retention of each space (MEM-75): none stored here, so 90 %.
+    user: { findUnique: vi.fn().mockResolvedValue(null) },
     $transaction: vi.fn((operations: Promise<unknown>[]) => Promise.all(operations)),
   };
 
@@ -117,13 +119,16 @@ describe('ReviewsService', () => {
       prismaMock.card.findFirst.mockResolvedValue(null);
 
       await expect(service.review(userId, 'card-1', 'Good', NOW)).rejects.toThrow(NotFoundException);
-      expect(prismaMock.card.findFirst).toHaveBeenCalledWith({ where: { id: 'card-1', item: { userId } } });
+      expect(prismaMock.card.findFirst).toHaveBeenCalledWith({
+        where: { id: 'card-1', item: { userId } },
+        include: { item: { select: { type: true } } },
+      });
       expect(prismaMock.$transaction).not.toHaveBeenCalled();
     });
 
     it('reschedules the card and records the review in a single transaction', async () => {
       const card = aCard();
-      prismaMock.card.findFirst.mockResolvedValue(card);
+      prismaMock.card.findFirst.mockResolvedValue({ ...card, item: { type: 'Quote' } });
       prismaMock.card.update.mockImplementation(({ data }) => Promise.resolve({ ...card, ...data }));
       prismaMock.reviewLog.create.mockResolvedValue({});
 
@@ -136,6 +141,33 @@ describe('ReviewsService', () => {
       expect(updated.state).toBe('Learning');
       // MEM-47: the previews of its next review, for its buttons at the end of the session.
       expect(updated.nextDueByRating).toEqual(scheduler.preview({ ...card, ...expected.card }, NOW));
+    });
+
+    it('schedules with the target retention of the space of the card (MEM-75)', async () => {
+      // A card reviewed ten days ago: its next interval depends on the retention.
+      const card = {
+        ...aCard(),
+        state: 'Review' as const,
+        stability: 10,
+        difficulty: 5,
+        reps: 3,
+        lastReview: new Date(NOW.getTime() - 10 * 86_400_000),
+        due: NOW,
+      };
+      prismaMock.card.findFirst.mockResolvedValue({ ...card, item: { type: 'Quote' } });
+      prismaMock.card.update.mockImplementation(({ data }) => Promise.resolve({ ...card, ...data }));
+      prismaMock.user.findUnique.mockResolvedValueOnce({
+        vocabularyRetention: 90,
+        quoteRetention: 95,
+        mindMapRetention: 85,
+      });
+
+      await service.review(userId, 'card-1', 'Good', NOW);
+
+      const at95 = scheduler.review(card, 'Good', NOW, 95).card;
+      const at90 = scheduler.review(card, 'Good', NOW, 90).card;
+      expect(at95.due.getTime()).toBeLessThan(at90.due.getTime()); // sooner, for a sturdier memory
+      expect(prismaMock.card.update).toHaveBeenCalledWith({ where: { id: 'card-1' }, data: at95 });
     });
   });
 

@@ -80,4 +80,16 @@ describe('SchedulerService', () => {
 
     expect(log).toMatchObject({ rating: 'Hard', state: 'New', reviewedAt: T0 });
   });
+
+  it('brings a card back sooner when the target retention is higher (MEM-75)', () => {
+    const scheduler = new SchedulerService({ enable_fuzz: false });
+    const now = new Date('2026-10-25T08:00:00Z');
+    let card = scheduler.newCard(now);
+    for (const day of [0, 1, 4]) card = scheduler.review(card, 'Good', new Date(now.getTime() + day * 86_400_000)).card;
+    const later = new Date(card.due);
+    const good = (retention: 85 | 90 | 95) => scheduler.preview(card, later, retention).Good.getTime();
+    expect(good(85)).toBeGreaterThan(good(90));
+    expect(good(90)).toBeGreaterThan(good(95));
+    expect(scheduler.preview(card, later)).toEqual(scheduler.preview(card, later, 90)); // 90 % by default
+  });
 });
