@@ -550,6 +550,7 @@ docker compose exec api node dist/admin/admin-cli.js list
 ```
 
 **Sécurité** :
+
 - la session dure 2 heures, sans prolongation ; « Déconnexion » la termine ;
 - après 5 échecs de connexion en 15 minutes depuis une même adresse, les connexions depuis cette adresse sont refusées le temps que les échecs sortent de la fenêtre ;
 - les pages ne sont ni indexées ni mises en cache.
