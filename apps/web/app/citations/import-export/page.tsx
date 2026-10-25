@@ -21,7 +21,7 @@ export default async function QuotesImportExportPage() {
     <div className="import-export">
       <p className="import-export__separator">
         Séparateur des fichiers CSV : <strong>{SEPARATOR_NAMES[csvSeparator]}</strong>.{' '}
-        <Link href="/reglages#csv">Changer dans les Réglages</Link>
+        <Link href="/reglages/saisie#csv">Changer dans les Réglages</Link>
       </p>
 
       <section className="import-export__section" aria-labelledby="export-title">

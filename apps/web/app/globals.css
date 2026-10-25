@@ -183,6 +183,20 @@ body {
   .app-header__top .page__nav {
     margin-inline-start: -0.4rem;
   }
+
+  /* MEM-78: in the Settings, the gear is the active entry: it reaches down to
+     band 2 and takes its colour, like the entry of the active space. The icons
+     stay centred on the row; the active gear goes to its bottom edge. */
+  .app-header__top .header-actions {
+    align-self: stretch;
+  }
+
+  .app-header__top .header-actions__icon.is-active {
+    align-self: end;
+    padding: 0.55rem 0.75rem 0.6rem;
+    border-radius: 8px 8px 0 0;
+    background: var(--band-2);
+  }
 }
 
 /* Band 2: the sub-menu of the active space, at a constant height */

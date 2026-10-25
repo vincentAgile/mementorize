@@ -1,12 +1,12 @@
 'use client';
 
 import { usePathname, useSearchParams } from 'next/navigation';
+import { inSettings } from '../lib/settings';
 import { activeSpace } from '../lib/spaces';
 
 /** The pages outside the spaces, by address. */
 const PAGE_NAMES: Record<string, string> = {
   '/review': 'Tout réviser',
-  '/reglages': 'Réglages',
   '/profil': 'Profil',
 };
 
@@ -22,7 +22,8 @@ const PAGE_NAMES: Record<string, string> = {
 export function HeaderTitle() {
   const pathname = usePathname();
   const type = useSearchParams().get('type');
-  const name = activeSpace(pathname, type)?.label ?? PAGE_NAMES[pathname];
+  // MEM-78: « Réglages » on each of their tabs.
+  const name = activeSpace(pathname, type)?.label ?? (inSettings(pathname) ? 'Réglages' : PAGE_NAMES[pathname]);
   if (!name) return null;
 
   const Tag = pathname.startsWith('/mind-maps/') ? 'p' : 'h1';

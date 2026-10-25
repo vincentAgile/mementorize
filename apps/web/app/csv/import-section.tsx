@@ -236,7 +236,7 @@ export function ImportSection({ type, separator }: { type: ListType; separator: 
               >
                 Passer à la {SEPARATOR_NAMES[other]} et relire le fichier
               </button>{' '}
-              (ou <Link href="/reglages#csv">changer dans les Réglages</Link>).
+              (ou <Link href="/reglages/saisie#csv">changer dans les Réglages</Link>).
             </>
           )}
         </Problem>
