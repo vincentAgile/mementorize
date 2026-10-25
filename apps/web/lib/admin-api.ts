@@ -12,6 +12,39 @@ export interface Administrator {
   email: string;
 }
 
+/** MEM-84: the items of a space (Anglais, Citations), per state. */
+export interface StatusCounts {
+  Waiting: number;
+  ToLearn: number;
+  Learning: number;
+  Learned: number;
+  total: number;
+}
+
+export interface SpaceCounts {
+  Vocabulary: StatusCounts;
+  Quote: StatusCounts;
+  /** Mind maps: how many, and their branches in review or learned. */
+  MindMap: { total: number; branchesInReview: number; branchesLearned: number };
+  total: number;
+}
+
+/** A user in the console: their account and counters, never the content of their items. */
+export interface AdminUserRow {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  createdAt: string;
+  lastActiveAt: string | null;
+  counts: SpaceCounts;
+}
+
+export interface AdminUserList {
+  users: AdminUserRow[];
+  totals: SpaceCounts;
+}
+
 export type AdminLoginResult = { ok: true; accessToken: string; expiresAt: string } | { ok: false; message: string };
 
 /** `client`: the address of the browser, for the limit on failed logins. */
@@ -61,4 +94,9 @@ async function adminFetch<T>(path: string): Promise<T> {
 
 export function getAdministrator(): Promise<Administrator> {
   return adminFetch<Administrator>('/admin/auth/me');
+}
+
+/** MEM-84: the users, their last activity and the number of their items. */
+export function getAdminUsers(): Promise<AdminUserList> {
+  return adminFetch<AdminUserList>('/admin/users');
 }

@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Ip, Post, Req, UseGuards } from '@nestjs/common';
 import { AdminAuthService, type AdminUser } from './admin-auth.service.js';
 import { AdminJwtGuard, type AdminRequest } from './admin-jwt.guard.js';
+import { type AdminUserList, AdminUsersService } from './admin-users.service.js';
 import { AdminLoginDto } from './dto/admin-login.dto.js';
 
 /**
@@ -11,7 +12,10 @@ import { AdminLoginDto } from './dto/admin-login.dto.js';
  */
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly auth: AdminAuthService) {}
+  constructor(
+    private readonly auth: AdminAuthService,
+    private readonly users: AdminUsersService,
+  ) {}
 
   /** POST /admin/auth/login — 401 (wrong e-mail or password), 429 (too many failures), 503 (console off). */
   @Post('auth/login')
@@ -25,5 +29,12 @@ export class AdminController {
   @UseGuards(AdminJwtGuard)
   me(@Req() request: AdminRequest): AdminUser {
     return request.admin;
+  }
+
+  /** GET /admin/users — MEM-84: the users, their last activity and the number of their items; read only. */
+  @Get('users')
+  @UseGuards(AdminJwtGuard)
+  listUsers(): Promise<AdminUserList> {
+    return this.users.list();
   }
 }
