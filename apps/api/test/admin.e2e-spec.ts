@@ -91,7 +91,6 @@ describe('Administration console (e2e)', () => {
       .send({ email, password })
       .expect(200);
     const admin = { Authorization: `Bearer ${login.body.accessToken}` };
-    const before = (await http().get('/admin/users').set(admin).expect(200)).body;
 
     const reader = await http()
       .post('/auth/register')
@@ -140,9 +139,13 @@ describe('Administration console (e2e)', () => {
         total: 5,
       },
     });
-    // The totals of all the users grew by as much.
-    expect(list.body.totals.total - before.totals.total).toBe(5);
-    expect(list.body.totals.MindMap.branchesLearned - before.totals.MindMap.branchesLearned).toBe(1);
+    // The totals: the sum of every user's counters (the other e2e files add items meanwhile).
+    type Row = { counts: { total: number; MindMap: { branchesLearned: number } } };
+    const users = list.body.users as Row[];
+    expect(list.body.totals.total).toBe(users.reduce((sum, user) => sum + user.counts.total, 0));
+    expect(list.body.totals.MindMap.branchesLearned).toBe(
+      users.reduce((sum, user) => sum + user.counts.MindMap.branchesLearned, 0),
+    );
     // Nothing of the items themselves.
     const raw = JSON.stringify(list.body);
     for (const secret of [
