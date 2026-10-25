@@ -10,6 +10,8 @@ const API_TIMEOUT_MS = 15_000;
 export interface Administrator {
   id: string;
   email: string;
+  /** MEM-86: the recovery codes not used yet. */
+  recoveryCodesLeft: number;
 }
 
 /** MEM-84: the items of a space (Anglais, Citations), per state. */
@@ -45,34 +47,100 @@ export interface AdminUserList {
   totals: SpaceCounts;
 }
 
-export type AdminLoginResult = { ok: true; accessToken: string; expiresAt: string } | { ok: false; message: string };
+/** After the password (MEM-86): the code is asked, or the two-step login is activated first. */
+export type AdminLoginResult =
+  { ok: true; step: 'code' | 'activation'; challenge: string; expiresAt: string } | { ok: false; message: string };
 
-/** `client`: the address of the browser, for the limit on failed logins. */
-export async function adminLogin(email: string, password: string, client: string | null): Promise<AdminLoginResult> {
-  let res: Response;
+/** A session, once the code is accepted; at the activation, with the recovery codes. */
+export interface AdminSession {
+  accessToken: string;
+  expiresAt: string;
+  recoveryCodesLeft: number;
+  recoveryCodes?: string[];
+}
+
+export type AdminCodeResult = { ok: true; session: AdminSession } | { ok: false; expired?: boolean; message: string };
+
+export interface Enrollment {
+  email: string;
+  secret: string;
+  otpauthUri: string;
+}
+
+const UNREACHABLE = 'Le serveur ne répond pas. Réessayez dans un instant.';
+const TOO_MANY = 'Trop de tentatives échouées : réessayez dans quelques minutes.';
+const OFF = 'La console d’administration n’est pas activée sur ce serveur.';
+export const STEP_EXPIRED = 'L’étape de connexion a expiré : saisissez de nouveau votre mot de passe.';
+
+/** A public route of the login; `client`: the address of the browser, for the limit on failures. */
+async function post(path: string, body: unknown, client?: string | null): Promise<Response | null> {
   try {
-    res = await fetch(`${API_URL}/admin/auth/login`, {
+    return await fetch(`${API_URL}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(client && { 'X-Admin-Client-IP': client }) },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(body),
       cache: 'no-store',
       signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
   } catch {
-    return { ok: false, message: 'Le serveur ne répond pas. Réessayez dans un instant.' };
+    return null;
   }
-  if (res.ok) {
-    const { accessToken, expiresAt } = (await res.json()) as { accessToken: string; expiresAt: string };
-    return { ok: true, accessToken, expiresAt };
-  }
+}
+
+/** The password, first step. */
+export async function adminLogin(email: string, password: string, client: string | null): Promise<AdminLoginResult> {
+  const res = await post('/admin/auth/login', { email, password }, client);
+  if (!res) return { ok: false, message: UNREACHABLE };
+  if (res.ok) return { ok: true, ...((await res.json()) as Omit<Extract<AdminLoginResult, { ok: true }>, 'ok'>) };
   switch (res.status) {
     case 401:
     case 400:
       return { ok: false, message: 'Identifiants incorrects.' };
     case 429:
-      return { ok: false, message: 'Trop de tentatives échouées : réessayez dans quelques minutes.' };
+      return { ok: false, message: TOO_MANY };
     case 503:
-      return { ok: false, message: 'La console d’administration n’est pas activée sur ce serveur.' };
+      return { ok: false, message: OFF };
+    default:
+      return { ok: false, message: `Erreur inattendue du serveur (${res.status}).` };
+  }
+}
+
+/** MEM-86: the key to add to the authenticator app. null: the step expired, or it is already active. */
+export async function adminEnrollment(challenge: string): Promise<Enrollment | 'expired' | 'active' | null> {
+  const res = await post('/admin/auth/enrollment', { challenge });
+  if (res?.ok) return (await res.json()) as Enrollment;
+  if (res?.status === 410) return 'expired';
+  if (res?.status === 409) return 'active';
+  return null;
+}
+
+/** MEM-86: the code (`verify`), or the first code that activates the two-step login (`activate`). */
+export async function adminCode(
+  kind: 'verify' | 'activate',
+  challenge: string,
+  code: string,
+  client: string | null,
+): Promise<AdminCodeResult> {
+  const res = await post(`/admin/auth/${kind}`, { challenge, code }, client);
+  if (!res) return { ok: false, message: UNREACHABLE };
+  if (res.ok) return { ok: true, session: (await res.json()) as AdminSession };
+  switch (res.status) {
+    case 401:
+    case 400:
+      return {
+        ok: false,
+        message:
+          kind === 'activate'
+            ? 'Code incorrect : vérifiez l’heure du téléphone, puis saisissez le code affiché maintenant.'
+            : 'Code incorrect ou déjà utilisé.',
+      };
+    case 410:
+    case 409:
+      return { ok: false, expired: true, message: STEP_EXPIRED };
+    case 429:
+      return { ok: false, message: TOO_MANY };
+    case 503:
+      return { ok: false, message: OFF };
     default:
       return { ok: false, message: `Erreur inattendue du serveur (${res.status}).` };
   }

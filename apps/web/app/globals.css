@@ -3090,3 +3090,92 @@ kbd {
     margin-bottom: 0.4rem;
   }
 }
+
+/* --- MEM-86: the two-step login of the console --- */
+
+.admin-code__input {
+  font-family: ui-monospace, monospace;
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+}
+
+.admin-activation__steps {
+  display: grid;
+  gap: 1rem;
+  padding-left: 1.2rem;
+}
+
+.admin-activation__qr {
+  width: 200px;
+  max-width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  background: white; /* the QR code needs its light background, in dark mode too */
+}
+
+.admin-activation__qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.admin-activation__secret {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.admin-recovery__warning {
+  padding: 0.6rem 0.8rem;
+  border-left: 4px solid #c1543a;
+  background: rgba(193, 84, 58, 0.08);
+}
+
+.admin-recovery__codes {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 0.4rem 2.5rem;
+  padding-left: 0;
+  font-size: 1.05rem;
+  list-style-position: inside;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-recovery__continue {
+  color: #147d80;
+}
+
+.admin-recovery__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-recovery__actions button {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: none;
+  color: #147d80;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-banner__codes {
+  opacity: 0.8;
+}
+
+.admin-banner__codes.is-low {
+  color: #ffb4a2;
+  opacity: 1;
+}
+
+@media (max-width: 480px) {
+  .admin-recovery__codes {
+    grid-template-columns: max-content;
+  }
+}
