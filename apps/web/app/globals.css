@@ -3165,15 +3165,6 @@ kbd {
   cursor: pointer;
 }
 
-.admin-banner__codes {
-  opacity: 0.8;
-}
-
-.admin-banner__codes.is-low {
-  color: #ffb4a2;
-  opacity: 1;
-}
-
 @media (max-width: 480px) {
   .admin-recovery__codes {
     grid-template-columns: max-content;
