@@ -2138,6 +2138,13 @@ kbd {
 }
 
 /* MEM-79: a setting and, next to it, the status of its saving */
+.settings__field,
+.settings__field label,
+.settings__field select {
+  min-width: 0;
+  max-width: 100%; /* MEM-75: long options stay within a phone's width */
+}
+
 .settings__field {
   display: flex;
   flex-wrap: wrap;

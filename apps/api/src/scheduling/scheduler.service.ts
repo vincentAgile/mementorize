@@ -37,18 +37,36 @@ export type NextDueByRating = Record<Grade, Date>;
 const RATINGS: readonly Grade[] = ['Again', 'Hard', 'Good', 'Easy'];
 
 /**
+ * The target retention of a space (MEM-75), in percent: the probability of
+ * remembering a card at which it comes back. 90 by default, 85 for fewer
+ * reviews, 95 for a sturdier memory.
+ */
+export const RETENTIONS = [85, 90, 95] as const;
+export type Retention = (typeof RETENTIONS)[number];
+export const DEFAULT_RETENTION: Retention = 90;
+
+/**
  * Thin wrapper around ts-fsrs. It's the only place in the app that knows
  * about the library: the rest of the code manipulates database rows, and
  * this class translates them to and from ts-fsrs's own types.
  *
  * Every method takes `now` as a parameter instead of reading the clock
- * itself: that's what makes the scheduling logic testable.
+ * itself: that's what makes the scheduling logic testable. The target
+ * retention of the card's space (MEM-75) is a parameter too: one FSRS
+ * instance per retention, made once.
  */
 export class SchedulerService {
-  private readonly fsrs: FSRS;
+  private readonly instances = new Map<number, FSRS>();
 
-  constructor(params: Partial<FSRSParameters> = {}) {
-    this.fsrs = fsrs(params);
+  constructor(private readonly params: Partial<FSRSParameters> = {}) {}
+
+  private fsrs(retention: Retention): FSRS {
+    let instance = this.instances.get(retention);
+    if (!instance) {
+      instance = fsrs({ ...this.params, request_retention: retention / 100 });
+      this.instances.set(retention, instance);
+    }
+    return instance;
   }
 
   /** Scheduling state of a card that has never been reviewed (due now). */
@@ -57,8 +75,8 @@ export class SchedulerService {
   }
 
   /** Next due date for each of the 4 possible answers, without saving anything. */
-  preview(card: CardSchedule, now: Date): NextDueByRating {
-    const outcomes = this.fsrs.repeat(toFsrsCard(card), now);
+  preview(card: CardSchedule, now: Date, retention: Retention = DEFAULT_RETENTION): NextDueByRating {
+    const outcomes = this.fsrs(retention).repeat(toFsrsCard(card), now);
     return Object.fromEntries(
       RATINGS.map((rating) => [rating, rating === 'Again' ? now : outcomes[Rating[rating] as FsrsGrade].card.due]),
     ) as NextDueByRating;
@@ -71,8 +89,13 @@ export class SchedulerService {
    * to review (MEM-47). The rest of FSRS's state (stability, difficulty,
    * lapses, step) is kept.
    */
-  review(card: CardSchedule, rating: Grade, now: Date): { card: CardSchedule; log: ReviewLogData } {
-    const { card: next, log } = this.fsrs.next(toFsrsCard(card), now, Rating[rating] as FsrsGrade);
+  review(
+    card: CardSchedule,
+    rating: Grade,
+    now: Date,
+    retention: Retention = DEFAULT_RETENTION,
+  ): { card: CardSchedule; log: ReviewLogData } {
+    const { card: next, log } = this.fsrs(retention).next(toFsrsCard(card), now, Rating[rating] as FsrsGrade);
     return {
       card: { ...fromFsrsCard(next), ...(rating === 'Again' && { due: now }) },
       log: {

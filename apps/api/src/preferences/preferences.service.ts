@@ -10,6 +10,10 @@ export interface Preferences {
   /** The separator of the CSV files (MEM-80): a single character. */
   csvSeparator: string;
   vocabularyPageSize: number;
+  /** The target retention of each space, in percent (MEM-75). */
+  vocabularyRetention: number;
+  quoteRetention: number;
+  mindMapRetention: number;
 }
 
 const SELECT = {
@@ -18,6 +22,9 @@ const SELECT = {
   showReviewDelays: true,
   csvDelimiter: true, // MEM-80: sent as csvSeparator
   vocabularyPageSize: true,
+  vocabularyRetention: true,
+  quoteRetention: true,
+  mindMapRetention: true,
 } as const;
 
 const toPreferences = ({ csvDelimiter, ...rest }: { csvDelimiter: string } & Omit<Preferences, 'csvSeparator'>) => ({
@@ -25,7 +32,7 @@ const toPreferences = ({ csvDelimiter, ...rest }: { csvDelimiter: string } & Omi
   csvSeparator: csvDelimiter,
 });
 
-/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55, MEM-58), stored on their account. */
+/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55, MEM-58, MEM-75), stored on their account. */
 @Injectable()
 export class PreferencesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -44,6 +51,9 @@ export class PreferencesService {
         showReviewDelays: dto.showReviewDelays,
         csvDelimiter: dto.csvSeparator,
         vocabularyPageSize: dto.vocabularyPageSize,
+        vocabularyRetention: dto.vocabularyRetention,
+        quoteRetention: dto.quoteRetention,
+        mindMapRetention: dto.mindMapRetention,
       },
       select: SELECT,
     });
