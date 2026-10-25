@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getItems, getPreferences } from '../../../lib/api';
-import { SEPARATOR_NAMES } from '../../../lib/csv-separator';
+import { separatorName } from '../../../lib/csv-separator';
 import { NBSP } from '../../../lib/format';
 import { ImportSection } from '../../csv/import-section';
 
@@ -19,7 +19,7 @@ export default async function EnglishImportExportPage() {
   return (
     <div className="import-export">
       <p className="import-export__separator">
-        Séparateur des fichiers CSV : <strong>{SEPARATOR_NAMES[csvSeparator]}</strong>.{' '}
+        Séparateur des fichiers CSV : <strong>{separatorName(csvSeparator)}</strong>.{' '}
         <Link href="/reglages/saisie#csv">Changer dans les Réglages</Link>
       </p>
 

@@ -430,7 +430,7 @@ describe('API (e2e)', () => {
       .set(other)
       .send({ content: 'Texte,Auteur,Source\nUn,Moi,\n' })
       .expect(200);
-    expect(comma.body).toEqual({ ok: false, problem: 'wrongSeparator' });
+    expect(comma.body).toEqual({ ok: false, problem: 'wrongSeparator', candidates: [','] });
     await http().post('/quotes-csv/preview').send({ content: 'x' }).expect(401);
   });
 
@@ -467,11 +467,22 @@ describe('API (e2e)', () => {
       '',
     ]);
 
-    await http().put('/preferences').set(auth).send({ csvSeparator: 'Comma' }).expect(200);
+    await http().put('/preferences').set(auth).send({ csvSeparator: ',' }).expect(200);
     const comma = await http().get('/vocabulary-csv/export').set(auth).expect(200);
     expect(comma.text.split('\r\n')[2]).toBe(
       'carte d’embarquement,boarding pass,Voyage,Montrez votre carte.,"Show your ""boarding pass""; please."',
     );
+    // MEM-80: any character; the values that hold it between double quotes.
+    await http().put('/preferences').set(auth).send({ csvSeparator: ' ' }).expect(200);
+    const space = await http().get('/vocabulary-csv/export').set(auth).expect(200);
+    expect(space.text.split('\r\n')[1]).toBe('accroc snag   ');
+    expect(space.text.split('\r\n')[2]).toBe(
+      '"carte d’embarquement" "boarding pass" Voyage "Montrez votre carte." "Show your ""boarding pass""; please."',
+    );
+    await http().put('/preferences').set(auth).send({ csvSeparator: '\t' }).expect(200);
+    const tab = await http().get('/vocabulary-csv/export').set(auth).expect(200);
+    const imported = await http().post('/vocabulary-csv/preview').set(auth).send({ content: tab.text }).expect(200);
+    expect(imported.body.summary).toEqual({ total: 2, new: 0, duplicate: 2, error: 0 }); // read back: the same items
     await http().get('/vocabulary-csv/export').expect(401);
   });
 
@@ -501,7 +512,7 @@ describe('API (e2e)', () => {
       .set(auth)
       .send({ content: 'Français,Anglais\r\nchérir,to cherish\r\n' })
       .expect(200);
-    expect(wrong.body).toEqual({ ok: false, problem: 'wrongSeparator' });
+    expect(wrong.body).toEqual({ ok: false, problem: 'wrongSeparator', candidates: [','] });
     const big = 'un;one;' + 'x'.repeat(40) + ';' + 'phrase '.repeat(70) + '\r\n';
     const large = await http()
       .post('/vocabulary-csv/preview')
@@ -772,7 +783,7 @@ describe('API (e2e)', () => {
       homeSpace: 'Vocabulary',
       translator: 'DeepL',
       showReviewDelays: false,
-      csvSeparator: 'Semicolon',
+      csvSeparator: ';',
       vocabularyPageSize: 20,
     });
 
@@ -782,7 +793,7 @@ describe('API (e2e)', () => {
       homeSpace: 'Quote',
       translator: 'DeepL',
       showReviewDelays: false,
-      csvSeparator: 'Semicolon',
+      csvSeparator: ';',
       vocabularyPageSize: 20,
     });
 
@@ -792,7 +803,7 @@ describe('API (e2e)', () => {
       homeSpace: 'Quote',
       translator: 'Google',
       showReviewDelays: false,
-      csvSeparator: 'Semicolon',
+      csvSeparator: ';',
       vocabularyPageSize: 20,
     });
 
@@ -802,19 +813,23 @@ describe('API (e2e)', () => {
       homeSpace: 'Quote',
       translator: 'Google',
       showReviewDelays: true,
-      csvSeparator: 'Semicolon',
+      csvSeparator: ';',
       vocabularyPageSize: 20,
     });
     await http().put('/preferences').set(auth).send({ showReviewDelays: 'yes' }).expect(400);
 
-    // MEM-55: the CSV separator, a semicolon by default.
-    const csv = await http().put('/preferences').set(auth).send({ csvSeparator: 'Comma' }).expect(200);
-    expect(csv.body).toMatchObject({ csvSeparator: 'Comma', showReviewDelays: true });
-    await http().put('/preferences').set(auth).send({ csvSeparator: 'Tab' }).expect(400);
+    // MEM-55, MEM-80: the CSV separator, a semicolon by default, any single character.
+    for (const separator of ['|', '\t', ' ', 'é', ',']) {
+      const csv = await http().put('/preferences').set(auth).send({ csvSeparator: separator }).expect(200);
+      expect(csv.body).toMatchObject({ csvSeparator: separator, showReviewDelays: true });
+    }
+    for (const refused of ['"', '\n', '\r', '', ';;', 'Tab', 3]) {
+      await http().put('/preferences').set(auth).send({ csvSeparator: refused }).expect(400);
+    }
 
     // MEM-58: items per page of the vocabulary list, 20 by default.
     const pages = await http().put('/preferences').set(auth).send({ vocabularyPageSize: 50 }).expect(200);
-    expect(pages.body).toMatchObject({ vocabularyPageSize: 50, csvSeparator: 'Comma' });
+    expect(pages.body).toMatchObject({ vocabularyPageSize: 50, csvSeparator: ',' });
     await http().put('/preferences').set(auth).send({ vocabularyPageSize: 30 }).expect(400);
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);

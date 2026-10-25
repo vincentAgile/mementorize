@@ -71,12 +71,26 @@ describe('analyzeImport (MEM-53)', () => {
     expect(result.ok && result.summary).toEqual({ total: 7, new: 3, duplicate: 4, error: 0 });
   });
 
-  it('reports the other separator instead of a grid full of errors', () => {
+  it('reports the separators the file seems to use instead of a grid full of errors (MEM-80)', () => {
     expect(analyze('Français,Anglais\nchérir,to cherish\naccroc,snag,Travail')).toEqual({
       ok: false,
       problem: 'wrongSeparator',
+      candidates: [','],
     });
-    expect(analyze(HEAD + 'chérir;to cherish', ',')).toEqual({ ok: false, problem: 'wrongSeparator' });
+    expect(analyze(HEAD + 'chérir;to cherish', ',')).toEqual({
+      ok: false,
+      problem: 'wrongSeparator',
+      candidates: [';'],
+    });
+    expect(analyze('Français\tAnglais\nchérir\tto cherish')).toMatchObject({ candidates: ['\t'] });
+    expect(analyze('Français|Anglais\nchérir|to cherish')).toMatchObject({ candidates: ['|'] });
+  });
+
+  it('reads a file with any separator chosen in the settings (MEM-80)', () => {
+    for (const separator of ['|', '\t', '§', ' ', '🙂']) {
+      const result = analyze(`Français${separator}Anglais\nchérir${separator}to_cherish`, separator);
+      expect(result.ok && result.rows[0]).toMatchObject({ french: 'chérir', english: 'to_cherish', status: 'new' });
+    }
   });
 
   it('takes the first line as the header even when it holds an item (MEM-50: a header line is expected)', () => {

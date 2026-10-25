@@ -2085,6 +2085,58 @@ kbd {
   font-size: 0.9rem;
 }
 
+/* MEM-80: the separator of the CSV files, a single character, and its shortcuts */
+.settings__field > label[for] {
+  flex-basis: 100%;
+  font-size: 0.9rem;
+}
+
+.separator-field {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings__form .separator-field__input {
+  width: 3.5rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  text-align: center;
+}
+
+.settings__form .separator-field__input[aria-invalid='true'] {
+  border-color: #c1543a;
+}
+
+.settings__form .separator-field__shortcut {
+  min-width: 2.4rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #c9dcdc;
+  border-radius: 4px;
+  background: none;
+  color: #147d80;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.settings__form .separator-field__shortcut[aria-pressed='true'] {
+  background: rgba(20, 125, 128, 0.12);
+  font-weight: 600;
+}
+
+.separator-field__shortcuts {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.import-problem__switch + .import-problem__switch::before {
+  content: ' · ';
+}
+
 /* MEM-79: a setting and, next to it, the status of its saving */
 .settings__field {
   display: flex;
@@ -2125,6 +2177,14 @@ kbd {
 
 .save-status__text {
   color: #666;
+}
+
+/* « Réessayer »: a link, not one of the form's buttons */
+.settings__form .save-status .link-button {
+  padding: 0;
+  background: none;
+  color: #147d80;
+  font-size: inherit;
 }
 
 .save-status--saved {

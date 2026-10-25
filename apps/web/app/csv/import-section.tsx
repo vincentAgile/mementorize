@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { type ReactNode, useEffect, useId, useRef, useState, useTransition } from 'react';
-import { MAX_FILE_BYTES, SEPARATOR_NAMES } from '../../lib/csv-separator';
+import { MAX_FILE_BYTES, separatorName, theSeparator, toSeparator } from '../../lib/csv-separator';
 import { NBSP } from '../../lib/format';
 import { agree, countOf, ITEM_NOUN, type Noun, QUOTE_NOUN } from '../../lib/nouns';
-import type { CsvSeparator, ImportAnalysis, ImportRow, ListType, QuoteImportRow } from '../../lib/types';
+import type { ImportAnalysis, ImportRow, ListType, QuoteImportRow } from '../../lib/types';
 import {
   type ImportActionResult,
   importAction,
@@ -110,7 +110,7 @@ const KINDS: Record<ListType, ImportKind<AnyRow>> = {
  * status (to import, duplicate, error). Nothing is saved until the import
  * is confirmed; the items imported are "En attente".
  */
-export function ImportSection({ type, separator }: { type: ListType; separator: CsvSeparator }) {
+export function ImportSection({ type, separator }: { type: ListType; separator: string }) {
   const kind = KINDS[type];
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<PreviewResult | null>(null);
@@ -120,7 +120,6 @@ export function ImportSection({ type, separator }: { type: ListType; separator: 
   const [pending, startTransition] = useTransition();
   const input = useRef<HTMLInputElement>(null);
   const inputId = useId();
-  const other: CsvSeparator = separator === 'Semicolon' ? 'Comma' : 'Semicolon';
 
   function analyze(chosen: File, action = previewImportAction.bind(null, type)) {
     setFile(chosen);
@@ -166,7 +165,7 @@ export function ImportSection({ type, separator }: { type: ListType; separator: 
     <section className="import-export__section" aria-labelledby="import-title">
       <h2 id="import-title">Importer</h2>
       <p>
-        {kind.format} Séparateur : {SEPARATOR_NAMES[separator]}. La première ligne, celle des en-têtes, est ignorée. Les{' '}
+        {kind.format} Séparateur : {separatorName(separator)}. La première ligne, celle des en-têtes, est ignorée. Les{' '}
         {kind.noun.many} {agree('importé', kind.noun, 2)} seront « En attente » : vous les ajouterez à la file
         d’apprentissage depuis la Liste.
       </p>
@@ -224,19 +223,24 @@ export function ImportSection({ type, separator }: { type: ListType; separator: 
 
       {result && 'analysis' in result && !result.analysis.ok && (
         <Problem file={file} onReset={reset}>
-          {problemText(result.analysis, separator, other)}
+          {problemText(result.analysis, separator)}
           {result.analysis.problem === 'wrongSeparator' && file && (
             <>
               {' '}
-              <button
-                type="button"
-                className="link-button"
-                disabled={pending}
-                onClick={() => analyze(file, switchSeparatorAction.bind(null, type, other))}
-              >
-                Passer à la {SEPARATOR_NAMES[other]} et relire le fichier
-              </button>{' '}
-              (ou <Link href="/reglages/saisie#csv">changer dans les Réglages</Link>).
+              {/* MEM-80: one button per separator detected, the most likely first. */}
+              {result.analysis.candidates.map((candidate) => (
+                <span key={candidate} className="import-problem__switch">
+                  <button
+                    type="button"
+                    className="link-button"
+                    disabled={pending}
+                    onClick={() => analyze(file, switchSeparatorAction.bind(null, type, candidate))}
+                  >
+                    Passer {toSeparator(candidate)} et relire le fichier
+                  </button>
+                </span>
+              ))}{' '}
+              (ou <Link href="/reglages/saisie#csv">choisir un autre séparateur dans les Réglages</Link>).
             </>
           )}
         </Problem>
@@ -258,7 +262,7 @@ export function ImportSection({ type, separator }: { type: ListType; separator: 
   );
 }
 
-function problemText(analysis: Extract<ImportAnalysis, { ok: false }>, separator: CsvSeparator, other: CsvSeparator) {
+function problemText(analysis: Extract<ImportAnalysis, { ok: false }>, separator: string) {
   switch (analysis.problem) {
     case 'empty':
       return 'Ce fichier ne contient aucune ligne à importer : sa première ligne, celle des en-têtes, est ignorée.';
@@ -266,8 +270,12 @@ function problemText(analysis: Extract<ImportAnalysis, { ok: false }>, separator
       return 'Ce fichier dépasse 2 000 lignes : découpe-le en plusieurs fichiers.';
     case 'syntax':
       return `Fichier illisible : le guillemet ouvert ligne ${analysis.line} n’est jamais refermé.`;
-    case 'wrongSeparator':
-      return `Ce fichier semble utiliser la ${SEPARATOR_NAMES[other]} comme séparateur, et non le ${SEPARATOR_NAMES[separator]} choisi dans les Réglages.`;
+    case 'wrongSeparator': {
+      // MEM-80: the common separators found in the file, the most likely first.
+      const found = analysis.candidates.map(theSeparator);
+      const listed = found.length > 1 ? `${found.slice(0, -1).join(', ')} ou ${found.at(-1)}` : found[0];
+      return `Ce fichier semble utiliser ${listed} comme séparateur, alors que les Réglages indiquent ${theSeparator(separator)}.`;
+    }
   }
 }
 

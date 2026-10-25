@@ -4,9 +4,6 @@
  * or a line break, a double quote doubled inside them. Lines end with CRLF.
  */
 
-/** The character of each separator, as chosen in the settings (MEM-55). */
-export const SEPARATOR_CHARS = { Semicolon: ';', Comma: ',' } as const;
-
 export const BOM = '﻿';
 
 function field(value: string, separator: string): string {
@@ -72,7 +69,9 @@ export function parseCsv(text: string, separator: string): CsvRecord[] {
       quoted = true;
       quoteLine = line;
       empty = false;
-    } else if (char === separator) {
+    } else if (input.startsWith(separator, i)) {
+      // Any single character since MEM-80, two UTF-16 units for some (an emoji).
+      i += separator.length - 1;
       fields.push(value);
       value = '';
       empty = false;

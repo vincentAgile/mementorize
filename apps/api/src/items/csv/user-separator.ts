@@ -1,11 +1,10 @@
 import type { PrismaService } from '../../prisma/prisma.service.js';
-import { SEPARATOR_CHARS } from './csv.js';
 
-/** The CSV separator chosen by the user in the settings (MEM-55), for the export and the import. */
+/** The CSV separator chosen by the user in the settings (MEM-55; any single character since MEM-80). */
 export async function userSeparator(prisma: PrismaService, userId: string): Promise<string> {
-  const { csvSeparator } = await prisma.user.findUniqueOrThrow({
+  const { csvDelimiter } = await prisma.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { csvSeparator: true },
+    select: { csvDelimiter: true },
   });
-  return SEPARATOR_CHARS[csvSeparator];
+  return csvDelimiter;
 }
