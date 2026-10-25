@@ -21,6 +21,19 @@ export function validateEnv(env: Record<string, unknown>): Record<string, unknow
     if (text(name) && !(Number(env[name]) > 0)) problems.push(`${name} must be a positive number of seconds`);
   }
 
+  // MEM-82: the administration console is optional (off without ADMIN_JWT_SECRET).
+  // Its secret must not be the users' one: a user token would then be checked with it.
+  if (text('ADMIN_JWT_SECRET')) {
+    if (text('ADMIN_JWT_SECRET') === text('JWT_SECRET')) {
+      problems.push('ADMIN_JWT_SECRET must differ from JWT_SECRET');
+    } else if (env.NODE_ENV === 'production' && text('ADMIN_JWT_SECRET') === 'change-me') {
+      problems.push('ADMIN_JWT_SECRET still has a placeholder value');
+    }
+  }
+  if (text('ADMIN_SESSION_TTL') && !(Number(env.ADMIN_SESSION_TTL) > 0)) {
+    problems.push('ADMIN_SESSION_TTL must be a positive number of seconds');
+  }
+
   // E-mails (phase 11) are optional: without SMTP_HOST, the reminders are
   // simply not sent. With it, the rest must be right.
   if (text('SMTP_HOST')) {

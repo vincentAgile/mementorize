@@ -526,6 +526,34 @@ Le conteneur `kokoro` génère la prononciation de chaque élément de vocabulai
 - **Journaux** : avertissements et erreurs seulement (`API_LOG_LEVEL: WARNING`), plus une ligne par requête ; au plus 3 × 10 Mo sur le disque. Pour tout voir le temps d'un diagnostic, `API_LOG_LEVEL: DEBUG` dans `docker-compose.yml`.
 - **Mettre à jour Kokoro** : changer la version de l'image dans `docker-compose.yml` ; le déploiement suivant la télécharge et recrée le conteneur.
 
+## Console d'administration (MEM-82)
+
+Une console séparée de l'application, à l'adresse `https://<domaine>/admin`. Aucun lien n'y mène depuis l'application. Elle a ses propres comptes, sans rapport avec ceux des utilisateurs : un compte utilisateur ne l'ouvre jamais.
+
+**Activer la console** : un secret à elle, différent de `JWT_SECRET`. Sans ce secret, la console reste fermée et sa page de connexion le dit.
+
+```bash
+openssl rand -hex 32    # → ADMIN_JWT_SECRET
+nano .env
+#   ADMIN_JWT_SECRET="<résultat>"
+#   ADMIN_SESSION_TTL=7200        # facultatif : durée d'une session, en secondes (2 h)
+docker compose up -d api
+```
+
+**Les comptes** : uniquement en ligne de commande, sur le serveur. Aucune page ne permet d'en créer. Le mot de passe (12 caractères au moins) est demandé deux fois, sans s'afficher.
+
+```bash
+docker compose exec api node dist/admin/admin-cli.js create admin@exemple.fr
+docker compose exec api node dist/admin/admin-cli.js password admin@exemple.fr   # changer le mot de passe
+docker compose exec api node dist/admin/admin-cli.js delete admin@exemple.fr     # supprimer : l'accès cesse aussitôt
+docker compose exec api node dist/admin/admin-cli.js list
+```
+
+**Sécurité** :
+- la session dure 2 heures, sans prolongation ; « Déconnexion » la termine ;
+- après 5 échecs de connexion en 15 minutes depuis une même adresse, les connexions depuis cette adresse sont refusées le temps que les échecs sortent de la fenêtre ;
+- les pages ne sont ni indexées ni mises en cache.
+
 ## Sauvegarder et restaurer
 
 Automatiquement : une chaque nuit dans `~/backups/daily` (et sa copie chiffrée hors serveur, voir ci-dessus), et une avant chaque déploiement dans `~/backups`. À la main :

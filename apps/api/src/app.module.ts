@@ -12,6 +12,7 @@ import { ProfileModule } from './profile/profile.module.js';
 import { ItemsModule } from './items/items.module.js';
 import { LearningModule } from './learning/learning.module.js';
 import { OptimizationModule } from './optimization/optimization.module.js';
+import { AdminModule } from './admin/admin.module.js';
 import { RemindersModule } from './reminders/reminders.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 
@@ -29,6 +30,7 @@ import { ReviewsModule } from './reviews/reviews.module.js';
     PreferencesModule,
     ProfileModule,
     OptimizationModule,
+    AdminModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],
