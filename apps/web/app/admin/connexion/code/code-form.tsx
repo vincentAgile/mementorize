@@ -21,9 +21,7 @@ export function CodeForm() {
           autoFocus
         />
       </label>
-      <p className="settings__hint">
-        Téléphone indisponible ? Saisissez l’un de vos codes de secours (par exemple k7m2p-x9qzr).
-      </p>
+      <p className="settings__hint">Téléphone indisponible ? Saisissez l’un de vos codes de secours.</p>
       {state.error && (
         <p role="alert" className="form-error">
           {state.error} {state.expired && <Link href="/admin/connexion">Revenir à la connexion</Link>}
