@@ -16,7 +16,7 @@ const TIMEOUT_MS = 5 * 60 * 1000;
 /** A run still "Running" after this was cut short (the API restarted): it counts as failed. */
 const STALE_MS = 15 * 60 * 1000;
 
-const FAILED = 'L’optimisation a échoué : les poids précédents restent en place.';
+const FAILED = 'L’optimisation a échoué : les réglages précédents restent en place.';
 
 /** Where a space stands (MEM-76), for the settings. */
 export interface SpaceOptimization {

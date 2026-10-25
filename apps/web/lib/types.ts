@@ -195,6 +195,22 @@ export interface Preferences {
   mindMapRetention: number;
 }
 
+/** MEM-76: where a space stands, for the optimization of its FSRS weights. */
+export interface SpaceOptimization {
+  type: ItemType;
+  /** The graded reviews of the space (« Appris » excluded): what is learned from. */
+  reviewCount: number;
+  /** Below this, the default weights stay: too few reviews to learn from. */
+  minReviews: number;
+  /** Weights optimized on the user's history are in use; otherwise the default ones. */
+  custom: boolean;
+  optimizedAt: string | null;
+  /** The last optimization: running, done or failed; null if none. */
+  status: 'Running' | 'Succeeded' | 'Failed' | null;
+  finishedAt: string | null;
+  error: string | null;
+}
+
 export interface ReminderSettings extends ReminderSettingsInput {
   emailAvailable: boolean; // false: the server can't send e-mails
 }
