@@ -141,7 +141,7 @@ describe('ReviewsService', () => {
       expect(prismaMock.card.update).toHaveBeenCalledWith({ where: { id: 'card-1' }, data: expected.card });
       expect(prismaMock.reviewLog.create).toHaveBeenCalledWith({ data: { ...expected.log, cardId: 'card-1' } });
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
-      expect(updated.state).toBe('Learning');
+      expect(updated.state).toBe('Review'); // a new card known at once leaves the short step (MEM-74)
       // MEM-47: the previews of its next review, for its buttons at the end of the session.
       expect(updated.nextDueByRating).toEqual(scheduler.preview({ ...card, ...expected.card }, NOW));
     });
