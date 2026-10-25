@@ -2,14 +2,28 @@ import { default_w } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
 import { type CardSchedule, SchedulerService } from './scheduler.service.js';
 
-// Fuzz disabled + a fixed clock: the same inputs always give the same
-// outputs, so we can make precise assertions about the schedule.
+// The settings of Mementorize (MEM-74), without the fuzz, and a fixed clock:
+// the same inputs always give the same outputs, so we can make precise
+// assertions about the schedule.
 const scheduler = new SchedulerService({ enable_fuzz: false });
 const T0 = new Date('2026-09-29T08:00:00Z');
 
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 const after = (from: Date, to: Date) => to.getTime() - from.getTime();
+
+/** A card in review, last seen 20 days ago with a stability of 20 days: due now. */
+const reviewed = (): CardSchedule => ({
+  due: T0,
+  stability: 20,
+  difficulty: 5,
+  scheduledDays: 20,
+  learningSteps: 0,
+  reps: 5,
+  lapses: 0,
+  state: 'Review',
+  lastReview: new Date(T0.getTime() - 20 * DAY),
+});
 
 describe('SchedulerService', () => {
   it('creates a new card that is due immediately', () => {
@@ -18,13 +32,57 @@ describe('SchedulerService', () => {
     expect(card).toMatchObject({ state: 'New', due: T0, reps: 0, lapses: 0, lastReview: null });
   });
 
-  it('keeps a new card rated "Good" in short-term learning (10 min)', () => {
-    const { card } = scheduler.review(scheduler.newCard(T0), 'Good', T0);
+  it('has a single short step of 10 minutes for a new card (MEM-74): « Correct » graduates it', () => {
+    const card = scheduler.newCard(T0);
+    const hard = scheduler.review(card, 'Hard', T0).card;
+    expect(hard.state).toBe('Learning');
+    expect(after(T0, hard.due)).toBe(15 * MINUTE); // « Difficile »: 1.5 × the step of 10 minutes
 
-    expect(card.state).toBe('Learning');
-    expect(after(T0, card.due)).toBe(10 * MINUTE);
-    expect(card.reps).toBe(1);
-    expect(card.lastReview).toEqual(T0);
+    const good = scheduler.review(card, 'Good', T0).card;
+    expect(good.state).toBe('Review');
+    expect(good.scheduledDays).toBeGreaterThanOrEqual(1);
+    expect(good.reps).toBe(1);
+    expect(good.lastReview).toEqual(T0);
+  });
+
+  it('has a single short step of 10 minutes for a forgotten card too (MEM-74)', () => {
+    const forgotten = scheduler.review(reviewed(), 'Again', T0).card;
+    expect(forgotten.state).toBe('Relearning');
+    expect(forgotten.due).toEqual(T0); // due at once, at the bottom of the pile (MEM-47)
+    const later = new Date(T0.getTime() + 10 * MINUTE);
+    expect(after(later, scheduler.review(forgotten, 'Hard', later).card.due)).toBe(15 * MINUTE);
+    expect(scheduler.review(forgotten, 'Good', later).card.state).toBe('Review');
+  });
+
+  it('never schedules a card further than a year (MEM-74), even with the fuzz', () => {
+    const fuzzy = new SchedulerService();
+    // A card known for years: FSRS alone would send it back in several years.
+    const card = { ...reviewed(), stability: 3000, scheduledDays: 900, lastReview: new Date(T0.getTime() - 900 * DAY) };
+    expect(after(T0, scheduler.preview(card, T0).Easy)).toBe(365 * DAY);
+    expect(scheduler.review(card, 'Easy', T0).card.scheduledDays).toBe(365);
+    for (const one of [scheduler, fuzzy]) {
+      const next = one.preview(card, T0);
+      for (const rating of ['Hard', 'Good', 'Easy'] as const) {
+        expect(after(T0, next[rating])).toBeLessThanOrEqual(365 * DAY);
+        expect(one.review(card, rating, T0).card.scheduledDays).toBeLessThanOrEqual(365);
+      }
+    }
+  });
+
+  it('spreads the cards learned the same day with the fuzz (MEM-74), as shown on the buttons', () => {
+    const fuzzy = new SchedulerService();
+    const intervals = new Set<number>();
+    for (let index = 0; index < 20; index++) {
+      // The same card, reviewed a few seconds apart: as twenty words learned in a row.
+      const card = { ...reviewed(), lastReview: new Date(T0.getTime() - 20 * DAY + index * 7_000) };
+      const shown = fuzzy.preview(card, T0).Good;
+      // Pressed a few minutes later: the same interval as the one shown (MEM-49).
+      const later = new Date(T0.getTime() + 5 * MINUTE);
+      const { card: next } = fuzzy.review(card, 'Good', later);
+      expect(after(T0, shown)).toBe(next.scheduledDays * DAY);
+      intervals.add(next.scheduledDays);
+    }
+    expect(intervals.size).toBeGreaterThan(1);
   });
 
   it('graduates a new card rated "Easy" straight to review, days later', () => {
@@ -49,7 +107,7 @@ describe('SchedulerService', () => {
     let now = T0;
     const intervals: number[] = [];
 
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
       card = scheduler.review(card, 'Good', now).card;
       intervals.push(after(now, card.due));
       now = card.due; // review exactly when due
@@ -59,7 +117,14 @@ describe('SchedulerService', () => {
       expect(intervals[i]).toBeGreaterThan(intervals[i - 1]);
     }
     expect(card.state).toBe('Review');
-    expect(intervals.at(-1)!).toBeGreaterThan(30 * DAY); // over a month after 6 successful reviews
+    expect(intervals.at(-1)!).toBeGreaterThan(30 * DAY); // over a month after 4 successful reviews
+
+    // Then up to a year, not further (MEM-74).
+    for (let i = 0; i < 4; i++) {
+      card = scheduler.review(card, 'Good', now).card;
+      now = card.due;
+    }
+    expect(card.scheduledDays).toBe(365);
   });
 
   it('counts a lapse and relearns the card when a known card is forgotten ("Again")', () => {
