@@ -1,6 +1,7 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { getSessionToken } from './session';
+import type { ApiSession } from './session-cookie';
 import type {
   AuthUser,
   CreateQuoteInput,
@@ -50,14 +51,19 @@ export class ApiError extends Error {
 // Public endpoints: register / login
 // ---------------------------------------------------------------------------
 
-export type AuthResult = { ok: true; accessToken: string } | { ok: false; message: string };
+export type AuthResult = { ok: true; session: ApiSession } | { ok: false; message: string };
 
-export async function authenticate(kind: 'login' | 'register', credentials: Credentials): Promise<AuthResult> {
+/** `device`: the browser's User-Agent, kept by the API with the session (MEM-85). */
+export async function authenticate(
+  kind: 'login' | 'register',
+  credentials: Credentials,
+  device?: string | null,
+): Promise<AuthResult> {
   let res: Response;
   try {
     res = await fetch(`${API_URL}/auth/${kind}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(device && { 'User-Agent': device }) },
       body: JSON.stringify(credentials),
       cache: 'no-store',
       signal: AbortSignal.timeout(API_TIMEOUT_MS),
@@ -67,8 +73,7 @@ export async function authenticate(kind: 'login' | 'register', credentials: Cred
   }
 
   if (res.ok) {
-    const { accessToken } = (await res.json()) as { accessToken: string };
-    return { ok: true, accessToken };
+    return { ok: true, session: (await res.json()) as ApiSession };
   }
 
   switch (res.status) {
@@ -80,6 +85,21 @@ export async function authenticate(kind: 'login' | 'register', credentials: Cred
       return { ok: false, message: 'Email invalide ou mot de passe trop court (8 caractères minimum).' };
     default:
       return { ok: false, message: `Erreur inattendue de l'API (${res.status}).` };
+  }
+}
+
+/** Ends the session of this device in the API (MEM-85). Best effort: the cookies go anyway. */
+export async function endSession(refreshToken: string): Promise<void> {
+  try {
+    await fetch(`${API_URL}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    });
+  } catch {
+    // The API is unreachable: the token will expire on its own.
   }
 }
 

@@ -1,8 +1,9 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { authenticate } from '../../lib/api';
-import { createSession, deleteSession } from '../../lib/session';
+import { authenticate, endSession } from '../../lib/api';
+import { createSession, deleteSession, getRefreshToken } from '../../lib/session';
 
 // Server Actions: these functions run on the Next.js server, even though
 // the forms that call them live in the browser.
@@ -20,12 +21,12 @@ async function handleAuth(kind: 'login' | 'register', formData: FormData): Promi
     return { error: 'Email et mot de passe sont requis.', email };
   }
 
-  const result = await authenticate(kind, { email, password });
+  const result = await authenticate(kind, { email, password }, (await headers()).get('user-agent'));
   if (!result.ok) {
     return { error: result.message, email };
   }
 
-  await createSession(result.accessToken);
+  await createSession(result.session);
   redirect('/'); // must stay outside any try/catch: it works by throwing
 }
 
@@ -37,7 +38,10 @@ export async function registerAction(_previous: AuthFormState, formData: FormDat
   return handleAuth('register', formData);
 }
 
+/** MEM-85: ends the session of this device in the API too, then removes both cookies. */
 export async function logoutAction(): Promise<void> {
+  const refreshToken = await getRefreshToken();
+  if (refreshToken) await endSession(refreshToken);
   await deleteSession();
   redirect('/login');
 }

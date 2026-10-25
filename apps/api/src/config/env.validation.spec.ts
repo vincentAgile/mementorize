@@ -5,7 +5,7 @@ const valid = { DATABASE_URL: 'postgresql://u:p@db:5432/x', JWT_SECRET: 'a-real-
 
 describe('validateEnv', () => {
   it('accepts a complete configuration', () => {
-    expect(validateEnv({ ...valid, JWT_EXPIRES_IN: '3600' })).toMatchObject(valid);
+    expect(validateEnv({ ...valid, ACCESS_TOKEN_TTL: '900', REFRESH_TOKEN_TTL: '2592000' })).toMatchObject(valid);
   });
 
   it('treats an empty JWT_SECRET as missing (docker compose passes "" when .env lacks it)', () => {
@@ -40,6 +40,8 @@ describe('validateEnv', () => {
   });
 
   it('lists every problem at once', () => {
-    expect(() => validateEnv({ JWT_EXPIRES_IN: 'soon' })).toThrow(/DATABASE_URL[\s\S]*JWT_SECRET[\s\S]*JWT_EXPIRES_IN/);
+    expect(() => validateEnv({ ACCESS_TOKEN_TTL: 'soon' })).toThrow(
+      /DATABASE_URL[\s\S]*JWT_SECRET[\s\S]*ACCESS_TOKEN_TTL/,
+    );
   });
 });

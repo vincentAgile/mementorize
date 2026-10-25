@@ -12,3 +12,6 @@ export interface JwtPayload {
   sub: string;
   email: string;
 }
+
+/** MEM-85: 15 minutes; the session lasts through the renewal token. */
+export const DEFAULT_ACCESS_TOKEN_TTL = 15 * 60;
