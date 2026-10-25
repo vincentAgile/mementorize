@@ -84,6 +84,85 @@ describe('Administration console (e2e)', () => {
     await http().post('/admin/auth/login').set(client).send({ email, password }).expect(429);
   });
 
+  it('lists the users with their counters, never the content of their items (MEM-84)', async () => {
+    const login = await http()
+      .post('/admin/auth/login')
+      .set('X-Admin-Client-IP', '10.3.0.1')
+      .send({ email, password })
+      .expect(200);
+    const admin = { Authorization: `Bearer ${login.body.accessToken}` };
+
+    const reader = await http()
+      .post('/auth/register')
+      .send({ email: `reader-${unique}@e2e.test`, password: 'password123' })
+      .expect(201);
+    const auth = { Authorization: `Bearer ${reader.body.accessToken}` };
+    await http().put('/profile').set(auth).send({ firstName: 'Rita', lastName: 'Lecture' }).expect(200);
+    for (const word of ['secret-word-1', 'secret-word-2', 'secret-word-3']) {
+      await http().post('/vocabulary').set(auth).send({ word, translation: 'mot secret' }).expect(201);
+    }
+    await http().post('/quotes').set(auth).send({ text: 'Une citation confidentielle.' }).expect(201);
+    const map = await http()
+      .post('/mind-maps')
+      .set(auth)
+      .send({
+        nodes: [
+          { id: 'r', parentId: null, label: 'Racine privée', position: { x: 0, y: 0 } },
+          { id: 'a', parentId: 'r', label: 'Branche A', position: { x: 100, y: 0 } },
+          { id: 'b', parentId: 'r', label: 'Branche B', position: { x: -100, y: 0 } },
+        ],
+      })
+      .expect(201);
+    const branch = (map.body.cards as { id: string }[])[0].id;
+    await http().post(`/reviews/${branch}/learned`).set(auth).expect(201);
+    // One word learning, one learned.
+    const words = await prisma.item.findMany({
+      where: { user: { email: `reader-${unique}@e2e.test` }, type: 'Vocabulary' },
+      orderBy: { createdAt: 'asc' },
+    });
+    await prisma.item.update({ where: { id: words[0].id }, data: { learningStatus: 'Learning', learnPosition: null } });
+    await prisma.item.update({ where: { id: words[1].id }, data: { learningStatus: 'Learned', learnPosition: null } });
+
+    const list = await http().get('/admin/users').set(admin).expect(200);
+    const row = list.body.users.find((user: { email: string }) => user.email === `reader-${unique}@e2e.test`);
+    expect(row).toEqual({
+      id: expect.any(String),
+      email: `reader-${unique}@e2e.test`,
+      firstName: 'Rita',
+      lastName: 'Lecture',
+      createdAt: expect.any(String),
+      lastActiveAt: expect.any(String),
+      counts: {
+        Vocabulary: { Waiting: 0, ToLearn: 1, Learning: 1, Learned: 1, total: 3 },
+        Quote: { Waiting: 0, ToLearn: 1, Learning: 0, Learned: 0, total: 1 },
+        MindMap: { total: 1, branchesInReview: 1, branchesLearned: 1 },
+        total: 5,
+      },
+    });
+    // The totals: the sum of every user's counters (the other e2e files add items meanwhile).
+    type Row = { counts: { total: number; MindMap: { branchesLearned: number } } };
+    const users = list.body.users as Row[];
+    expect(list.body.totals.total).toBe(users.reduce((sum, user) => sum + user.counts.total, 0));
+    expect(list.body.totals.MindMap.branchesLearned).toBe(
+      users.reduce((sum, user) => sum + user.counts.MindMap.branchesLearned, 0),
+    );
+    // Nothing of the items themselves.
+    const raw = JSON.stringify(list.body);
+    for (const secret of [
+      'secret-word',
+      'mot secret',
+      'confidentielle',
+      'Racine privée',
+      'Branche A',
+      'passwordHash',
+    ]) {
+      expect(raw).not.toContain(secret);
+    }
+
+    await http().get('/admin/users').expect(401);
+    await http().get('/admin/users').set(auth).expect(401); // a user token
+  });
+
   it('ends the access of a deleted account', async () => {
     const login = await http()
       .post('/admin/auth/login')

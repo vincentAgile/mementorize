@@ -2981,3 +2981,112 @@ kbd {
     padding-inline: 1rem;
   }
 }
+
+/* --- MEM-84: the users of the console --- */
+
+.admin-users__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.admin-users__bar .item-list__filters {
+  flex: 1 1 18rem;
+  margin: 0;
+}
+
+.admin-users__bar .item-list__count {
+  margin: 0;
+}
+
+.admin-users__table th[scope='row'] {
+  font-weight: normal;
+  text-align: left;
+}
+
+.admin-users__table tfoot th[scope='row'],
+.admin-users__table tfoot td {
+  font-weight: 600;
+  border-top: 2px solid #c9dcdc;
+}
+
+.admin-users__table .admin-users__number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-users__table th.admin-users__number button {
+  margin-left: auto;
+}
+
+.admin-users__user {
+  min-width: 12rem;
+}
+
+.admin-users__email,
+.admin-users__name {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.admin-users__name,
+.admin-users__ago {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.admin-users__date,
+.admin-users__ago {
+  display: block;
+  white-space: nowrap;
+}
+
+.admin-users__table td,
+.admin-users__table th[scope='row'] {
+  vertical-align: top;
+}
+
+.admin-users__toggle-cell {
+  width: 2rem;
+}
+
+.admin-users__toggle {
+  padding: 0 0.4rem;
+  border: none;
+  background: none;
+  color: #147d80;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-users__detail-row td {
+  background: rgba(20, 125, 128, 0.05);
+}
+
+.admin-users__detail {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.admin-users__detail dt {
+  font-weight: 600;
+}
+
+.admin-users__detail dd {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .admin-users__detail {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-users__detail dd {
+    margin-bottom: 0.4rem;
+  }
+}
