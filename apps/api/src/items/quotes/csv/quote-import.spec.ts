@@ -63,8 +63,9 @@ describe('analyzeQuoteImport (MEM-72)', () => {
     expect(analyze('Texte,Auteur,Source\nJe pense,Descartes,Discours\nLa vie est un songe.,,')).toEqual({
       ok: false,
       problem: 'wrongSeparator',
+      candidates: [','],
     });
-    expect(analyze(`${HEAD}Un;deux`, ',')).toEqual({ ok: false, problem: 'wrongSeparator' });
+    expect(analyze(`${HEAD}Un;deux`, ',')).toEqual({ ok: false, problem: 'wrongSeparator', candidates: [';'] });
     // A file of texts only, with commas in them: fine with either separator.
     expect(analyze('Texte\nJe pense, donc je suis.\nOui, non.')).toMatchObject({ ok: true });
   });

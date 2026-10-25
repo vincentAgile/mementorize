@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { CsvSeparator, ItemType, Translator } from '@prisma/client';
+import type { ItemType, Translator } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { PreferencesDto } from './dto/preferences.dto.js';
 
@@ -7,7 +7,8 @@ export interface Preferences {
   homeSpace: ItemType;
   translator: Translator;
   showReviewDelays: boolean;
-  csvSeparator: CsvSeparator;
+  /** The separator of the CSV files (MEM-80): a single character. */
+  csvSeparator: string;
   vocabularyPageSize: number;
 }
 
@@ -15,31 +16,37 @@ const SELECT = {
   homeSpace: true,
   translator: true,
   showReviewDelays: true,
-  csvSeparator: true,
+  csvDelimiter: true, // MEM-80: sent as csvSeparator
   vocabularyPageSize: true,
 } as const;
+
+const toPreferences = ({ csvDelimiter, ...rest }: { csvDelimiter: string } & Omit<Preferences, 'csvSeparator'>) => ({
+  ...rest,
+  csvSeparator: csvDelimiter,
+});
 
 /** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55, MEM-58), stored on their account. */
 @Injectable()
 export class PreferencesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  get(userId: string): Promise<Preferences> {
-    return this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: SELECT });
+  async get(userId: string): Promise<Preferences> {
+    return toPreferences(await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: SELECT }));
   }
 
   /** Changes the preferences sent; the others stay as they are. */
-  update(userId: string, dto: PreferencesDto): Promise<Preferences> {
-    return this.prisma.user.update({
+  async update(userId: string, dto: PreferencesDto): Promise<Preferences> {
+    const user = await this.prisma.user.update({
       where: { id: userId },
       data: {
         homeSpace: dto.homeSpace,
         translator: dto.translator,
         showReviewDelays: dto.showReviewDelays,
-        csvSeparator: dto.csvSeparator,
+        csvDelimiter: dto.csvSeparator,
         vocabularyPageSize: dto.vocabularyPageSize,
       },
       select: SELECT,
     });
+    return toPreferences(user);
   }
 }

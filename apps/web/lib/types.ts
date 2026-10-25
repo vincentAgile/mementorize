@@ -187,12 +187,9 @@ export interface Preferences {
   homeSpace: ItemType;
   translator: Translator;
   showReviewDelays: boolean; // MEM-49: the delays under the rating buttons
-  csvSeparator: CsvSeparator; // MEM-55
+  csvSeparator: string; // MEM-55: any single character since MEM-80
   vocabularyPageSize: number; // MEM-58: 20, 50 or 100
 }
-
-/** The separator of the CSV files, export and import (MEM-55). */
-export type CsvSeparator = 'Semicolon' | 'Comma';
 
 export interface ReminderSettings extends ReminderSettingsInput {
   emailAvailable: boolean; // false: the server can't send e-mails
@@ -222,7 +219,10 @@ export type QuoteImportRow = { line: number; text: string; author: string; sourc
 /** Answer of POST /vocabulary-csv/preview and /quotes-csv/preview: the lines, or why the file can't be read. */
 export type ImportAnalysis<Row = ImportRow | QuoteImportRow> =
   | { ok: true; rows: Row[]; summary: { total: number; new: number; duplicate: number; error: number } }
-  | { ok: false; problem: 'empty' | 'tooManyLines' | 'syntax' | 'wrongSeparator'; line?: number };
+  | { ok: false; problem: 'empty' | 'tooManyLines' }
+  | { ok: false; problem: 'syntax'; line: number }
+  /** MEM-80: the common separators the file seems to use instead, the most likely first. */
+  | { ok: false; problem: 'wrongSeparator'; candidates: string[] };
 
 /** Answer of POST /vocabulary-csv/import (MEM-54) and /quotes-csv/import (MEM-72). */
 export type ImportResult =

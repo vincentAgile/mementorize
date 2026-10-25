@@ -35,4 +35,12 @@ describe('CSV (MEM-50)', () => {
   it('rejects a quoted field that is never closed', () => {
     expect(() => parseCsv('a;"b\nc;d', ';')).toThrow(CsvSyntaxError);
   });
+
+  it('writes and reads back any single character as separator (MEM-80)', () => {
+    for (const separator of ['|', '\t', ' ', 'é', '🙂']) {
+      const lines = [['a b', `x${separator}y`, 'say "hi"', '']];
+      const csv = toCsv(lines, separator);
+      expect(parseCsv(csv, separator).map((record) => record.fields)).toEqual(lines);
+    }
+  });
 });

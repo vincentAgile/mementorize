@@ -37,9 +37,14 @@ model User {
   /// Show, under each rating button of a review, when the card would come
   /// back (MEM-49). Off by default, existing accounts included.
   showReviewDelays Boolean @default(false)
-  /// Separator of the CSV files, export and import (MEM-55): a semicolon
-  /// for Excel in French, by default; a comma for most other tools.
+  /// Former separator of the CSV files (MEM-55), replaced by csvDelimiter
+  /// (MEM-80). Kept for the previous version of the API during the
+  /// deployment; no longer read nor written: to drop with a later migration.
   csvSeparator CsvSeparator @default(Semicolon)
+  /// Separator of the CSV files, export and import (MEM-80): any single
+  /// character but the double quote and the line breaks; a semicolon, for
+  /// Excel in French, by default.
+  csvDelimiter String @default(";")
   /// Number of items per page of the vocabulary list (MEM-58): 20, 50 or 100.
   vocabularyPageSize Int @default(20)
 
@@ -47,7 +52,8 @@ model User {
 }
 
 /// Services of the translate buttons of the vocabulary forms (MEM-44).
-/// Separator of the CSV files (MEM-55): « ; » or « , ».
+/// Former separator of the CSV files (MEM-55): « ; » or « , ». Replaced by
+/// users.csvDelimiter (MEM-80).
 enum CsvSeparator {
   Semicolon
   Comma

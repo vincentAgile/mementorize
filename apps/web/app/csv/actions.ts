@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { ApiError, importCsv, previewImport, savePreferences } from '../../lib/api';
-import { CSV_SEPARATORS, MAX_FILE_BYTES } from '../../lib/csv-separator';
-import type { CsvSeparator, ImportAnalysis, ImportResult, ListType } from '../../lib/types';
+import { MAX_FILE_BYTES, separatorProblem } from '../../lib/csv-separator';
+import type { ImportAnalysis, ImportResult, ListType } from '../../lib/types';
 
 const LIST_TYPES: readonly ListType[] = ['Vocabulary', 'Quote'];
 
@@ -69,15 +69,15 @@ export async function importAction(type: ListType, formData: FormData): Promise<
 }
 
 /**
- * The file seems to use the other separator (MEM-53): change the setting
- * (MEM-55), then read it again.
+ * The file seems to use another separator (MEM-53, MEM-80): change the
+ * setting (MEM-55) to the one chosen among those detected, then read it again.
  */
 export async function switchSeparatorAction(
   type: ListType,
-  separator: CsvSeparator,
+  separator: string,
   formData: FormData,
 ): Promise<PreviewResult> {
-  if (!CSV_SEPARATORS.includes(separator)) throw new Error('Invalid separator');
+  if (typeof separator !== 'string' || separatorProblem(separator)) throw new Error('Invalid separator');
   try {
     await savePreferences({ csvSeparator: separator });
   } catch (error) {

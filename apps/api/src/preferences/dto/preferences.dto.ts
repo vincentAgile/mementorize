@@ -1,15 +1,20 @@
-import type { CsvSeparator, ItemType, Translator } from '@prisma/client';
-import { IsBoolean, IsEnum, IsIn, IsOptional } from 'class-validator';
+import type { ItemType, Translator } from '@prisma/client';
+import { IsBoolean, IsEnum, IsIn, IsOptional, ValidateBy } from 'class-validator';
+import { separatorProblem } from '../../items/csv/separator.js';
 import { ITEM_TYPES } from '../../items/item-content.js';
 
 /** Runtime list of the translation services (MEM-44), in sync with the Prisma enum. */
 export const TRANSLATORS = { DeepL: 'DeepL', Google: 'Google' } as const satisfies Record<Translator, Translator>;
 
-/** Runtime list of the CSV separators (MEM-55), in sync with the Prisma enum. */
-export const CSV_SEPARATORS = { Semicolon: 'Semicolon', Comma: 'Comma' } as const satisfies Record<
-  CsvSeparator,
-  CsvSeparator
->;
+/** A separator of the CSV files (MEM-80): a single character, but the double quote and the line breaks. */
+const IsCsvSeparator = () =>
+  ValidateBy({
+    name: 'isCsvSeparator',
+    validator: {
+      validate: (value: unknown) => separatorProblem(value) === null,
+      defaultMessage: (args) => separatorProblem(args?.value) ?? 'Invalid separator',
+    },
+  });
 
 /** The page sizes of the vocabulary list (MEM-58). */
 export const PAGE_SIZES = [20, 50, 100] as const;
@@ -31,10 +36,10 @@ export class PreferencesDto {
   @IsBoolean()
   showReviewDelays?: boolean;
 
-  /** The separator of the CSV files, export and import (MEM-55). */
+  /** The separator of the CSV files, export and import (MEM-55): any single character since MEM-80. */
   @IsOptional()
-  @IsEnum(CSV_SEPARATORS)
-  csvSeparator?: CsvSeparator;
+  @IsCsvSeparator()
+  csvSeparator?: string;
 
   /** Items per page of the vocabulary list (MEM-58). */
   @IsOptional()

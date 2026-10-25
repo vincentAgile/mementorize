@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { ApiError, savePreferences, saveReminderSettings, sendTestReminder } from '../../lib/api';
-import { CSV_SEPARATORS } from '../../lib/csv-separator';
+import { separatorProblem } from '../../lib/csv-separator';
 import { findSpace } from '../../lib/spaces';
-import type { CsvSeparator, ItemType, Preferences, Translator } from '../../lib/types';
+import type { ItemType, Preferences, Translator } from '../../lib/types';
 import type { SaveResult } from './save-result';
 
 // MEM-79: each setting is saved as soon as its change is confirmed. A Server
@@ -46,9 +46,10 @@ export async function saveReviewDelaysAction(showReviewDelays: boolean): Promise
   return save({ showReviewDelays }, 'settings');
 }
 
-/** The separator of the CSV files, export and import (MEM-55). */
-export async function saveCsvSeparatorAction(csvSeparator: CsvSeparator): Promise<SaveResult> {
-  if (!CSV_SEPARATORS.includes(csvSeparator)) return { invalid: 'Séparateur invalide.' };
+/** The separator of the CSV files, export and import (MEM-55): any single character since MEM-80. */
+export async function saveCsvSeparatorAction(csvSeparator: string): Promise<SaveResult> {
+  const problem = typeof csvSeparator === 'string' ? separatorProblem(csvSeparator) : 'Séparateur invalide.';
+  if (problem) return { invalid: problem };
   return save({ csvSeparator }, 'all'); // the Import / export tabs use it
 }
 
