@@ -20,6 +20,8 @@ model User {
   /// renewal of the session; to the hour. Null: not used since it exists.
   lastActiveAt DateTime?
   items        Item[]
+  /// The sessions of the user, one family of renewal tokens per login (MEM-85).
+  refreshTokens RefreshToken[]
   /// The FSRS weights optimized on the user's history, per space (MEM-76).
   fsrsParameters FsrsParameters[]
 
@@ -240,4 +242,30 @@ model FsrsParameters {
 
   @@id([userId, type])
   @@map("fsrs_parameters")
+}
+
+/// MEM-85: a token to renew the session of a device without the password.
+/// Each renewal replaces it by a new one of the same family (one family per
+/// login on a device); presented again after that, it revokes its family.
+/// Stored hashed: the token itself only exists in the browser's cookie.
+model RefreshToken {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyId         String
+  /// SHA-256 of the secret part of the token (a long random value: no need for bcrypt).
+  tokenHash        String
+  /// The browser of the login (its User-Agent), and when that session started.
+  device           String?
+  sessionStartedAt DateTime
+  createdAt        DateTime  @default(now())
+  expiresAt        DateTime
+  /// When it was exchanged for a new one: it can't be used again.
+  usedAt           DateTime?
+  revokedAt        DateTime?
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }

@@ -16,8 +16,9 @@ export function validateEnv(env: Record<string, unknown>): Record<string, unknow
   } else if (env.NODE_ENV === 'production' && text('JWT_SECRET') === 'change-me') {
     problems.push('JWT_SECRET still has the placeholder value of .env.example');
   }
-  if (env.JWT_EXPIRES_IN !== undefined && !(Number(env.JWT_EXPIRES_IN) > 0)) {
-    problems.push('JWT_EXPIRES_IN must be a positive number of seconds');
+  // MEM-85: the lifetimes of the access token and of the renewal token.
+  for (const name of ['ACCESS_TOKEN_TTL', 'REFRESH_TOKEN_TTL']) {
+    if (text(name) && !(Number(env[name]) > 0)) problems.push(`${name} must be a positive number of seconds`);
   }
 
   // E-mails (phase 11) are optional: without SMTP_HOST, the reminders are

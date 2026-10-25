@@ -196,6 +196,15 @@ COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
 
 Avec `COMPOSE_FILE`, un simple `docker compose …` utilise les deux fichiers, sans avoir à taper `-f docker-compose.yml -f docker-compose.prod.yml` à chaque fois. `WEB_PORT` ne sert pas en production.
 
+**Durée des sessions** (facultatif, MEM-85) : l'utilisateur reste connecté tant qu'il utilise l'application. Un jeton d'accès court, renouvelé sans qu'il le voie, et un jeton de renouvellement long, prolongé à chaque utilisation. Valeurs par défaut, en secondes :
+
+```bash
+ACCESS_TOKEN_TTL=900         # jeton d'accès : 15 minutes
+REFRESH_TOKEN_TTL=2592000    # sans aucune utilisation pendant 30 jours : nouvelle connexion
+```
+
+L'ancienne variable `JWT_EXPIRES_IN` n'est plus lue : elle peut être retirée de `.env`.
+
 Le mot de passe de la base n'est lu qu'à la **création** du volume : le changer ensuite dans `.env` ne change pas celui de la base existante.
 
 ## 9. Préparer le déploiement continu

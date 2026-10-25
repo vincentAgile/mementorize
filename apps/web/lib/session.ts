@@ -1,27 +1,23 @@
 import 'server-only';
 import { cookies } from 'next/headers';
-import { SESSION_COOKIE } from './session-cookie';
+import { type ApiSession, REFRESH_COOKIE, SESSION_COOKIE, sessionCookies } from './session-cookie';
 
 /**
- * The "session" is simply the JWT returned by the API, stored in an
- * httpOnly cookie: JavaScript running in the page can't read it (XSS
- * protection), the browser sends it back to Next.js automatically, and
- * Next.js forwards it to the API as a Bearer token.
+ * The "session" is the pair of tokens given by the API (MEM-85), stored in
+ * httpOnly cookies: JavaScript running in the page can't read them (XSS
+ * protection), the browser sends them back to Next.js automatically, and
+ * Next.js forwards the access token to the API as a Bearer token. The proxy
+ * (proxy.ts) renews it before it expires.
  */
-export async function createSession(accessToken: string): Promise<void> {
+export async function createSession(session: ApiSession): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'lax',
-    path: '/',
-    maxAge: secondsUntilExpiry(accessToken), // cookie dies with the token
-  });
+  for (const cookie of sessionCookies(session)) cookieStore.set(cookie);
 }
 
 export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(SESSION_COOKIE);
+  cookieStore.delete(REFRESH_COOKIE);
 }
 
 export async function getSessionToken(): Promise<string | undefined> {
@@ -29,15 +25,7 @@ export async function getSessionToken(): Promise<string | undefined> {
   return cookieStore.get(SESSION_COOKIE)?.value;
 }
 
-/**
- * Reads the `exp` claim of the JWT. No signature check here: that's the
- * API's job. We only need the expiry date to size the cookie.
- */
-function secondsUntilExpiry(token: string): number {
-  try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
-    return Math.max(0, payload.exp - Math.floor(Date.now() / 1000));
-  } catch {
-    return 60 * 60; // fallback: 1 hour
-  }
+export async function getRefreshToken(): Promise<string | undefined> {
+  const cookieStore = await cookies();
+  return cookieStore.get(REFRESH_COOKIE)?.value;
 }
