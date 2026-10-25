@@ -16,6 +16,9 @@ model User {
   lastName     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  /// The last use of the app (MEM-83): an authenticated call, a login, a
+  /// renewal of the session; to the hour. Null: not used since it exists.
+  lastActiveAt DateTime?
   items        Item[]
   /// The FSRS weights optimized on the user's history, per space (MEM-76).
   fsrsParameters FsrsParameters[]

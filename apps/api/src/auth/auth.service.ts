@@ -1,6 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcryptjs';
+import { ActivityService } from '../users/activity.service.js';
 import { UsersService } from '../users/users.service.js';
 import type { AuthUser, JwtPayload } from './auth-user.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -18,6 +19,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
+    private readonly activity: ActivityService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AccessToken> {
@@ -45,6 +47,7 @@ export class AuthService {
   }
 
   async login(user: AuthUser): Promise<AccessToken> {
+    void this.activity.touch(user.id); // MEM-83: a login is an activity
     const payload: JwtPayload = { sub: user.id, email: user.email };
     return { accessToken: await this.jwtService.signAsync(payload) };
   }
