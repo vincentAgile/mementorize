@@ -14,7 +14,8 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
+  /** A new account: its first activity is its registration (MEM-83). */
   create(email: string, passwordHash: string): Promise<User> {
-    return this.prisma.user.create({ data: { email, passwordHash } });
+    return this.prisma.user.create({ data: { email, passwordHash, lastActiveAt: new Date() } });
   }
 }

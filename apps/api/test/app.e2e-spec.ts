@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
+import { PrismaService } from '../src/prisma/prisma.service.js';
 
 /**
  * End-to-end: the whole Nest application, on a real PostgreSQL database
@@ -53,6 +54,23 @@ describe('API (e2e)', () => {
 
     const me = await http().get('/auth/me').set('Authorization', `Bearer ${token}`).expect(200);
     expect(me.body.email).toBe(`alice-${unique}@e2e.test`);
+  });
+
+  it('records the last activity of a user, to the hour (MEM-83)', async () => {
+    const prisma = app.get(PrismaService);
+    const before = Date.now();
+    const token = await register('activity');
+    const email = `activity-${unique}@e2e.test`;
+    const lastActive = async () =>
+      (await prisma.user.findUniqueOrThrow({ where: { email }, select: { lastActiveAt: true } })).lastActiveAt;
+
+    const registered = await lastActive();
+    expect(registered!.getTime()).toBeGreaterThanOrEqual(before - 1000); // the registration
+
+    // An authenticated call within the hour: not rewritten.
+    await http().get('/items').set('Authorization', `Bearer ${token}`).expect(200);
+    await new Promise((resolve) => setTimeout(resolve, 100)); // recorded in the background
+    expect(await lastActive()).toEqual(registered);
   });
 
   it("creates an item with its review card, and keeps it out of other users' reach", async () => {

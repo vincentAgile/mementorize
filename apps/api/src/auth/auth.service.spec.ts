@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import bcrypt from 'bcryptjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ActivityService } from '../users/activity.service.js';
 import { UsersService } from '../users/users.service.js';
 import { AuthService } from './auth.service.js';
 
@@ -13,6 +14,7 @@ describe('AuthService', () => {
     findByEmail: vi.fn(),
     create: vi.fn(),
   };
+  const activityMock = { touch: vi.fn().mockResolvedValue(undefined) };
   const jwtMock = {
     signAsync: vi.fn().mockResolvedValue('signed.jwt.token'),
   };
@@ -26,6 +28,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: UsersService, useValue: usersMock },
         { provide: JwtService, useValue: jwtMock },
+        { provide: ActivityService, useValue: activityMock },
       ],
     }).compile();
 
@@ -84,6 +87,13 @@ describe('AuthService', () => {
       usersMock.findByEmail.mockResolvedValue(null);
 
       expect(await service.validateUser('nobody@example.com', 'correct horse')).toBeNull();
+    });
+  });
+
+  describe('login', () => {
+    it('records the activity of the user (MEM-83)', async () => {
+      await service.login({ id: 'user-1', email: 'a@b.c' });
+      expect(activityMock.touch).toHaveBeenCalledWith('user-1');
     });
   });
 });
