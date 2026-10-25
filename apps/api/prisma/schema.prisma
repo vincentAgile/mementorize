@@ -17,6 +17,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   items        Item[]
+  /// The FSRS weights optimized on the user's history, per space (MEM-76).
+  fsrsParameters FsrsParameters[]
 
   /// E-mail reminder of the due reviews (phase 11), once a day at most.
   /// Off until the user turns it on in the settings.
@@ -204,4 +206,35 @@ model ReviewLog {
 
   @@index([cardId])
   @@map("review_logs")
+}
+
+/// MEM-76: the state of an optimization of the FSRS weights.
+enum OptimizationStatus {
+  Running
+  Succeeded
+  Failed
+}
+
+/// The FSRS weights of a user for one space (MEM-76), optimized on their
+/// review history with the official FSRS optimizer; and the state of the
+/// last optimization, run in the background. No row, or no weights: the
+/// default weights.
+model FsrsParameters {
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        ItemType
+  /// The 21 weights of FSRS-6; empty: the default weights.
+  weights     Float[]             @default([])
+  /// When the weights in use were optimized; null with the default weights.
+  optimizedAt DateTime?
+  /// How many reviews they were optimized on.
+  reviewCount Int?
+  /// The last optimization: running, done, or failed (the weights in use stay).
+  status      OptimizationStatus?
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  error       String?
+
+  @@id([userId, type])
+  @@map("fsrs_parameters")
 }

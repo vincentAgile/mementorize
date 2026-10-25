@@ -3,8 +3,13 @@ import type { Card, CardKind, ItemType, LearningStatus } from '@prisma/client';
 import { contentOf } from '../items/item-content.js';
 import { IN_QUEUE, QUEUE_ORDER, type QueueType, queueIds, renumberQueue } from './learning-queue.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { userRetentions } from '../scheduling/retention.js';
-import { type Grade, type NextDueByRating, type Retention, SchedulerService } from '../scheduling/scheduler.service.js';
+import { spaceScheduling } from '../scheduling/space-scheduling.js';
+import {
+  type Grade,
+  type NextDueByRating,
+  type SchedulingOptions,
+  SchedulerService,
+} from '../scheduling/scheduler.service.js';
 
 /** The types learned per item (MEM-22, MEM-67): the item leaves the review, not a card. */
 const LEARNED_PER_ITEM: ItemType[] = ['Vocabulary', 'Quote'];
@@ -79,9 +84,9 @@ export class LearningService {
   ) {}
 
   async session(userId: string, now = new Date()): Promise<LearningSession> {
-    const [[total, items], retentions] = await Promise.all([
+    const [[total, items], scheduling] = await Promise.all([
       this.firstOfQueue(userId, 'Vocabulary'),
-      userRetentions(this.prisma, userId), // MEM-75
+      spaceScheduling(this.prisma, userId), // MEM-75
     ]);
     return {
       total,
@@ -93,7 +98,7 @@ export class LearningService {
           translation,
           example,
           frenchExample: frenchExample ?? null,
-          ...this.previews(item.cards[0], now, retentions.Vocabulary),
+          ...this.previews(item.cards[0], now, scheduling.Vocabulary),
         };
       }),
     };
@@ -101,15 +106,15 @@ export class LearningService {
 
   /** MEM-68: up to five quotes to learn, the first ones of their learning queue. */
   async quoteSession(userId: string, now = new Date()): Promise<QuoteLearningSession> {
-    const [[total, items], retentions] = await Promise.all([
+    const [[total, items], scheduling] = await Promise.all([
       this.firstOfQueue(userId, 'Quote'),
-      userRetentions(this.prisma, userId), // MEM-75
+      spaceScheduling(this.prisma, userId), // MEM-75
     ]);
     return {
       total,
       items: items.map((item) => {
         const { text, author, source } = contentOf({ ...item, type: 'Quote' as const });
-        return { id: item.id, text, author, source, ...this.previews(item.cards[0], now, retentions.Quote) };
+        return { id: item.id, text, author, source, ...this.previews(item.cards[0], now, scheduling.Quote) };
       }),
     };
   }
@@ -130,15 +135,11 @@ export class LearningService {
   }
 
   /** The card of a session's item, and when it comes back for each rating, then once rated « À revoir ». */
-  private previews(card: Card, now: Date, retention: Retention) {
+  private previews(card: Card, now: Date, options: SchedulingOptions) {
     return {
       cardId: card.id,
-      nextDue: this.scheduler.preview(card, now, retention),
-      nextDueAfterAgain: this.scheduler.preview(
-        this.scheduler.review(card, 'Again', now, retention).card,
-        now,
-        retention,
-      ),
+      nextDue: this.scheduler.preview(card, now, options),
+      nextDueAfterAgain: this.scheduler.preview(this.scheduler.review(card, 'Again', now, options).card, now, options),
     };
   }
 
@@ -167,8 +168,8 @@ export class LearningService {
     }
     const others = item.cards.filter((card) => card.id !== first.id);
 
-    const retention = (await userRetentions(this.prisma, userId))[type]; // MEM-75
-    const { card: next, log } = this.scheduler.review(first, rating, now, retention);
+    const options = (await spaceScheduling(this.prisma, userId))[type]; // MEM-75, MEM-76
+    const { card: next, log } = this.scheduler.review(first, rating, now, options);
 
     // All or nothing: the item never ends up `Learning` without its first review.
     await this.prisma.$transaction([
@@ -186,7 +187,7 @@ export class LearningService {
       learningStatus: 'Learning' as const,
       nextDue: next.due,
       // MEM-47: after « À revoir », the card comes back at the end of the session.
-      nextDueByRating: this.scheduler.preview({ ...first, ...next }, now, retention),
+      nextDueByRating: this.scheduler.preview({ ...first, ...next }, now, options),
     };
   }
 

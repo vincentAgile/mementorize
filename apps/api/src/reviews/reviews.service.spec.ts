@@ -1,3 +1,4 @@
+import { default_w } from 'ts-fsrs';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,6 +17,8 @@ describe('ReviewsService', () => {
     reviewLog: { create: vi.fn() },
     // The target retention of each space (MEM-75): none stored here, so 90 %.
     user: { findUnique: vi.fn().mockResolvedValue(null) },
+    // The weights optimized on the history (MEM-76): none here, so the default ones.
+    fsrsParameters: { findMany: vi.fn().mockResolvedValue([]) },
     $transaction: vi.fn((operations: Promise<unknown>[]) => Promise.all(operations)),
   };
 
@@ -164,10 +167,37 @@ describe('ReviewsService', () => {
 
       await service.review(userId, 'card-1', 'Good', NOW);
 
-      const at95 = scheduler.review(card, 'Good', NOW, 95).card;
-      const at90 = scheduler.review(card, 'Good', NOW, 90).card;
+      const at95 = scheduler.review(card, 'Good', NOW, { retention: 95 }).card;
+      const at90 = scheduler.review(card, 'Good', NOW, { retention: 90 }).card;
       expect(at95.due.getTime()).toBeLessThan(at90.due.getTime()); // sooner, for a sturdier memory
       expect(prismaMock.card.update).toHaveBeenCalledWith({ where: { id: 'card-1' }, data: at95 });
+    });
+
+    it('schedules with the weights optimized for the space of the card (MEM-76)', async () => {
+      const card = {
+        ...aCard(),
+        state: 'Review' as const,
+        stability: 10,
+        difficulty: 5,
+        reps: 3,
+        lastReview: new Date(NOW.getTime() - 10 * 86_400_000),
+        due: NOW,
+      };
+      prismaMock.card.findFirst.mockResolvedValue({ ...card, item: { type: 'MindMap' } });
+      prismaMock.card.update.mockImplementation(({ data }) => Promise.resolve({ ...card, ...data }));
+      const weights = [...default_w];
+      weights[8] += 1; // a success strengthens the memory more
+      prismaMock.fsrsParameters.findMany.mockResolvedValueOnce([
+        { type: 'Vocabulary', weights: [] },
+        { type: 'MindMap', weights },
+      ]);
+
+      await service.review(userId, 'card-1', 'Good', NOW);
+
+      const expected = scheduler.review(card, 'Good', NOW, { weights }).card;
+      expect(expected.due).not.toEqual(scheduler.review(card, 'Good', NOW).card.due);
+      expect(prismaMock.card.update).toHaveBeenCalledWith({ where: { id: 'card-1' }, data: expected });
+      expect(prismaMock.fsrsParameters.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId } }));
     });
   });
 

@@ -1,3 +1,4 @@
+import { default_w } from 'ts-fsrs';
 import { describe, expect, it } from 'vitest';
 import { type CardSchedule, SchedulerService } from './scheduler.service.js';
 
@@ -87,9 +88,26 @@ describe('SchedulerService', () => {
     let card = scheduler.newCard(now);
     for (const day of [0, 1, 4]) card = scheduler.review(card, 'Good', new Date(now.getTime() + day * 86_400_000)).card;
     const later = new Date(card.due);
-    const good = (retention: 85 | 90 | 95) => scheduler.preview(card, later, retention).Good.getTime();
+    const good = (retention: 85 | 90 | 95) => scheduler.preview(card, later, { retention }).Good.getTime();
     expect(good(85)).toBeGreaterThan(good(90));
     expect(good(90)).toBeGreaterThan(good(95));
-    expect(scheduler.preview(card, later)).toEqual(scheduler.preview(card, later, 90)); // 90 % by default
+    expect(scheduler.preview(card, later)).toEqual(scheduler.preview(card, later, { retention: 90 })); // 90 % by default
+  });
+
+  it('schedules with the weights optimized on the history of the space, if any (MEM-76)', () => {
+    const scheduler = new SchedulerService({ enable_fuzz: false });
+    const now = new Date('2026-10-25T08:00:00Z');
+    let card = scheduler.newCard(now);
+    for (const day of [0, 1, 4]) card = scheduler.review(card, 'Good', new Date(now.getTime() + day * 86_400_000)).card;
+    const later = new Date(card.due);
+    // Weights where a success strengthens the memory more (w[8]: the growth of the stability).
+    const weights = [...default_w];
+    weights[8] += 1;
+    expect(scheduler.preview(card, later, { weights }).Good.getTime()).toBeGreaterThan(
+      scheduler.preview(card, later).Good.getTime(),
+    );
+    // No weights, or none stored: the default ones.
+    expect(scheduler.preview(card, later, { weights: [] })).toEqual(scheduler.preview(card, later));
+    expect(scheduler.preview(card, later, { weights: null })).toEqual(scheduler.preview(card, later));
   });
 });
