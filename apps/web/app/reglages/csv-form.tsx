@@ -5,7 +5,7 @@ import { CSV_SEPARATORS, SEPARATOR_NAMES } from '../../lib/csv-separator';
 import type { CsvSeparator } from '../../lib/types';
 import { saveCsvSeparatorAction } from './actions';
 
-/** The separator of the CSV files of the vocabulary, export and import (MEM-55). */
+/** The separator of the CSV files, export and import, of the vocabulary and the quotes (MEM-55, MEM-72). */
 export function CsvForm({ csvSeparator }: { csvSeparator: CsvSeparator }) {
   const [state, action, saving] = useActionState(saveCsvSeparatorAction, {});
 
@@ -13,8 +13,8 @@ export function CsvForm({ csvSeparator }: { csvSeparator: CsvSeparator }) {
     <section className="settings" id="csv">
       <h2>Fichiers CSV</h2>
       <p className="page__subtitle">
-        Le séparateur des colonnes, à l’export comme à l’import du vocabulaire : point-virgule pour Excel en français,
-        virgule pour la plupart des autres outils (Google Sheets, Numbers, tableurs en anglais).
+        Le séparateur des colonnes, à l’export comme à l’import du vocabulaire et des citations : point-virgule pour
+        Excel en français, virgule pour la plupart des autres outils (Google Sheets, Numbers, tableurs en anglais).
       </p>
 
       {/* The key remounts the form with the saved value (a <select> ignores a new defaultValue). */}

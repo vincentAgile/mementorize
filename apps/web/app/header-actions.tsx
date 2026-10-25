@@ -2,16 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { inSettings } from '../lib/settings';
 import type { Profile } from '../lib/types';
 import { AccountMenu } from './account-menu';
 
 /**
  * The two icons at the top right of the header (MEM-9): Settings, the only
  * way to reach them, and the account's avatar. A Client Component, to
- * highlight the gear on the Settings page.
+ * highlight the gear in the Settings: on a computer, it plays the part of
+ * the active entry of the menu and joins the band of their tabs (MEM-78).
  */
 export function HeaderActions({ profile }: { profile: Profile }) {
-  const onSettings = usePathname().startsWith('/reglages');
+  const pathname = usePathname();
+  const onSettings = inSettings(pathname);
 
   return (
     <div className="header-actions">
@@ -20,7 +23,7 @@ export function HeaderActions({ profile }: { profile: Profile }) {
         className={`header-actions__icon${onSettings ? ' is-active' : ''}`}
         aria-label="Réglages"
         title="Réglages"
-        aria-current={onSettings ? 'page' : undefined}
+        aria-current={pathname === '/reglages' ? 'page' : onSettings ? 'true' : undefined}
       >
         <GearIcon />
       </Link>

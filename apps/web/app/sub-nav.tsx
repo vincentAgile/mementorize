@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { inSettings, SETTINGS_TABS } from '../lib/settings';
 import { activeSpace, inSession } from '../lib/spaces';
 
 /**
  * The second band of the header (MEM-29): the sub-menu of the active space,
- * as tabs (in the Anglais space: Apprendre · Réviser, Liste, Ajouter, MEM-24).
+ * as tabs (in the Anglais space: Apprendre · Réviser, Liste, Ajouter, MEM-24),
+ * or of the Settings (Général, Révision, Rappels, Saisie et fichiers, MEM-78).
  * The tabs are links, each one a page with its own URL: bookmarks and the
  * browser's Back button work. The band is there on every page, empty when
  * the space has no sub-menu or outside the spaces, so that the page keeps
@@ -18,7 +20,10 @@ export function SubNav() {
   const pathname = usePathname();
   const type = useSearchParams().get('type');
   const space = activeSpace(pathname, type);
-  const tabs = space?.tabs;
+  // MEM-78: the Settings have their tabs too, under the gear.
+  const settings = inSettings(pathname);
+  const tabs = settings ? SETTINGS_TABS : space?.tabs;
+  const label = settings ? 'Réglages' : `Espace ${space?.label}`;
   // A learning or review session belongs to the first tab ("Apprendre · Réviser").
   const session = space !== undefined && inSession(space, pathname, type);
   const nav = useRef<HTMLElement>(null);
@@ -32,8 +37,8 @@ export function SubNav() {
   return (
     <div className={tabs ? 'app-header__sub' : 'app-header__sub app-header__sub--empty'}>
       <div className="app-header__inner">
-        {space && tabs && (
-          <nav ref={nav} className="tabs" aria-label={`Espace ${space.label}`}>
+        {tabs && (
+          <nav ref={nav} className="tabs" aria-label={label}>
             {tabs.map((tab, index) => {
               const open = pathname === tab.href;
               const active = open || (session && index === 0);

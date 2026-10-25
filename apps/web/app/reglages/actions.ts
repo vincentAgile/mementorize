@@ -29,7 +29,7 @@ export async function saveRemindersAction(
     if (error instanceof ApiError) return { error: "Impossible d'enregistrer les réglages." };
     throw error; // e.g. the redirect of an expired session
   }
-  revalidatePath('/reglages');
+  revalidatePath('/reglages', 'layout'); // every tab of the Settings
   return { message: enabled ? `Rappel enregistré : chaque jour vers ${hour}\u00a0h.` : 'Rappels désactivés.' };
 }
 
@@ -61,7 +61,7 @@ export async function saveHomeSpaceAction(
     if (error instanceof ApiError) return { error: "Impossible d'enregistrer la page d'accueil." };
     throw error;
   }
-  revalidatePath('/reglages');
+  revalidatePath('/reglages', 'layout'); // every tab of the Settings
   return { message: `Page d’accueil enregistrée : ${space.label}.` };
 }
 
@@ -97,7 +97,7 @@ export async function saveReviewDelaysAction(
     if (error instanceof ApiError) return { error: "Impossible d'enregistrer le réglage de la révision." };
     throw error;
   }
-  revalidatePath('/reglages');
+  revalidatePath('/reglages', 'layout'); // every tab of the Settings
   return {
     message: showReviewDelays
       ? 'Les boutons de révision affichent le délai avant la prochaine révision.'
