@@ -269,3 +269,16 @@ model RefreshToken {
   @@index([expiresAt])
   @@map("refresh_tokens")
 }
+
+/// MEM-82: an account of the administration console. Apart from the users:
+/// no link to them, its own login and session. Created, changed and deleted
+/// only on the command line, on the server (src/admin/admin-cli.ts).
+model AdminAccount {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+
+  @@map("admin_accounts")
+}

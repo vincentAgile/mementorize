@@ -10,6 +10,9 @@ export const SESSION_COOKIE = 'mementorize_session';
  */
 export const REFRESH_COOKIE = 'mementorize_refresh';
 
+/** MEM-82: the session of the administration console, under /admin only. */
+export const ADMIN_COOKIE = 'mementorize_admin';
+
 /** What the API gives at login, registration and renewal. */
 export interface ApiSession {
   accessToken: string;

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { REFRESH_COOKIE, SESSION_COOKIE, secondsUntilExpiry, sessionCookies } from './lib/session-cookie';
+import { ADMIN_COOKIE, REFRESH_COOKIE, SESSION_COOKIE, secondsUntilExpiry, sessionCookies } from './lib/session-cookie';
 import { renewSession } from './lib/session-renewal';
 
 // Pages reachable without being logged in.
@@ -26,6 +26,7 @@ const RENEW_BEFORE = 60;
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) return admin(request);
   const isPublic = PUBLIC_PATHS.includes(pathname);
   const access = request.cookies.get(SESSION_COOKIE)?.value;
   const refresh = request.cookies.get(REFRESH_COOKIE)?.value;
@@ -52,6 +53,25 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   return NextResponse.next();
+}
+
+/** Where the console is reachable without its session. */
+const ADMIN_PUBLIC_PATHS = ['/admin/connexion', '/admin/session-expiree'];
+
+/**
+ * MEM-82: the administration console has nothing to do with the users'
+ * session: neither renewed nor required here. Without its own session,
+ * its login page. Never indexed, never cached.
+ */
+function admin(request: NextRequest): NextResponse {
+  const { pathname } = request.nextUrl;
+  const response =
+    !ADMIN_PUBLIC_PATHS.includes(pathname) && !request.cookies.has(ADMIN_COOKIE)
+      ? NextResponse.redirect(new URL('/admin/connexion', request.url))
+      : NextResponse.next();
+  response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  response.headers.set('Cache-Control', 'no-store');
+  return response;
 }
 
 function withoutSession(response: NextResponse): NextResponse {

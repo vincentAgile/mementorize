@@ -44,4 +44,11 @@ describe('validateEnv', () => {
       /DATABASE_URL[\s\S]*JWT_SECRET[\s\S]*ACCESS_TOKEN_TTL/,
     );
   });
+
+  it("accepts no administration console, but not one with the users' secret (MEM-82)", () => {
+    expect(validateEnv(valid)).toMatchObject(valid);
+    expect(validateEnv({ ...valid, ADMIN_JWT_SECRET: 'another-secret', ADMIN_SESSION_TTL: '7200' })).toBeTruthy();
+    expect(() => validateEnv({ ...valid, ADMIN_JWT_SECRET: valid.JWT_SECRET })).toThrow(/must differ/);
+    expect(() => validateEnv({ ...valid, ADMIN_SESSION_TTL: '0' })).toThrow(/ADMIN_SESSION_TTL/);
+  });
 });

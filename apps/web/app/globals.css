@@ -2909,3 +2909,75 @@ kbd {
 .optimization__space [role='status']:empty {
   display: none;
 }
+
+/* --- MEM-82: the administration console, its own layout --- */
+
+.admin-banner {
+  background: #24302f;
+  color: #f3f5f5;
+}
+
+.admin-banner__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 0.75rem 2rem;
+}
+
+.admin-banner__title {
+  margin: 0;
+  font-weight: 500;
+}
+
+.admin-banner__brand {
+  font-family: var(--font-logo), system-ui, sans-serif;
+  font-weight: 600;
+}
+
+.admin-banner__account {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-banner__account form {
+  margin: 0;
+}
+
+.admin-banner__logout {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid #9fc9c9;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin__main {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 2rem;
+}
+
+.admin__main--narrow {
+  max-width: calc(380px + 4rem);
+}
+
+.admin__empty {
+  color: #666;
+}
+
+@media (max-width: 600px) {
+  .admin-banner__inner,
+  .admin__main {
+    padding-inline: 1rem;
+  }
+}
