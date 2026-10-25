@@ -23,6 +23,7 @@ import type {
   ReminderSettingsInput,
   RatedCard,
   ReviewRating,
+  SpaceOptimization,
 } from './types';
 
 // Server-side only: this module runs in Server Components and Server
@@ -256,6 +257,21 @@ export function savePreferences(input: Partial<Preferences>): Promise<Preference
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
+}
+
+/** MEM-76: where each space stands for the optimization of its FSRS weights. */
+export function getOptimization(): Promise<SpaceOptimization[]> {
+  return authedFetch<SpaceOptimization[]>('/optimization');
+}
+
+/** Starts the optimization of a space, in the background. ApiError 409: too few reviews, or one is running. */
+export function startOptimization(type: ItemType): Promise<SpaceOptimization> {
+  return authedFetch<SpaceOptimization>(`/optimization/${type}`, { method: 'POST' });
+}
+
+/** Back to the default weights of a space. ApiError 409: an optimization of it is running. */
+export function resetOptimization(type: ItemType): Promise<SpaceOptimization> {
+  return authedFetch<SpaceOptimization>(`/optimization/${type}/reset`, { method: 'POST' });
 }
 
 /** Up to five vocabulary items to learn, the first ones of the learning queue (MEM-21). */

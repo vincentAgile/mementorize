@@ -46,25 +46,38 @@ export type Retention = (typeof RETENTIONS)[number];
 export const DEFAULT_RETENTION: Retention = 90;
 
 /**
+ * How the cards of a space are scheduled: its target retention (MEM-75)
+ * and, once optimized on the user's history, its FSRS weights (MEM-76).
+ */
+export interface SchedulingOptions {
+  retention?: Retention;
+  /** The 21 weights of FSRS-6; none (or empty): the default weights. */
+  weights?: readonly number[] | null;
+}
+
+/**
  * Thin wrapper around ts-fsrs. It's the only place in the app that knows
  * about the library: the rest of the code manipulates database rows, and
  * this class translates them to and from ts-fsrs's own types.
  *
  * Every method takes `now` as a parameter instead of reading the clock
- * itself: that's what makes the scheduling logic testable. The target
- * retention of the card's space (MEM-75) is a parameter too: one FSRS
- * instance per retention, made once.
+ * itself: that's what makes the scheduling logic testable. How the
+ * card's space is scheduled is a parameter too: its target retention
+ * (MEM-75) and its optimized weights (MEM-76). One FSRS instance per
+ * combination, made once.
  */
 export class SchedulerService {
-  private readonly instances = new Map<number, FSRS>();
+  private readonly instances = new Map<string, FSRS>();
 
   constructor(private readonly params: Partial<FSRSParameters> = {}) {}
 
-  private fsrs(retention: Retention): FSRS {
-    let instance = this.instances.get(retention);
+  private fsrs({ retention = DEFAULT_RETENTION, weights }: SchedulingOptions): FSRS {
+    const custom = weights && weights.length > 0 ? weights : undefined;
+    const key = `${retention}|${custom?.join(',') ?? ''}`;
+    let instance = this.instances.get(key);
     if (!instance) {
-      instance = fsrs({ ...this.params, request_retention: retention / 100 });
-      this.instances.set(retention, instance);
+      instance = fsrs({ ...this.params, request_retention: retention / 100, ...(custom && { w: [...custom] }) });
+      this.instances.set(key, instance);
     }
     return instance;
   }
@@ -75,8 +88,8 @@ export class SchedulerService {
   }
 
   /** Next due date for each of the 4 possible answers, without saving anything. */
-  preview(card: CardSchedule, now: Date, retention: Retention = DEFAULT_RETENTION): NextDueByRating {
-    const outcomes = this.fsrs(retention).repeat(toFsrsCard(card), now);
+  preview(card: CardSchedule, now: Date, options: SchedulingOptions = {}): NextDueByRating {
+    const outcomes = this.fsrs(options).repeat(toFsrsCard(card), now);
     return Object.fromEntries(
       RATINGS.map((rating) => [rating, rating === 'Again' ? now : outcomes[Rating[rating] as FsrsGrade].card.due]),
     ) as NextDueByRating;
@@ -93,9 +106,9 @@ export class SchedulerService {
     card: CardSchedule,
     rating: Grade,
     now: Date,
-    retention: Retention = DEFAULT_RETENTION,
+    options: SchedulingOptions = {},
   ): { card: CardSchedule; log: ReviewLogData } {
-    const { card: next, log } = this.fsrs(retention).next(toFsrsCard(card), now, Rating[rating] as FsrsGrade);
+    const { card: next, log } = this.fsrs(options).next(toFsrsCard(card), now, Rating[rating] as FsrsGrade);
     return {
       card: { ...fromFsrsCard(next), ...(rating === 'Again' && { due: now }) },
       log: {

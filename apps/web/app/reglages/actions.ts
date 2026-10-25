@@ -1,10 +1,18 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { ApiError, savePreferences, saveReminderSettings, sendTestReminder } from '../../lib/api';
+import {
+  ApiError,
+  getOptimization,
+  resetOptimization,
+  savePreferences,
+  saveReminderSettings,
+  sendTestReminder,
+  startOptimization,
+} from '../../lib/api';
 import { separatorProblem } from '../../lib/csv-separator';
 import { findSpace } from '../../lib/spaces';
-import type { ItemType, Preferences, Translator } from '../../lib/types';
+import type { ItemType, Preferences, SpaceOptimization, Translator } from '../../lib/types';
 import type { SaveResult } from './save-result';
 
 // MEM-79: each setting is saved as soon as its change is confirmed. A Server
@@ -65,6 +73,45 @@ const RETENTION_FIELDS = {
 export async function saveRetentionAction(type: ItemType, retention: number): Promise<SaveResult> {
   if (!(type in RETENTION_FIELDS) || !RETENTIONS.includes(retention)) return { invalid: 'Rétention invalide.' };
   return save({ [RETENTION_FIELDS[type]]: retention }, 'settings');
+}
+
+/** What an action on the optimization gives (MEM-76): where the space stands now, or why it didn't. */
+export type OptimizationResult = { space: SpaceOptimization } | { error: string };
+
+/** Starts the optimization of the FSRS weights of a space (MEM-76), in the background. */
+export async function optimizeAction(type: ItemType): Promise<OptimizationResult> {
+  if (!(type in RETENTION_FIELDS)) return { error: 'Espace inconnu.' };
+  try {
+    return { space: await startOptimization(type) };
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error;
+    if (error.status === 409) {
+      return { error: 'L’optimisation n’a pas pu démarrer : pas assez de révisions, ou une autre est en cours.' };
+    }
+    return { error: 'L’optimisation n’a pas pu démarrer.' };
+  }
+}
+
+/** Back to the default weights of a space (MEM-76). */
+export async function resetOptimizationAction(type: ItemType): Promise<OptimizationResult> {
+  if (!(type in RETENTION_FIELDS)) return { error: 'Espace inconnu.' };
+  try {
+    return { space: await resetOptimization(type) };
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error;
+    if (error.status === 409) return { error: 'Une optimisation est en cours : attendez qu’elle se termine.' };
+    return { error: 'Le retour aux valeurs par défaut a échoué.' };
+  }
+}
+
+/** Where each space stands (MEM-76): to follow an optimization running in the background. */
+export async function optimizationStatusAction(): Promise<SpaceOptimization[] | null> {
+  try {
+    return await getOptimization();
+  } catch (error) {
+    if (error instanceof ApiError) return null; // the next poll will tell
+    throw error;
+  }
 }
 
 /** The daily reminder e-mail (phase 11): on or off, its hour, in the browser's time zone. */
