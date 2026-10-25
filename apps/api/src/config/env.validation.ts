@@ -30,6 +30,10 @@ export function validateEnv(env: Record<string, unknown>): Record<string, unknow
       problems.push('ADMIN_JWT_SECRET still has a placeholder value');
     }
   }
+  // MEM-86: the key that encrypts the TOTP secrets: 32 bytes, in hexadecimal.
+  if (text('ADMIN_TOTP_ENCRYPTION_KEY') && !/^[0-9a-fA-F]{64}$/.test(text('ADMIN_TOTP_ENCRYPTION_KEY'))) {
+    problems.push('ADMIN_TOTP_ENCRYPTION_KEY must be 64 hexadecimal characters (openssl rand -hex 32)');
+  }
   if (text('ADMIN_SESSION_TTL') && !(Number(env.ADMIN_SESSION_TTL) > 0)) {
     problems.push('ADMIN_SESSION_TTL must be a positive number of seconds');
   }
