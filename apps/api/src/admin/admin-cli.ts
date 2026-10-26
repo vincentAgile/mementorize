@@ -94,7 +94,13 @@ export async function run(args: string[], prisma: PrismaService, prompt = newPas
       await prisma.$transaction([
         prisma.adminAccount.update({
           where: { email },
-          data: { totpSecret: null, totpEnabledAt: null, totpLastStep: null, totpPendingSecret: null },
+          data: {
+            totpSecret: null,
+            totpEnabledAt: null,
+            totpLastStep: null,
+            totpPendingSecret: null,
+            totpDisabledAt: null, // MEM-88: back to « on by default »
+          },
         }),
         prisma.adminRecoveryCode.deleteMany({ where: { adminId: account.id } }),
       ]);
@@ -114,7 +120,7 @@ export async function run(args: string[], prisma: PrismaService, prompt = newPas
         .map(
           (one) =>
             `${one.email}  (créé le ${date(one.createdAt)}, dernière connexion : ${date(one.lastLoginAt)}, ` +
-            `double authentification : ${one.totpEnabledAt ? 'active' : 'à activer'})`,
+            `double authentification : ${one.totpEnabledAt ? 'active' : one.totpDisabledAt ? 'désactivée' : 'à activer'})`,
         )
         .join('\n');
     }

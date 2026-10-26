@@ -3171,3 +3171,107 @@ kbd {
     grid-template-columns: max-content;
   }
 }
+
+/* --- MEM-88: the navigation and the settings of the console --- */
+
+.admin-nav {
+  display: flex;
+  gap: 1.25rem;
+  margin-right: auto;
+  margin-left: 1.5rem;
+}
+
+.admin-nav a {
+  color: #c9dcdc;
+  text-decoration: none;
+  padding-bottom: 0.15rem;
+  border-bottom: 2px solid transparent;
+}
+
+.admin-nav a:hover {
+  color: white;
+}
+
+.admin-nav a[aria-current='page'] {
+  color: white;
+  border-bottom-color: #7cc7c7;
+}
+
+.admin-settings {
+  max-width: 40rem;
+}
+
+.admin-settings h2 {
+  font-size: 1.15rem;
+}
+
+.admin-settings__on {
+  color: #2e7d32;
+}
+
+.admin-settings__off {
+  color: #b3261e;
+}
+
+.admin-settings__form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.admin-settings__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.admin-settings__form input {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.admin-settings__button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: #147d80;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-settings__button--danger {
+  margin-top: 0.5rem;
+  border-color: #b3261e;
+  background: none;
+  color: #b3261e;
+}
+
+.admin-settings__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dialog .admin-settings__confirm {
+  border-color: #b3261e;
+  background: #b3261e;
+}
+
+.admin-settings__warning {
+  padding: 0.6rem 0.8rem;
+  border-left: 4px solid #c1543a;
+  background: rgba(193, 84, 58, 0.08);
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .admin-nav {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+  }
+}

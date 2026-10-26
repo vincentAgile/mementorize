@@ -36,6 +36,7 @@ describe('Administration console (e2e)', () => {
   async function adminSession(ip: string): Promise<{ Authorization: string }> {
     const client = { 'X-Admin-Client-IP': ip };
     const login = await http().post('/admin/auth/login').set(client).send({ email, password }).expect(200);
+    if (login.body.step === 'session') return { Authorization: `Bearer ${login.body.session.accessToken}` }; // MEM-88
     if (login.body.step === 'activation') {
       const { challenge } = login.body;
       totpSecret = (await http().post('/admin/auth/enrollment').send({ challenge }).expect(200)).body.secret;
@@ -87,7 +88,12 @@ describe('Administration console (e2e)', () => {
     const admin = await adminSession(client['X-Admin-Client-IP']);
 
     const me = await http().get('/admin/auth/me').set(admin).expect(200);
-    expect(me.body).toEqual({ id: expect.any(String), email, recoveryCodesLeft: 10 });
+    expect(me.body).toEqual({
+      id: expect.any(String),
+      email,
+      recoveryCodesLeft: 10,
+      twoFactor: { enabled: true, enabledAt: expect.any(String), disabledAt: null },
+    });
     await http().get('/admin/auth/me').expect(401);
     expect((await prisma.adminAccount.findUniqueOrThrow({ where: { email } })).lastLoginAt).not.toBeNull();
 
@@ -176,6 +182,70 @@ describe('Administration console (e2e)', () => {
     await http().get('/admin/auth/me').set(admin).expect(200);
     await run(['reset-2fa', email], prisma);
     await http().get('/admin/auth/me').set(admin).expect(401);
+  });
+
+  it('lets an administrator turn their two-step login off, then on again (MEM-88)', async () => {
+    const ip = '10.5.0.1';
+    const client = { 'X-Admin-Client-IP': ip };
+    const admin = await adminSession(ip); // on (activated if needed)
+    const state = async () => (await http().get('/admin/auth/me').set(admin).expect(200)).body.twoFactor;
+    expect(await state()).toMatchObject({ enabled: true, enabledAt: expect.any(String) });
+
+    // Not without the password and a valid code.
+    await http().post('/admin/auth/2fa/disable').set(client).send({ password, code: '000000' }).expect(401);
+    await http()
+      .post('/admin/auth/2fa/disable')
+      .set(client)
+      .send({ password: 'wrong', code: await nextCode() })
+      .expect(401);
+    await http()
+      .post('/admin/auth/2fa/disable')
+      .send({ password, code: await nextCode() })
+      .expect(401); // no session
+    expect((await state()).enabled).toBe(true);
+
+    await http()
+      .post('/admin/auth/2fa/disable')
+      .set(admin)
+      .set(client)
+      .send({ password, code: await nextCode() })
+      .expect(204);
+    expect(await state()).toMatchObject({ enabled: false, disabledAt: expect.any(String) });
+    const account = await prisma.adminAccount.findUniqueOrThrow({ where: { email } });
+    expect(account).toMatchObject({ totpSecret: null, totpEnabledAt: null });
+    expect(await prisma.adminRecoveryCode.count({ where: { adminId: account.id } })).toBe(0);
+    const events = await prisma.adminSecurityEvent.findMany({
+      where: { adminId: account.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(events.at(-1)).toMatchObject({ event: '2fa-disabled', ip, email });
+
+    // The password alone now opens a session.
+    const login = await http().post('/admin/auth/login').set(client).send({ email, password }).expect(200);
+    expect(login.body).toMatchObject({ step: 'session', session: { accessToken: expect.any(String) } });
+    await http().get('/admin/auth/me').set('Authorization', `Bearer ${login.body.session.accessToken}`).expect(200);
+
+    // On again: the password, then the activation of MEM-86.
+    await http().post('/admin/auth/2fa/enable').set(admin).set(client).send({ password: 'wrong' }).expect(401);
+    const step = await http().post('/admin/auth/2fa/enable').set(admin).set(client).send({ password }).expect(200);
+    expect(step.body.step).toBe('activation');
+    totpSecret = (await http().post('/admin/auth/enrollment').send({ challenge: step.body.challenge }).expect(200)).body
+      .secret;
+    const activated = await http()
+      .post('/admin/auth/activate')
+      .set(client)
+      .send({ challenge: step.body.challenge, code: await nextCode() })
+      .expect(200);
+    expect(activated.body.recoveryCodes).toHaveLength(10);
+    expect((await state()).enabled).toBe(true);
+    const last = await prisma.adminSecurityEvent.findFirst({
+      where: { adminId: account.id },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(last).toMatchObject({ event: '2fa-enabled', ip });
+    expect((await http().post('/admin/auth/login').set(client).send({ email, password }).expect(200)).body.step).toBe(
+      'code',
+    );
   });
 
   it('lists the users with their counters, never the content of their items (MEM-84)', async () => {

@@ -12,6 +12,8 @@ export interface Administrator {
   email: string;
   /** MEM-86: the recovery codes not used yet. */
   recoveryCodesLeft: number;
+  /** MEM-88: on, or turned off by the administrator. */
+  twoFactor: { enabled: boolean; enabledAt: string | null; disabledAt: string | null };
 }
 
 /** MEM-84: the items of a space (Anglais, Citations), per state. */
@@ -49,7 +51,10 @@ export interface AdminUserList {
 
 /** After the password (MEM-86): the code is asked, or the two-step login is activated first. */
 export type AdminLoginResult =
-  { ok: true; step: 'code' | 'activation'; challenge: string; expiresAt: string } | { ok: false; message: string };
+  | { ok: true; step: 'code' | 'activation'; challenge: string; expiresAt: string }
+  /** MEM-88: the two-step login is off: the password opened the session. */
+  | { ok: true; step: 'session'; session: AdminSession }
+  | { ok: false; message: string };
 
 /** A session, once the code is accepted; at the activation, with the recovery codes. */
 export interface AdminSession {
@@ -91,7 +96,12 @@ async function post(path: string, body: unknown, client?: string | null): Promis
 export async function adminLogin(email: string, password: string, client: string | null): Promise<AdminLoginResult> {
   const res = await post('/admin/auth/login', { email, password }, client);
   if (!res) return { ok: false, message: UNREACHABLE };
-  if (res.ok) return { ok: true, ...((await res.json()) as Omit<Extract<AdminLoginResult, { ok: true }>, 'ok'>) };
+  if (res.ok) {
+    const body = (await res.json()) as
+      | { step: 'code' | 'activation'; challenge: string; expiresAt: string }
+      | { step: 'session'; session: AdminSession };
+    return { ok: true, ...body };
+  }
   switch (res.status) {
     case 401:
     case 400:
@@ -167,4 +177,66 @@ export function getAdministrator(): Promise<Administrator> {
 /** MEM-84: the users, their last activity and the number of their items. */
 export function getAdminUsers(): Promise<AdminUserList> {
   return adminFetch<AdminUserList>('/admin/users');
+}
+
+/** A change of the console, with the session; null: the API couldn't be reached. */
+async function adminPost(path: string, body: unknown, client: string | null): Promise<Response | null> {
+  const token = await getAdminToken();
+  if (!token) redirect('/admin/connexion');
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(client && { 'X-Admin-Client-IP': client }),
+      },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    });
+  } catch {
+    return null;
+  }
+  // A 401 of the guard: the session is over (2 hours, account deleted or reset). The 401 of a
+  // wrong password or code says « Invalid … »: the form shows it.
+  if (res.status === 401) {
+    const { message } = (await res
+      .clone()
+      .json()
+      .catch(() => ({}))) as { message?: string };
+    if (!message?.startsWith('Invalid')) redirect('/admin/session-expiree');
+  }
+  return res;
+}
+
+export type TwoFactorChange = { ok: true } | { ok: false; message: string };
+
+function twoFactorError(res: Response | null, wrong: string): { ok: false; message: string } {
+  if (!res) return { ok: false, message: UNREACHABLE };
+  if (res.status === 401 || res.status === 400) return { ok: false, message: wrong };
+  if (res.status === 429) return { ok: false, message: TOO_MANY };
+  if (res.status === 409) return { ok: false, message: 'Le réglage a déjà changé : rechargez la page.' };
+  return { ok: false, message: `Erreur inattendue du serveur (${res.status}).` };
+}
+
+/** MEM-88: turns the two-step login of the logged-in account off, with its password and a code. */
+export async function disableTwoFactor(
+  password: string,
+  code: string,
+  client: string | null,
+): Promise<TwoFactorChange> {
+  const res = await adminPost('/admin/auth/2fa/disable', { password, code }, client);
+  return res?.ok ? { ok: true } : twoFactorError(res, 'Mot de passe ou code incorrect.');
+}
+
+/** MEM-88: after the password, the step of the activation, as at a first login. */
+export async function enableTwoFactor(
+  password: string,
+  client: string | null,
+): Promise<{ ok: true; challenge: string; expiresAt: string } | { ok: false; message: string }> {
+  const res = await adminPost('/admin/auth/2fa/enable', { password }, client);
+  if (res?.ok) return { ok: true, ...((await res.json()) as { challenge: string; expiresAt: string }) };
+  return twoFactorError(res, 'Mot de passe incorrect.');
 }

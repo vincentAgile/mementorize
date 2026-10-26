@@ -559,9 +559,24 @@ docker compose exec api node dist/admin/admin-cli.js delete admin@exemple.fr    
 docker compose exec api node dist/admin/admin-cli.js list
 ```
 
+**Double authentification** (MEM-86), activée par défaut :
+
+- à la première connexion d'un compte, après le mot de passe, la console affiche un QR code et la clé, à ajouter dans une application d'authentification (Google Authenticator, Microsoft Authenticator, 1Password, Bitwarden…) ;
+- un premier code confirme l'activation. La console affiche alors **10 codes de secours**, une seule fois : garde-les en lieu sûr ;
+- ensuite, chaque connexion demande, après le mot de passe, le code à 6 chiffres de l'application ou un code de secours. Chaque code de secours ne sert qu'une fois ;
+- chaque administrateur peut la **désactiver** pour son propre compte, dans **Paramètres** (MEM-88). Il le confirme avec son mot de passe et un code ; ensuite, le mot de passe seul ouvre la console. Il peut la réactiver au même endroit ;
+- chaque désactivation et réactivation est journalisée dans la table `admin_security_events` (compte, date, adresse IP) :
+
+  ```bash
+  docker compose exec postgres psql -U mementorize mementorize -c 'SELECT email, event, ip, "createdAt" FROM admin_security_events ORDER BY "createdAt" DESC LIMIT 20;'
+  ```
+
+- en cas de perte du téléphone et des codes de secours : `reset-2fa`. Les sessions en cours du compte prennent fin, et la double authentification est de nouveau proposée à l'activation à la connexion suivante.
+
 **Sécurité** :
 
 - la session dure 2 heures, sans prolongation ; « Déconnexion » la termine ;
+- entre le mot de passe et le code, l'étape dure 5 minutes ;
 - après 5 échecs (mot de passe ou code) en 15 minutes depuis une même adresse, les connexions depuis cette adresse sont refusées le temps que les échecs sortent de la fenêtre ;
 - les pages ne sont ni indexées ni mises en cache.
 
