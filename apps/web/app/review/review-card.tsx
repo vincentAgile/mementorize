@@ -121,7 +121,6 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
               {back.frenchNote}
             </p>
           )}
-          <p className="review-card__question">Tu t&apos;en souvenais bien ?</p>
           <RatingButtons onAnswer={answer} withLearned={withLearned} delays={delays} disabled={pending} />
         </>
       ) : (

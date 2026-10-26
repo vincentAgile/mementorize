@@ -34,7 +34,8 @@ interface RatingButtonsProps {
 
 export function RatingButtons({ onAnswer, withLearned, delays, disabled = false }: RatingButtonsProps) {
   return (
-    <div className="review-card__ratings">
+    // MEM-87: no question above the buttons any more; the group keeps a name for screen readers.
+    <div className="review-card__ratings" role="group" aria-label="Auto-évaluation">
       {ANSWERS.filter(({ answer }) => withLearned || answer !== 'Learned').map(({ answer, label }, index) => (
         <button
           key={answer}

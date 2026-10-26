@@ -852,6 +852,7 @@ kbd {
   grid-auto-columns: minmax(0, 1fr); /* three or four equal columns, on one line */
   grid-auto-flow: column;
   gap: 0.5rem;
+  margin-top: 1.5rem; /* MEM-87: where the question « Tu t'en souvenais bien ? » was */
 }
 
 @media (max-width: 480px) {
