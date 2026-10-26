@@ -230,7 +230,6 @@ export function LearningSessionView({ session, now, showDelays }: LearningSessio
               </blockquote>
             </Speakable>
             <Examples item={item} />
-            <p className="review-card__question">Tu t&apos;en souvenais bien ?</p>
             <RatingButtons
               onAnswer={rate}
               withLearned
