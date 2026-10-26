@@ -288,7 +288,11 @@ model AdminAccount {
   totpLastStep     Int?
   /// The secret shown while it is being activated, encrypted, until a first code confirms it.
   totpPendingSecret String?
+  /// MEM-88: the administrator turned the two-step login off (the password
+  /// alone opens the console); null: on, or to activate at the next login.
+  totpDisabledAt   DateTime?
   recoveryCodes    AdminRecoveryCode[]
+  securityEvents   AdminSecurityEvent[]
 
   @@map("admin_accounts")
 }
@@ -304,4 +308,21 @@ model AdminRecoveryCode {
 
   @@index([adminId])
   @@map("admin_recovery_codes")
+}
+
+/// MEM-88: the journal of the changes to the protection of an administration
+/// account: two-step login turned on or off, by whom (the account), when, from where.
+model AdminSecurityEvent {
+  id        String        @id @default(uuid())
+  adminId   String?
+  admin     AdminAccount? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  /// Kept when the account is deleted.
+  email     String
+  /// "2fa-enabled", "2fa-disabled".
+  event     String
+  ip        String
+  createdAt DateTime      @default(now())
+
+  @@index([adminId])
+  @@map("admin_security_events")
 }

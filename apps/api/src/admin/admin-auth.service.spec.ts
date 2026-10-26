@@ -24,6 +24,7 @@ interface Account {
   totpEnabledAt: Date | null;
   totpLastStep: number | null;
   totpPendingSecret: string | null;
+  totpDisabledAt: Date | null;
 }
 interface Code {
   adminId: string;
@@ -34,11 +35,16 @@ interface Code {
 /** An in-memory admin_accounts and admin_recovery_codes, enough for the queries of the service. */
 function fakePrisma(account: Account) {
   let codes: Code[] = [];
+  const events: Record<string, unknown>[] = [];
   const accountMatches = (where: Record<string, unknown>) => {
     if (where.id !== undefined && where.id !== account.id) return false;
     if (where.email !== undefined && where.email !== account.email) return false;
     if (where.totpEnabledAt && account.totpEnabledAt === null) return false;
-    if (where.OR) {
+    const or = where.OR as Record<string, unknown>[] | undefined;
+    if (or && 'totpEnabledAt' in or[0]) {
+      // verify(): two-step login on, or turned off by the administrator (MEM-88)
+      if (account.totpEnabledAt === null && account.totpDisabledAt === null) return false;
+    } else if (or) {
       const step = account.totpLastStep;
       const limit = ((where.OR as Record<string, { lt?: number }>[])[1].totpLastStep as { lt: number }).lt;
       if (!(step === null || step < limit)) return false;
@@ -48,6 +54,7 @@ function fakePrisma(account: Account) {
   const prisma = {
     adminAccount: {
       findUnique: vi.fn(async ({ where }) => (accountMatches(where) ? { ...account } : null)),
+      findUniqueOrThrow: vi.fn(async () => ({ ...account })),
       findFirst: vi.fn(async ({ where }) => (accountMatches(where) ? { id: account.id, email: account.email } : null)),
       update: vi.fn(async ({ data }) => Object.assign(account, data)),
       updateMany: vi.fn(async ({ where, data }) => {
@@ -72,9 +79,15 @@ function fakePrisma(account: Account) {
       }),
       count: vi.fn(async () => codes.filter((one) => one.usedAt === null).length),
     },
+    adminSecurityEvent: {
+      create: vi.fn(async ({ data }) => {
+        events.push(data);
+        return data;
+      }),
+    },
     $transaction: vi.fn((operations: Promise<unknown>[]) => Promise.all(operations)),
   };
-  return { prisma: prisma as unknown as PrismaService, codes: () => codes };
+  return { prisma: prisma as unknown as PrismaService, codes: () => codes, events };
 }
 
 describe('AdminAuthService (MEM-82, MEM-86)', () => {
@@ -101,6 +114,7 @@ describe('AdminAuthService (MEM-82, MEM-86)', () => {
       totpEnabledAt: null,
       totpLastStep: null,
       totpPendingSecret: null,
+      totpDisabledAt: null,
     };
     fake = fakePrisma(account);
     auth = new AdminAuthService(fake.prisma, config);
@@ -214,16 +228,13 @@ describe('AdminAuthService (MEM-82, MEM-86)', () => {
   });
 
   describe('sessions', () => {
-    it('refuses a user token, a token without the code, an expired session, a deleted or reset account', async () => {
+    it('refuses a user token, a step token, an expired session, a deleted or reset account', async () => {
       const { secret } = await activated();
       const userToken = await new JwtService({ secret: 'users-secret' }).signAsync({ sub: 'user-1' });
       expect(await auth.verify(userToken)).toBeNull();
-      // Signed with the admin secret and audience, but without the code (a session of before MEM-86).
-      const noCode = await new JwtService({ secret: 'admin-secret' }).signAsync(
-        { sub: account.id },
-        { audience: 'mementorize-admin' },
-      );
-      expect(await auth.verify(noCode)).toBeNull();
+      // Signed with the admin secret, but without the audience of the sessions.
+      const noAudience = await new JwtService({ secret: 'admin-secret' }).signAsync({ sub: account.id });
+      expect(await auth.verify(noAudience)).toBeNull();
 
       vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime(later(60));
@@ -253,6 +264,74 @@ describe('AdminAuthService (MEM-82, MEM-86)', () => {
         unknown.catch((e: Error) => e.message),
       ]);
       expect(messages[0]).toBe(messages[1]);
+    });
+  });
+
+  describe('turning the two-step login off and on again (MEM-88)', () => {
+    const me = () => ({ id: account.id, email: account.email });
+
+    it('refuses without the right password and a valid code, and never touches the key then', async () => {
+      const { secret } = await activated();
+      const at = later(90);
+      await expect(auth.disableTwoFactor(me(), 'wrong', totpCode(secret, timeStep(at)), IP, at)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(auth.disableTwoFactor(me(), 'the right password', '000000', IP, at)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(auth.disableTwoFactor(me(), 'the right password', '', IP, at)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(account.totpEnabledAt).not.toBeNull();
+      expect(fake.events.filter((one) => one.event === '2fa-disabled')).toHaveLength(0);
+    });
+
+    it('turns it off with the password and a code: key and recovery codes deleted, journaled', async () => {
+      const { secret } = await activated();
+      const at = later(90);
+      await auth.disableTwoFactor(me(), 'the right password', totpCode(secret, timeStep(at)), '9.9.9.9', at);
+
+      expect(account).toMatchObject({ totpSecret: null, totpEnabledAt: null, totpLastStep: null, totpDisabledAt: at });
+      expect(fake.codes()).toHaveLength(0);
+      expect(fake.events.at(-1)).toMatchObject({ adminId: account.id, event: '2fa-disabled', ip: '9.9.9.9' });
+      expect(await auth.profile(me())).toMatchObject({ twoFactor: { enabled: false, disabledAt: at } });
+      await expect(auth.disableTwoFactor(me(), 'the right password', '123456', IP, at)).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('accepts a recovery code instead of the code of the app', async () => {
+      const { recoveryCodes } = await activated();
+      await auth.disableTwoFactor(me(), 'the right password', recoveryCodes[0], IP, later(90));
+      expect(account.totpEnabledAt).toBeNull();
+    });
+
+    it('then logs in with the password alone, for a session', async () => {
+      const { secret } = await activated();
+      await auth.disableTwoFactor(me(), 'the right password', totpCode(secret, timeStep(later(90))), IP, later(90));
+
+      const login = await auth.login(account.email, 'the right password', IP, later(120));
+      expect(login.step).toBe('session');
+      const { session } = login as { session: { accessToken: string } };
+      expect(await auth.verify(session.accessToken)).toEqual(me());
+    });
+
+    it('turns it on again after the password, through the activation, journaled', async () => {
+      const { secret } = await activated();
+      await auth.disableTwoFactor(me(), 'the right password', totpCode(secret, timeStep(later(90))), IP, later(90));
+
+      await expect(auth.startActivation(me(), 'wrong', IP, later(100))).rejects.toThrow(UnauthorizedException);
+      const step = await auth.startActivation(me(), 'the right password', IP, later(100));
+      expect(step.step).toBe('activation');
+      const { secret: fresh } = await auth.enrollment(step.challenge);
+      expect(fresh).not.toBe(secret); // a new key
+      const activated2 = await auth.activate(step.challenge, totpCode(fresh, timeStep(later(100))), IP, later(100));
+      expect(activated2.recoveryCodes).toHaveLength(10);
+      expect(account).toMatchObject({ totpDisabledAt: null, totpEnabledAt: later(100) });
+      expect(fake.events.map((one) => one.event)).toEqual(['2fa-enabled', '2fa-disabled', '2fa-enabled']);
+      // On again: the code is asked at login.
+      expect((await auth.login(account.email, 'the right password', IP, later(130))).step).toBe('code');
+      await expect(auth.startActivation(me(), 'the right password', IP, later(130))).rejects.toThrow(ConflictException);
     });
   });
 });

@@ -1,6 +1,7 @@
 import { getAdministrator } from '../../../lib/admin-api';
 import { adminLogoutAction } from '../actions';
 import { AdminBanner } from '../admin-banner';
+import { AdminNav } from '../admin-nav';
 
 /** The pages of the console behind its login (MEM-82): who is logged in, and « Déconnexion ». */
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
@@ -8,6 +9,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
   return (
     <>
       <AdminBanner>
+        <AdminNav />
         <div className="admin-banner__account">
           <span>{administrator.email}</span>
           <form action={adminLogoutAction}>

@@ -13,3 +13,17 @@ export class AdminCodeDto extends AdminChallengeDto {
   @MaxLength(40)
   code: string;
 }
+
+/** MEM-88: the password, to turn the two-step login on again. */
+export class AdminPasswordDto {
+  @IsString()
+  @MaxLength(200)
+  password: string;
+}
+
+/** MEM-88: the password and a code, to turn the two-step login off. */
+export class AdminDisableTwoFactorDto extends AdminPasswordDto {
+  @IsString()
+  @MaxLength(40)
+  code: string;
+}

@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Ip, Post, Req, UseGuards } from '@nestjs/common';
-import { AdminAuthService, type AdminUser } from './admin-auth.service.js';
+import { AdminAuthService } from './admin-auth.service.js';
 import { AdminJwtGuard, type AdminRequest } from './admin-jwt.guard.js';
 import { type AdminUserList, AdminUsersService } from './admin-users.service.js';
 import { AdminLoginDto } from './dto/admin-login.dto.js';
-import { AdminChallengeDto, AdminCodeDto } from './dto/admin-step.dto.js';
+import { AdminChallengeDto, AdminCodeDto, AdminDisableTwoFactorDto, AdminPasswordDto } from './dto/admin-step.dto.js';
 
 /**
  * The routes of the administration console (MEM-82). The API is not on the
@@ -59,11 +59,45 @@ export class AdminController {
     return this.auth.verifyCode(dto.challenge, dto.code, clientOf(client, ip));
   }
 
-  /** GET /admin/auth/me — the administrator of the token, and their recovery codes left. */
+  /** GET /admin/auth/me — the administrator of the token, their recovery codes left and their two-step login. */
   @Get('auth/me')
   @UseGuards(AdminJwtGuard)
-  me(@Req() request: AdminRequest): Promise<AdminUser & { recoveryCodesLeft: number }> {
+  me(@Req() request: AdminRequest) {
     return this.auth.profile(request.admin);
+  }
+
+  /**
+   * POST /admin/auth/2fa/disable — MEM-88: the logged-in administrator turns
+   * their own two-step login off, with their password and a code. 204; 401
+   * (wrong password or code), 409 (already off), 429.
+   */
+  @Post('auth/2fa/disable')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(AdminJwtGuard)
+  async disableTwoFactor(
+    @Req() request: AdminRequest,
+    @Body() dto: AdminDisableTwoFactorDto,
+    @Headers('x-admin-client-ip') client: string | undefined,
+    @Ip() ip: string,
+  ): Promise<void> {
+    await this.auth.disableTwoFactor(request.admin, dto.password, dto.code, clientOf(client, ip));
+  }
+
+  /**
+   * POST /admin/auth/2fa/enable — MEM-88: after the password, the step of the
+   * activation (as at a first login): POST /admin/auth/enrollment, then
+   * /admin/auth/activate. 401 (wrong password), 409 (already on), 429.
+   */
+  @Post('auth/2fa/enable')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AdminJwtGuard)
+  enableTwoFactor(
+    @Req() request: AdminRequest,
+    @Body() dto: AdminPasswordDto,
+    @Headers('x-admin-client-ip') client: string | undefined,
+    @Ip() ip: string,
+  ) {
+    return this.auth.startActivation(request.admin, dto.password, clientOf(client, ip));
   }
 
   /** GET /admin/users — MEM-84: the users, their last activity and the number of their items; read only. */

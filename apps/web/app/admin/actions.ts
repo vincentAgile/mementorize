@@ -1,8 +1,9 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { adminCode, adminLogin, STEP_EXPIRED } from '../../lib/admin-api';
+import { adminCode, adminLogin, disableTwoFactor, enableTwoFactor, STEP_EXPIRED } from '../../lib/admin-api';
 import {
   createAdminSession,
   deleteAdminSession,
@@ -39,6 +40,11 @@ export async function adminLoginAction(_previous: AdminLoginState, formData: For
   const result = await adminLogin(email, password, await clientAddress());
   if (!result.ok) return { error: result.message, email };
 
+  if (result.step === 'session') {
+    // MEM-88: the two-step login is off for this account.
+    await createAdminSession(result.session.accessToken, result.session.expiresAt);
+    redirect('/admin');
+  }
   await setAdminStep(result.challenge, result.expiresAt);
   redirect(result.step === 'code' ? '/admin/connexion/code' : '/admin/connexion/activation');
 }
@@ -78,6 +84,31 @@ async function submitCode(
   await createAdminSession(result.session.accessToken, result.session.expiresAt);
   if (kind === 'verify') await deleteAdminStep();
   return { recoveryCodes: result.session.recoveryCodes ?? [] };
+}
+
+export interface TwoFactorState {
+  error?: string;
+}
+
+/** MEM-88: turns the two-step login of the logged-in account off: its password and a code. */
+export async function disableTwoFactorAction(_previous: TwoFactorState, formData: FormData): Promise<TwoFactorState> {
+  const password = String(formData.get('password') ?? '');
+  const code = String(formData.get('code') ?? '').trim();
+  if (!password || !code) return { error: 'Le mot de passe et le code sont requis.' };
+  const result = await disableTwoFactor(password, code, await clientAddress());
+  if (!result.ok) return { error: result.message };
+  revalidatePath('/admin/parametres');
+  redirect('/admin/parametres?2fa=desactivee');
+}
+
+/** MEM-88: after the password, the activation of the two-step login, as at a first login. */
+export async function enableTwoFactorAction(_previous: TwoFactorState, formData: FormData): Promise<TwoFactorState> {
+  const password = String(formData.get('password') ?? '');
+  if (!password) return { error: 'Le mot de passe est requis.' };
+  const result = await enableTwoFactor(password, await clientAddress());
+  if (!result.ok) return { error: result.message };
+  await setAdminStep(result.challenge, result.expiresAt);
+  redirect('/admin/connexion/activation');
 }
 
 export async function adminLogoutAction(): Promise<void> {
