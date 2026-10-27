@@ -1,0 +1,9 @@
+id,kind,text,take,status,recognition,heard,pron,accuracy,fluency,completeness,prosody,flagged,weakPhonemes,convOggMs,convWavMs,apiOggMs,apiWavMs,wavPron
+"01","mot","water","fautive","200","Success",".","0","0","0","0","","water (Omission, 0)","","105","77","144","158","0"
+"01","mot","water","soignee","200","Success","Water.","84","82","100","100","69","","","176","109","214","237","85.5"
+"02","mot","apple","fautive","200","Success","Apple.","22.4","53","0","0","59","apple (Mispronunciation, 53)","apple:/æ/ 54 ; apple:/p/ 52 ; apple:/ə/ 36 ; apple:/l/ 36","176","121","298","326","22.2"
+"02","mot","apple","soignee","200","Success","Apple.","84.2","89","100","100","65.9","","","146","135","331","273","85.2"
+"03","mot","world","fautive","200","Success","World.","76.4","71","100","100","55.4","","world:/w/ 45 ; world:/ɝ/ 55","187","135","483","518","76.3"
+"03","mot","world","soignee","200","Success",".","0","0","0","0","","world (Omission, 0)","","149","111","162","175","0"
+"04","mot","thorough","fautive","200","Success","Thorough.","8.1","26","0","0","14.6","thorough (Mispronunciation, 26)","thorough:/θ/ 33 ; thorough:/ɝ/ 4 ; thorough:/ɹ/ 12 ; thorough:/oʊ/ 28","168","119","333","350","8.2"
+"04","mot","thorough","soignee","200","Success","Thorough.","75.9","70","100","100","54.8","","thorough:/ɹ/ 46 ; thorough:/oʊ/ 18","173","112","340","353","19.1"

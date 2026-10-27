@@ -1,0 +1,89 @@
+{
+  "RecognitionStatus": "Success",
+  "Offset": 4900000,
+  "Duration": 5600000,
+  "DisplayText": "Apple.",
+  "SNR": 16.089779,
+  "NBest": [
+    {
+      "Confidence": 0.95378035,
+      "Lexical": "apple",
+      "ITN": "apple",
+      "MaskedITN": "apple",
+      "Display": "Apple.",
+      "AccuracyScore": 89,
+      "FluencyScore": 100,
+      "ProsodyScore": 65.9,
+      "CompletenessScore": 100,
+      "PronScore": 84.2,
+      "Words": [
+        {
+          "Word": "apple",
+          "Offset": 4900000,
+          "Duration": 5600000,
+          "Confidence": 0,
+          "AccuracyScore": 89,
+          "ErrorType": "None",
+          "Syllables": [
+            {
+              "Syllable": "æp",
+              "Grapheme": "ap",
+              "Offset": 4900000,
+              "Duration": 2900000,
+              "AccuracyScore": 92
+            },
+            {
+              "Syllable": "əl",
+              "Grapheme": "ple",
+              "Offset": 7900000,
+              "Duration": 2600000,
+              "AccuracyScore": 77
+            }
+          ],
+          "Phonemes": [
+            {
+              "Phoneme": "æ",
+              "Offset": 4900000,
+              "Duration": 2000000,
+              "AccuracyScore": 88
+            },
+            {
+              "Phoneme": "p",
+              "Offset": 7000000,
+              "Duration": 800000,
+              "AccuracyScore": 100
+            },
+            {
+              "Phoneme": "ə",
+              "Offset": 7900000,
+              "Duration": 600000,
+              "AccuracyScore": 100
+            },
+            {
+              "Phoneme": "l",
+              "Offset": 8600000,
+              "Duration": 1900000,
+              "AccuracyScore": 69
+            }
+          ],
+          "Feedback": {
+            "Prosody": {
+              "Break": {
+                "ErrorTypes": ["None"],
+                "BreakLength": 0
+              },
+              "Intonation": {
+                "ErrorTypes": [],
+                "Monotone": {
+                  "Confidence": 0,
+                  "WordPitchSlopeConfidence": 0,
+                  "SyllablePitchDeltaConfidence": 0.682239
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
