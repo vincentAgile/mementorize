@@ -481,3 +481,49 @@ export async function pronunciationAudio(itemId: string): Promise<PronunciationA
     return { ok: false, status: 502 };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Pronunciation assessment (MEM-90, MEM-91)
+// ---------------------------------------------------------------------------
+
+/** Whether the pronunciation assessment is offered (configured on the server). False if the API can't say. */
+export async function pronunciationAssessmentEnabled(): Promise<boolean> {
+  const token = await getSessionToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(`${API_URL}/pronunciation/assessment`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5_000),
+    });
+    return res.ok && ((await res.json()) as { enabled?: boolean }).enabled === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sends a recording to be assessed, for app/prononciation/evaluation/route.ts:
+ * the status and the body of the API, as they are. The recording only
+ * passes through: nothing is kept.
+ */
+export async function assessPronunciation(
+  itemId: string,
+  audio: ArrayBuffer,
+  mimeType: string,
+): Promise<{ status: number; body: unknown }> {
+  const token = await getSessionToken();
+  if (!token) return { status: 401, body: null };
+  try {
+    const res = await fetch(`${API_URL}/pronunciation/assess?itemId=${encodeURIComponent(itemId)}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': mimeType },
+      body: audio,
+      cache: 'no-store',
+      signal: AbortSignal.timeout(20_000), // the API gives up after 15 s
+    });
+    return { status: res.status, body: await res.json().catch(() => null) };
+  } catch {
+    return { status: 503, body: null };
+  }
+}

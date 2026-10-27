@@ -1,6 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getLearningSession, getPreferences, getQuoteLearningSession } from '../../lib/api';
+import {
+  getLearningSession,
+  getPreferences,
+  getQuoteLearningSession,
+  pronunciationAssessmentEnabled,
+} from '../../lib/api';
 import { AppHeader } from '../app-header';
 import { LearningSessionView } from './learning-session';
 import { QuoteLearningSessionView } from './quote-learning-session';
@@ -30,7 +35,11 @@ export default async function LearningPage({ searchParams }: Props) {
 }
 
 async function VocabularySession({ now }: { now: string }) {
-  const [session, { showReviewDelays }] = await Promise.all([getLearningSession(), getPreferences()]);
+  const [session, { showReviewDelays }, canAssess] = await Promise.all([
+    getLearningSession(),
+    getPreferences(),
+    pronunciationAssessmentEnabled(), // MEM-91: « Répéter », if configured
+  ]);
   if (session.items.length === 0) {
     return (
       <NothingToLearn>
@@ -39,7 +48,7 @@ async function VocabularySession({ now }: { now: string }) {
       </NothingToLearn>
     );
   }
-  return <LearningSessionView session={session} now={now} showDelays={showReviewDelays} />;
+  return <LearningSessionView session={session} now={now} showDelays={showReviewDelays} canAssess={canAssess} />;
 }
 
 async function QuotesSession({ now }: { now: string }) {
