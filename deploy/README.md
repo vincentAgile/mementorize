@@ -526,6 +526,36 @@ Le conteneur `kokoro` génère la prononciation de chaque élément de vocabulai
 - **Journaux** : avertissements et erreurs seulement (`API_LOG_LEVEL: WARNING`), plus une ligne par requête ; au plus 3 × 10 Mo sur le disque. Pour tout voir le temps d'un diagnostic, `API_LOG_LEVEL: DEBUG` dans `docker-compose.yml`.
 - **Mettre à jour Kokoro** : changer la version de l'image dans `docker-compose.yml` ; le déploiement suivant la télécharge et recrée le conteneur.
 
+## Évaluation de la prononciation avec Azure (MEM-90)
+
+L'API peut évaluer la prononciation d'un élément de vocabulaire enregistré par l'utilisateur. Elle utilise Azure AI Speech (Pronunciation Assessment), avec le texte anglais de l'élément comme référence. Le choix d'Azure a été fait lors de l'essai MEM-93. Sans configuration, la fonctionnalité est désactivée et l'application ne la propose pas.
+
+**Activer** : une ressource **Speech** sur [portal.azure.com](https://portal.azure.com), dans une **région européenne** (_France Central_), niveau **Free F0** pour commencer : 5 heures d'audio par mois. Puis, dans `.env` :
+
+```bash
+AZURE_SPEECH_KEY="<clé 1>"
+AZURE_SPEECH_REGION="francecentral"
+# facultatif : limites par utilisateur (valeurs par défaut)
+PRONUNCIATION_PER_MINUTE=10
+PRONUNCIATION_PER_DAY=100
+```
+
+puis `docker compose up -d api`.
+
+**Confidentialité** :
+
+- l'enregistrement est converti en mémoire (ffmpeg, sans fichier), envoyé à Azure, puis effacé. Mementorize ne le conserve jamais et ne l'écrit pas dans ses journaux ;
+- côté Azure, la journalisation des enregistrements est désactivée par défaut, et l'API ne la demande pas ;
+- la clé reste sur le serveur : le navigateur ne la voit jamais.
+
+**Limites** :
+
+- 10 secondes et 1 Mo par enregistrement ;
+- 10 évaluations par minute et 100 par jour par utilisateur, réglables ;
+- 15 secondes au plus par évaluation : au-delà, ou si Azure ne répond pas, l'application l'indique sans bloquer l'apprentissage.
+
+Pour suivre la consommation : portail Azure, ressource Speech, **Métriques**.
+
 ## Console d'administration (MEM-82)
 
 Une console séparée de l'application, à l'adresse `https://<domaine>/admin`. Aucun lien n'y mène depuis l'application. Elle a ses propres comptes, sans rapport avec ceux des utilisateurs : un compte utilisateur ne l'ouvre jamais.

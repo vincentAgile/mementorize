@@ -53,4 +53,13 @@ describe('validateEnv', () => {
     expect(validateEnv({ ...valid, ADMIN_TOTP_ENCRYPTION_KEY: 'ab'.repeat(32) })).toBeTruthy(); // MEM-86
     expect(() => validateEnv({ ...valid, ADMIN_TOTP_ENCRYPTION_KEY: 'short' })).toThrow(/64 hexadecimal/);
   });
+
+  it('checks the settings of the pronunciation assessment (MEM-90), optional', () => {
+    expect(validateEnv({ ...valid, AZURE_SPEECH_KEY: 'k', AZURE_SPEECH_REGION: 'francecentral' })).toBeTruthy();
+    expect(() => validateEnv({ ...valid, AZURE_SPEECH_KEY: 'k' })).toThrow(/AZURE_SPEECH_REGION is needed/);
+    expect(() => validateEnv({ ...valid, AZURE_SPEECH_KEY: 'k', AZURE_SPEECH_REGION: 'France Central' })).toThrow(
+      /region name/,
+    );
+    expect(() => validateEnv({ ...valid, PRONUNCIATION_PER_DAY: '0' })).toThrow(/PRONUNCIATION_PER_DAY/);
+  });
 });
