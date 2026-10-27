@@ -294,14 +294,22 @@ export function resetOptimization(type: ItemType): Promise<SpaceOptimization> {
   return authedFetch<SpaceOptimization>(`/optimization/${type}/reset`, { method: 'POST' });
 }
 
-/** Up to five vocabulary items to learn, the first ones of the learning queue (MEM-21). */
-export function getLearningSession(): Promise<LearningSession> {
-  return authedFetch<LearningSession>('/learning/session');
+/** MEM-94: the items chosen on the preparation page, as a query parameter. */
+const chosen = (ids?: string[]) => (ids && ids.length > 0 ? `ids=${ids.map(encodeURIComponent).join(',')}` : '');
+
+/**
+ * Up to five vocabulary items to learn, the first ones of the learning queue
+ * (MEM-21); or those chosen on the preparation page, in their order (MEM-94).
+ */
+export function getLearningSession(ids?: string[]): Promise<LearningSession> {
+  const query = chosen(ids);
+  return authedFetch<LearningSession>(query ? `/learning/session?${query}` : '/learning/session');
 }
 
-/** Up to five quotes to learn, the first ones of their learning queue (MEM-68). */
-export function getQuoteLearningSession(): Promise<QuoteLearningSession> {
-  return authedFetch<QuoteLearningSession>('/learning/session?type=Quote');
+/** Up to five quotes to learn, the first ones of their learning queue (MEM-68); or the chosen ones (MEM-94). */
+export function getQuoteLearningSession(ids?: string[]): Promise<QuoteLearningSession> {
+  const query = chosen(ids);
+  return authedFetch<QuoteLearningSession>(`/learning/session?type=Quote${query ? `&${query}` : ''}`);
 }
 
 /**

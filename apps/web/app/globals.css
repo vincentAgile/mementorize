@@ -3502,3 +3502,232 @@ button.practice__word {
   outline: 2px solid #147d80;
   outline-offset: 2px;
 }
+
+/* MEM-94: the preparation of a learning session */
+.prepare {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 46rem;
+}
+
+.prepare__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.prepare__title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.prepare__count,
+.prepare__empty,
+.prepare__full,
+.prepare__no-result,
+.prepare__more {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.prepare__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #e3e3e3;
+}
+
+.prepare__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid #e3e3e3;
+}
+
+.prepare__number {
+  flex: none;
+  min-width: 1.6rem;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+}
+
+.prepare__text {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.15rem 1rem;
+  min-width: 0;
+}
+
+.prepare__primary {
+  flex: 0 1 14rem;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.prepare__secondary {
+  flex: 1 1 10rem;
+  min-width: 0;
+  color: #555;
+  overflow-wrap: anywhere;
+}
+
+.prepare__remove,
+.prepare__next,
+.prepare__cancel {
+  flex: none;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: transparent;
+  color: #147d80;
+  font: inherit;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.prepare__remove:hover,
+.prepare__next:hover:not(:disabled),
+.prepare__cancel:hover {
+  background: #e3f1f1;
+}
+
+.prepare__next:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.prepare__add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.prepare__add-label {
+  font-weight: 600;
+}
+
+.prepare__search {
+  flex: 1 1 16rem;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.prepare__search:disabled {
+  background: rgba(127, 127, 127, 0.1);
+}
+
+.prepare__results ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.prepare__results li + li {
+  border-top: 1px solid #eee;
+}
+
+.prepare__result {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prepare__result:hover,
+.prepare__result:focus-visible {
+  background: #e3f1f1;
+}
+
+.prepare__more {
+  margin-top: 0.4rem;
+}
+
+.prepare__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.prepare__actions .space__review {
+  margin: 0;
+  border: none;
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.prepare__start:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+  .prepare__next {
+    width: 100%;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .prepare__list,
+  .prepare__item {
+    border-color: #333;
+  }
+
+  .prepare__count,
+  .prepare__empty,
+  .prepare__full,
+  .prepare__no-result,
+  .prepare__more,
+  .prepare__secondary {
+    color: #aaa;
+  }
+
+  .prepare__search {
+    border-color: #555;
+  }
+
+  .prepare__results ul,
+  .prepare__results li + li {
+    border-color: #333;
+  }
+
+  .prepare__remove,
+  .prepare__next,
+  .prepare__cancel {
+    border-color: #4fb3b6;
+    color: #7fd0d2;
+  }
+
+  .prepare__remove:hover,
+  .prepare__next:hover:not(:disabled),
+  .prepare__cancel:hover,
+  .prepare__result:hover,
+  .prepare__result:focus-visible {
+    background: rgba(79, 179, 182, 0.15);
+  }
+}

@@ -20,6 +20,8 @@ export interface Space {
   tabs?: SpaceTab[];
   /** The learning process of the space (MEM-21, MEM-68), if it has one. */
   learnHref?: string;
+  /** MEM-94: the page where a learning session is prepared, before it starts. */
+  prepareHref?: string;
   /** How its items are named in the messages (v0.12): « élément », « citation ». */
   noun: Noun;
 }
@@ -46,6 +48,7 @@ export const SPACES: Space[] = [
       { href: '/anglais/import-export', label: 'Import / export' }, // MEM-52
     ],
     learnHref: '/apprendre',
+    prepareHref: '/anglais/preparer', // MEM-94
     noun: ITEM_NOUN,
   },
   {
@@ -72,6 +75,7 @@ export const SPACES: Space[] = [
       { href: '/citations/import-export', label: 'Import / export' },
     ],
     learnHref: '/apprendre?type=Quote', // MEM-68
+    prepareHref: '/citations/preparer', // MEM-94
     noun: QUOTE_NOUN,
   },
 ];
@@ -110,6 +114,7 @@ export const learnedType = (type: string | null) => type ?? 'Vocabulary';
 export function inSession(space: Space, pathname: string, type: string | null): boolean {
   return (
     (pathname === '/review' && type === space.type) ||
+    pathname === space.prepareHref || // MEM-94: the preparation of a learning session
     (pathname === '/apprendre' && space.learnHref !== undefined && learnedType(type) === space.type)
   );
 }
