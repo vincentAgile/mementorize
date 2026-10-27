@@ -134,8 +134,12 @@ function speakWithBrowser(text: string): void {
  * it, or if it can't be played, the browser's voice. Call it from a click
  * or key handler: browsers only allow sound started by the user.
  */
+/** MEM-92: told when the reference is read, so that the user's own recording stops. */
+export const PRONOUNCE_EVENT = 'mementorize:pronounce';
+
 export function pronounce(text: string, audioUrl?: string): void {
   stopPronouncing();
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(PRONOUNCE_EVENT));
   const loaded = audioUrl && typeof Audio !== 'undefined' ? loadAudio(audioUrl) : null;
   if (!loaded || loaded.state === 'missing') {
     speakWithBrowser(text);
