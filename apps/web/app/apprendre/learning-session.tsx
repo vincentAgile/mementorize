@@ -8,6 +8,7 @@ import type { LearningItem, LearningSession } from '../../lib/types';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
 import { type Answer, answerOfKey, RatingButtons } from '../review/rating-buttons';
+import { PracticePanel, RepeatButton, usePronunciationPractice } from './pronunciation-practice';
 import { sendAnswers } from './send-answers';
 
 type Phase = 'discover' | 'rate' | 'done';
@@ -18,6 +19,8 @@ interface LearningSessionViewProps {
   now: string;
   /** The delays under the rating buttons: a setting, off by default (MEM-49). */
   showDelays: boolean;
+  /** MEM-91: the pronunciation assessment is configured on the server (« Répéter »). */
+  canAssess?: boolean;
 }
 
 /**
@@ -34,7 +37,7 @@ interface LearningSessionViewProps {
  * d'apprentissage", the next ones are reviews of its card): leaving the
  * session ("Arrêter", another page) keeps every item "À apprendre".
  */
-export function LearningSessionView({ session, now, showDelays }: LearningSessionViewProps) {
+export function LearningSessionView({ session, now, showDelays, canAssess = false }: LearningSessionViewProps) {
   const [items] = useState(session.items);
   const [phase, setPhase] = useState<Phase>('discover');
   const [index, setIndex] = useState(0); // step 1
@@ -199,11 +202,7 @@ export function LearningSessionView({ session, now, showDelays }: LearningSessio
 
         {discovering ? (
           <>
-            <Speakable text={item.word} audioUrl={audioUrl}>
-              <blockquote className="review-card__text" lang="en">
-                {item.word}
-              </blockquote>
-            </Speakable>
+            <DiscoveredWord key={item.id} item={item} audioUrl={audioUrl} canAssess={canAssess} />
             {revealed ? (
               <>
                 <p className="review-card__answer">{item.translation}</p>
@@ -257,6 +256,26 @@ export function LearningSessionView({ session, now, showDelays }: LearningSessio
         )}
       </article>
     </section>
+  );
+}
+
+/**
+ * The English of the item at step 1, with « Écouter » and, when the
+ * assessment is offered, « Répéter » and its result (MEM-91). Keyed by the
+ * item: the next one starts afresh.
+ */
+function DiscoveredWord({ item, audioUrl, canAssess }: { item: LearningItem; audioUrl?: string; canAssess: boolean }) {
+  const practice = usePronunciationPractice(item.id);
+  const offered = canAssess && practice.supported;
+  return (
+    <>
+      <Speakable text={item.word} audioUrl={audioUrl} actions={offered && <RepeatButton practice={practice} />}>
+        <blockquote className="review-card__text" lang="en">
+          {item.word}
+        </blockquote>
+      </Speakable>
+      {offered && <PracticePanel practice={practice} />}
+    </>
   );
 }
 
