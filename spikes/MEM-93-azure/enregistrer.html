@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>MEM-93 · Enregistrements</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --accent: #147d80;
+        --bad: #b3261e;
+        --muted: #666;
+        --line: #ddd;
+        --bg: #fff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --muted: #aaa;
+          --line: #444;
+          --bg: #1c1c1c;
+        }
+      }
+      body {
+        margin: 0;
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+        background: var(--bg);
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 4rem;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 0.5rem;
+      }
+      .intro {
+        color: var(--muted);
+      }
+      ol {
+        padding: 0;
+        list-style: none;
+      }
+      li {
+        border-top: 1px solid var(--line);
+        padding: 0.9rem 0;
+      }
+      .text {
+        font-size: 1.15rem;
+        font-weight: 600;
+      }
+      .kind {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin-left: 0.4rem;
+      }
+      .takes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+      }
+      @media (max-width: 560px) {
+        .takes {
+          grid-template-columns: 1fr;
+        }
+      }
+      .take {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.6rem;
+      }
+      .take h3 {
+        margin: 0 0 0.3rem;
+        font-size: 0.9rem;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 0.85rem;
+        margin: 0 0 0.4rem;
+      }
+      button {
+        font: inherit;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+      }
+      button.rec {
+        background: var(--bad);
+        border-color: var(--bad);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      audio {
+        width: 100%;
+        margin-top: 0.4rem;
+        height: 2rem;
+      }
+      .done {
+        color: var(--accent);
+        font-size: 0.85rem;
+        margin-left: 0.4rem;
+      }
+      .bar {
+        position: sticky;
+        bottom: 0;
+        background: var(--bg);
+        border-top: 1px solid var(--line);
+        padding: 0.75rem 1rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>MEM-93 · Enregistrements pour l’essai Azure</h1>
+      <p class="intro">
+        Pour chaque élément : une prononciation <strong>soignée</strong>, puis une
+        <strong>volontairement fautive</strong> (suggestion à côté, vous pouvez en inventer une autre). Parlez 1 à 2
+        secondes après avoir cliqué, puis arrêtez. Vous pouvez réécouter et recommencer. À la fin, « Télécharger »
+        enregistre un fichier <code>enregistrements.zip</code>, au format natif de ce navigateur (WebM/Opus sous Chrome
+        et Firefox, MP4/AAC sous Safari).
+      </p>
+      <ol id="list"></ol>
+    </main>
+    <div class="bar">
+      <span id="count">0 / 40</span><button id="zip" disabled>Télécharger enregistrements.zip</button>
+    </div>
+    <script>
+      const ITEMS = [
+        { id: '01', kind: 'mot', text: 'water', fault: 'à la française : « wa-tèr », r roulé' },
+        { id: '02', kind: 'mot', text: 'apple', fault: '« a-pplé », en appuyant le é final' },
+        { id: '03', kind: 'mot', text: 'world', fault: '« wor-lé », sans le l sombre' },
+        { id: '04', kind: 'mot', text: 'thorough', fault: '« tho-rou-gue », le th en t et le gh prononcé' },
+        { id: '05', kind: 'mot', text: 'squirrel', fault: '« skwi-rèl », comme en français' },
+        { id: '06', kind: 'mot', text: 'comfortable', fault: '« com-for-ta-ble », toutes les syllabes à la française' },
+        { id: '07', kind: 'mot', text: 'Wednesday', fault: '« Wed-nes-day », en prononçant le d' },
+        { id: '08', kind: 'mot', text: 'clothes', fault: '« clo-tèz », en deux syllabes' },
+        { id: '09', kind: 'mot', text: 'vegetable', fault: '« vé-gé-ta-ble », quatre syllabes à la française' },
+        { id: '10', kind: 'mot', text: 'rural', fault: '« ru-ral », r roulés' },
+        { id: '11', kind: 'mot', text: 'to cherish', fault: '« tou ché-riche », ch français' },
+        { id: '12', kind: 'expression', text: 'a piece of cake', fault: '« a pièce of cak », voyelles à la française' },
+        { id: '13', kind: 'expression', text: 'by the way', fault: '« baï ze wé », th en z' },
+        {
+          id: '14',
+          kind: 'expression',
+          text: 'to look forward to',
+          fault: '« tou louk for-ward tou », en prononçant le w et le r',
+        },
+        { id: '15', kind: 'expression', text: 'to take for granted', fault: '« tou tak for gran-tèd »' },
+        {
+          id: '16',
+          kind: 'phrase',
+          text: 'The weather is lovely today.',
+          fault: '« Ze wéze iz lo-vli tou-dé », th en z',
+        },
+        { id: '17', kind: 'phrase', text: 'I thought it through.', fault: '« Aï tôt it trou », th en t' },
+        {
+          id: '18',
+          kind: 'phrase',
+          text: 'Could you repeat that, please?',
+          fault: '« Coul-de you ré-pit zat », le l et le d prononcés',
+        },
+        {
+          id: '19',
+          kind: 'phrase',
+          text: 'She sells seashells by the seashore.',
+          fault: '« Si sèl si-chèl », s et ch inversés',
+        },
+        { id: '20', kind: 'phrase', text: 'I usually walk to work.', fault: '« Aï u-zu-a-li wal-ke tou wor-ke »' },
+      ];
+      const clips = new Map(); // "01-soignee" -> Blob
+      let recorder = null;
+
+      const list = document.getElementById('list');
+      for (const item of ITEMS) {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="text"></span><span class="kind"></span><div class="takes"></div>`;
+        li.querySelector('.text').textContent = item.text;
+        li.querySelector('.kind').textContent = item.kind;
+        for (const [take, label, hint] of [
+          ['soignee', 'Soignée', 'Votre meilleure prononciation.'],
+          ['fautive', 'Fautive', 'Par exemple : ' + item.fault],
+        ]) {
+          const box = document.createElement('div');
+          box.className = 'take';
+          box.innerHTML = `<h3></h3><p class="hint"></p><button type="button">● Enregistrer</button><span class="done"></span><audio controls hidden></audio>`;
+          box.querySelector('h3').textContent = label;
+          box.querySelector('.hint').textContent = hint;
+          const button = box.querySelector('button');
+          button.addEventListener('click', () => toggle(`${item.id}-${take}`, button, box));
+          li.querySelector('.takes').append(box);
+        }
+        list.append(li);
+      }
+
+      async function toggle(key, button, box) {
+        if (recorder && recorder.state === 'recording') {
+          recorder.stop();
+          return;
+        }
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } catch (error) {
+          alert('Micro inaccessible : ' + error.message);
+          return;
+        }
+        const chunks = [];
+        recorder = new MediaRecorder(stream);
+        recorder.ondataavailable = (event) => chunks.push(event.data);
+        recorder.onstop = () => {
+          stream.getTracks().forEach((track) => track.stop());
+          const blob = new Blob(chunks, { type: recorder.mimeType });
+          clips.set(key, blob);
+          const audio = box.querySelector('audio');
+          audio.src = URL.createObjectURL(blob);
+          audio.hidden = false;
+          box.querySelector('.done').textContent = '✓ ' + (blob.size / 1024).toFixed(0) + ' Ko';
+          button.textContent = '● Recommencer';
+          button.classList.remove('rec');
+          document.querySelectorAll('.take button').forEach((b) => (b.disabled = false));
+          update();
+        };
+        recorder.start();
+        button.textContent = '■ Arrêter';
+        button.classList.add('rec');
+        document.querySelectorAll('.take button').forEach((b) => (b.disabled = b !== button));
+      }
+
+      function update() {
+        document.getElementById('count').textContent = `${clips.size} / ${ITEMS.length * 2}`;
+        document.getElementById('zip').disabled = clips.size === 0;
+      }
+
+      const extension = (type) =>
+        type.includes('webm') ? 'webm' : type.includes('mp4') ? 'mp4' : type.includes('ogg') ? 'ogg' : 'bin';
+
+      // A ZIP without compression (the audio is already compressed): local headers, central directory, end.
+      const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+        let c = n;
+        for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+        return c >>> 0;
+      });
+      const crc32 = (bytes) => {
+        let c = 0xffffffff;
+        for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
+        return (c ^ 0xffffffff) >>> 0;
+      };
+      async function zip(files) {
+        const parts = [],
+          central = [];
+        let offset = 0;
+        for (const { name, blob } of files) {
+          const data = new Uint8Array(await blob.arrayBuffer());
+          const nameBytes = new TextEncoder().encode(name);
+          const crc = crc32(data);
+          const local = new DataView(new ArrayBuffer(30));
+          local.setUint32(0, 0x04034b50, true);
+          local.setUint16(4, 20, true);
+          local.setUint32(14, crc, true);
+          local.setUint32(18, data.length, true);
+          local.setUint32(22, data.length, true);
+          local.setUint16(26, nameBytes.length, true);
+          parts.push(local, nameBytes, data);
+          const entry = new DataView(new ArrayBuffer(46));
+          entry.setUint32(0, 0x02014b50, true);
+          entry.setUint16(4, 20, true);
+          entry.setUint16(6, 20, true);
+          entry.setUint32(16, crc, true);
+          entry.setUint32(20, data.length, true);
+          entry.setUint32(24, data.length, true);
+          entry.setUint16(28, nameBytes.length, true);
+          entry.setUint32(42, offset, true);
+          central.push(entry, nameBytes);
+          offset += 30 + nameBytes.length + data.length;
+        }
+        const size = central.reduce((sum, part) => sum + part.byteLength, 0);
+        const end = new DataView(new ArrayBuffer(22));
+        end.setUint32(0, 0x06054b50, true);
+        end.setUint16(8, files.length, true);
+        end.setUint16(10, files.length, true);
+        end.setUint32(12, size, true);
+        end.setUint32(16, offset, true);
+        return new Blob([...parts, ...central, end], { type: 'application/zip' });
+      }
+
+      document.getElementById('zip').addEventListener('click', async () => {
+        const files = [...clips].sort().map(([key, blob]) => ({ name: `${key}.${extension(blob.type)}`, blob }));
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(await zip(files));
+        link.download = 'enregistrements.zip';
+        link.click();
+      });
+    </script>
+  </body>
+</html>

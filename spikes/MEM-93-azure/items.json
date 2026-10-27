@@ -1,0 +1,52 @@
+[
+  { "id": "01", "kind": "mot", "text": "water", "fault": "à la française : « wa-tèr », r roulé" },
+  { "id": "02", "kind": "mot", "text": "apple", "fault": "« a-pplé », en appuyant le é final" },
+  { "id": "03", "kind": "mot", "text": "world", "fault": "« wor-lé », sans le l sombre" },
+  { "id": "04", "kind": "mot", "text": "thorough", "fault": "« tho-rou-gue », le th en t et le gh prononcé" },
+  { "id": "05", "kind": "mot", "text": "squirrel", "fault": "« skwi-rèl », comme en français" },
+  {
+    "id": "06",
+    "kind": "mot",
+    "text": "comfortable",
+    "fault": "« com-for-ta-ble », toutes les syllabes à la française"
+  },
+  { "id": "07", "kind": "mot", "text": "Wednesday", "fault": "« Wed-nes-day », en prononçant le d" },
+  { "id": "08", "kind": "mot", "text": "clothes", "fault": "« clo-tèz », en deux syllabes" },
+  { "id": "09", "kind": "mot", "text": "vegetable", "fault": "« vé-gé-ta-ble », quatre syllabes à la française" },
+  { "id": "10", "kind": "mot", "text": "rural", "fault": "« ru-ral », r roulés" },
+  { "id": "11", "kind": "mot", "text": "to cherish", "fault": "« tou ché-riche », ch français" },
+  {
+    "id": "12",
+    "kind": "expression",
+    "text": "a piece of cake",
+    "fault": "« a pièce of cak », voyelles à la française"
+  },
+  { "id": "13", "kind": "expression", "text": "by the way", "fault": "« baï ze wé », th en z" },
+  {
+    "id": "14",
+    "kind": "expression",
+    "text": "to look forward to",
+    "fault": "« tou louk for-ward tou », en prononçant le w et le r"
+  },
+  { "id": "15", "kind": "expression", "text": "to take for granted", "fault": "« tou tak for gran-tèd »" },
+  {
+    "id": "16",
+    "kind": "phrase",
+    "text": "The weather is lovely today.",
+    "fault": "« Ze wéze iz lo-vli tou-dé », th en z"
+  },
+  { "id": "17", "kind": "phrase", "text": "I thought it through.", "fault": "« Aï tôt it trou », th en t" },
+  {
+    "id": "18",
+    "kind": "phrase",
+    "text": "Could you repeat that, please?",
+    "fault": "« Coul-de you ré-pit zat », le l et le d prononcés"
+  },
+  {
+    "id": "19",
+    "kind": "phrase",
+    "text": "She sells seashells by the seashore.",
+    "fault": "« Si sèl si-chèl », s et ch inversés"
+  },
+  { "id": "20", "kind": "phrase", "text": "I usually walk to work.", "fault": "« Aï u-zu-a-li wal-ke tou wor-ke »" }
+]
