@@ -34,6 +34,18 @@ export function validateEnv(env: Record<string, unknown>): Record<string, unknow
   if (text('ADMIN_TOTP_ENCRYPTION_KEY') && !/^[0-9a-fA-F]{64}$/.test(text('ADMIN_TOTP_ENCRYPTION_KEY'))) {
     problems.push('ADMIN_TOTP_ENCRYPTION_KEY must be 64 hexadecimal characters (openssl rand -hex 32)');
   }
+  // MEM-90: the pronunciation assessment, by Azure AI Speech. Optional: off without both.
+  if (text('AZURE_SPEECH_KEY') && !text('AZURE_SPEECH_REGION')) {
+    problems.push('AZURE_SPEECH_REGION is needed with AZURE_SPEECH_KEY (e.g. francecentral)');
+  }
+  if (text('AZURE_SPEECH_REGION') && !/^[a-z0-9]+$/.test(text('AZURE_SPEECH_REGION'))) {
+    problems.push('AZURE_SPEECH_REGION must be an Azure region name, e.g. francecentral');
+  }
+  for (const name of ['PRONUNCIATION_PER_MINUTE', 'PRONUNCIATION_PER_DAY']) {
+    if (text(name) && !(Number.isInteger(Number(text(name))) && Number(text(name)) > 0)) {
+      problems.push(`${name} must be a positive whole number`);
+    }
+  }
   if (text('ADMIN_SESSION_TTL') && !(Number(env.ADMIN_SESSION_TTL) > 0)) {
     problems.push('ADMIN_SESSION_TTL must be a positive number of seconds');
   }

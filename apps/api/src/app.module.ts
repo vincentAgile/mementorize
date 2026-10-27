@@ -13,6 +13,7 @@ import { ItemsModule } from './items/items.module.js';
 import { LearningModule } from './learning/learning.module.js';
 import { OptimizationModule } from './optimization/optimization.module.js';
 import { AdminModule } from './admin/admin.module.js';
+import { PronunciationAssessmentModule } from './pronunciation-assessment/pronunciation-assessment.module.js';
 import { RemindersModule } from './reminders/reminders.module.js';
 import { ReviewsModule } from './reviews/reviews.module.js';
 
@@ -31,6 +32,7 @@ import { ReviewsModule } from './reviews/reviews.module.js';
     ProfileModule,
     OptimizationModule,
     AdminModule,
+    PronunciationAssessmentModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

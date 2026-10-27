@@ -66,6 +66,9 @@ CMD ["./node_modules/.bin/prisma", "migrate", "deploy"]
 # sources, no build tools). Files stay owned by root and the process runs as
 # the unprivileged "node" user: the app can't modify its own code.
 FROM node:${NODE_VERSION}-alpine AS runtime
+# MEM-90: ffmpeg converts the browser recordings (WebM, MP4) for the
+# pronunciation assessment, in memory.
+RUN apk add --no-cache ffmpeg
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /app ./

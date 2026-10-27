@@ -93,6 +93,12 @@ services:
       # KOKORO_URL=http://kokoro:8880 in .env. Set in production.
       KOKORO_URL: ${KOKORO_URL:-}
       KOKORO_VOICE: ${KOKORO_VOICE:-af_heart}
+      # Pronunciation assessment (MEM-90), by Azure AI Speech. Off without the
+      # key and the region. Limits per user, to keep the cost in hand.
+      AZURE_SPEECH_KEY: ${AZURE_SPEECH_KEY:-}
+      AZURE_SPEECH_REGION: ${AZURE_SPEECH_REGION:-}
+      PRONUNCIATION_PER_MINUTE: ${PRONUNCIATION_PER_MINUTE:-10}
+      PRONUNCIATION_PER_DAY: ${PRONUNCIATION_PER_DAY:-100}
     depends_on:
       postgres:
         condition: service_healthy

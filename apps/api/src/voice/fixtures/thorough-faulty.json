@@ -1,0 +1,89 @@
+{
+  "RecognitionStatus": "Success",
+  "Offset": 2000000,
+  "Duration": 5100000,
+  "DisplayText": "Thorough.",
+  "SNR": 16.25925,
+  "NBest": [
+    {
+      "Confidence": 0.8118836,
+      "Lexical": "thorough",
+      "ITN": "thorough",
+      "MaskedITN": "thorough",
+      "Display": "Thorough.",
+      "AccuracyScore": 26,
+      "FluencyScore": 0,
+      "ProsodyScore": 14.6,
+      "CompletenessScore": 0,
+      "PronScore": 8.1,
+      "Words": [
+        {
+          "Word": "thorough",
+          "Offset": 2000000,
+          "Duration": 5100000,
+          "Confidence": 0,
+          "AccuracyScore": 26,
+          "ErrorType": "Mispronunciation",
+          "Syllables": [
+            {
+              "Syllable": "θɝ",
+              "Grapheme": "thor",
+              "Offset": 2000000,
+              "Duration": 3200000,
+              "AccuracyScore": 18
+            },
+            {
+              "Syllable": "oʊ",
+              "Grapheme": "ough",
+              "Offset": 5300000,
+              "Duration": 1800000,
+              "AccuracyScore": 28
+            }
+          ],
+          "Phonemes": [
+            {
+              "Phoneme": "θ",
+              "Offset": 2000000,
+              "Duration": 1100000,
+              "AccuracyScore": 33
+            },
+            {
+              "Phoneme": "ɝ",
+              "Offset": 3200000,
+              "Duration": 700000,
+              "AccuracyScore": 4
+            },
+            {
+              "Phoneme": "ɹ",
+              "Offset": 4000000,
+              "Duration": 1200000,
+              "AccuracyScore": 12
+            },
+            {
+              "Phoneme": "oʊ",
+              "Offset": 5300000,
+              "Duration": 1800000,
+              "AccuracyScore": 28
+            }
+          ],
+          "Feedback": {
+            "Prosody": {
+              "Break": {
+                "ErrorTypes": ["None"],
+                "BreakLength": 0
+              },
+              "Intonation": {
+                "ErrorTypes": ["Monotone"],
+                "Monotone": {
+                  "Confidence": 0,
+                  "WordPitchSlopeConfidence": 0,
+                  "SyllablePitchDeltaConfidence": 0.20467421
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

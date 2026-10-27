@@ -22,6 +22,8 @@ model User {
   items        Item[]
   /// The sessions of the user, one family of renewal tokens per login (MEM-85).
   refreshTokens RefreshToken[]
+  /// How many pronunciation assessments, per day (MEM-90).
+  pronunciationUsage PronunciationUsage[]
   /// The FSRS weights optimized on the user's history, per space (MEM-76).
   fsrsParameters FsrsParameters[]
 
@@ -325,4 +327,17 @@ model AdminSecurityEvent {
 
   @@index([adminId])
   @@map("admin_security_events")
+}
+
+/// MEM-90: the pronunciation assessments of a user, per day (UTC), for the
+/// daily cap. Only a count: never the recordings.
+model PronunciationUsage {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// YYYY-MM-DD, in UTC.
+  day    String
+  count  Int    @default(0)
+
+  @@id([userId, day])
+  @@map("pronunciation_usage")
 }
