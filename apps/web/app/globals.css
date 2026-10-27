@@ -3275,3 +3275,204 @@ kbd {
     margin-left: 0;
   }
 }
+
+/* --- MEM-91: « Répéter » and the result of the pronunciation --- */
+
+.repeat-button.is-recording {
+  background: #b3261e;
+  color: white;
+  animation: repeat-pulse 1.2s ease-in-out infinite;
+}
+
+.repeat-button:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+@keyframes repeat-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgba(179, 38, 30, 0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .repeat-button.is-recording {
+    animation: none;
+  }
+}
+
+.practice {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.practice:empty {
+  display: none;
+}
+
+.practice__consent {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #c9dcdc;
+  border-radius: 8px;
+  background: rgba(20, 125, 128, 0.06);
+  font-size: 0.9rem;
+}
+
+.practice__consent p {
+  margin: 0 0 0.5rem;
+}
+
+.practice__buttons {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+}
+
+.practice__primary {
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-radius: 4px;
+  background: #147d80;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+.practice__recording,
+.practice__message {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.practice__message--error {
+  color: #b3261e;
+}
+
+.practice__dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: #b3261e;
+  vertical-align: 0.05rem;
+}
+
+.practice__time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.practice__hint {
+  color: #777;
+}
+
+.practice__score {
+  margin: 0.25rem 0;
+}
+
+.practice__score strong {
+  font-size: 1.25rem;
+}
+
+.practice__out-of {
+  color: #777;
+}
+
+.practice__label {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.practice__label--good {
+  background: rgba(46, 125, 50, 0.15);
+  color: #2e7d32;
+}
+
+.practice__label--fair {
+  background: rgba(230, 126, 0, 0.15);
+  color: #b35c00;
+}
+
+.practice__label--poor {
+  background: rgba(179, 38, 30, 0.12);
+  color: #b3261e;
+}
+
+.practice__words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.4rem 0;
+  font-size: 1.05rem;
+}
+
+.practice__word {
+  padding: 0.05rem 0.4rem;
+  border: none;
+  border-radius: 4px;
+  font: inherit;
+}
+
+button.practice__word {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.practice__word--good {
+  background: rgba(46, 125, 50, 0.15);
+  color: #2e7d32;
+}
+
+.practice__word--fair {
+  background: rgba(230, 126, 0, 0.15);
+  color: #b35c00;
+}
+
+.practice__word--poor {
+  background: rgba(179, 38, 30, 0.12);
+  color: #b3261e;
+}
+
+.practice__word--omitted {
+  background: rgba(127, 127, 127, 0.15);
+  color: #777;
+  text-decoration: line-through;
+}
+
+.practice__detail {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.practice__sound {
+  margin-left: 0.3rem;
+  padding: 0 0.3rem;
+  border-radius: 4px;
+  font-family: 'Charis SIL', 'Doulos SIL', 'Gentium', 'Segoe UI', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  .practice__recording,
+  .practice__message {
+    color: #bbb;
+  }
+  .practice__word--good,
+  .practice__label--good {
+    color: #81c784;
+  }
+  .practice__word--fair,
+  .practice__label--fair {
+    color: #ffb74d;
+  }
+  .practice__word--poor,
+  .practice__label--poor,
+  .practice__message--error {
+    color: #f28b82;
+  }
+}

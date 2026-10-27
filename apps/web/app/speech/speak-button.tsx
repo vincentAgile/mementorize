@@ -75,20 +75,23 @@ export function SpeakButton({ text, audioUrl }: { text: string; audioUrl?: strin
   );
 }
 
-/** A line of English with its loudspeaker button on the right. */
+/** A line of English with its loudspeaker button on the right; `actions`: other buttons next to it (MEM-91). */
 export function Speakable({
   text,
   audioUrl,
+  actions,
   children,
 }: {
   text: string;
   audioUrl?: string;
+  actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="speakable">
       {children}
       <SpeakButton text={text} audioUrl={audioUrl} />
+      {actions}
     </div>
   );
 }
