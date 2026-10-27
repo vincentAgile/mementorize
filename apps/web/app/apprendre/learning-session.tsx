@@ -156,8 +156,8 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
             Retour à l’anglais
           </Link>
           {remaining > 0 && (
-            // A plain link: the page loads a new session with the next items.
-            <a href="/apprendre" className="learning-done__next">
+            // MEM-94: the next session is prepared too.
+            <a href="/anglais/preparer" className="learning-done__next">
               Apprendre les suivants ({remaining})
             </a>
           )}

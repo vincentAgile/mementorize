@@ -14,8 +14,11 @@ import {
 /** The types learned per item (MEM-22, MEM-67): the item leaves the review, not a card. */
 const LEARNED_PER_ITEM: ItemType[] = ['Vocabulary', 'Quote'];
 
-/** Number of items in a learning session (MEM-21, MEM-68). */
+/** Number of items in a learning session (MEM-21, MEM-68): those offered by the preparation page (MEM-94). */
 export const SESSION_SIZE = 5;
+
+/** MEM-94: at most this many items in a session prepared by the user. */
+export const MAX_SESSION_SIZE = 10;
 
 export interface LearningItem {
   id: string;
@@ -83,9 +86,13 @@ export class LearningService {
     private readonly scheduler: SchedulerService,
   ) {}
 
-  async session(userId: string, now = new Date()): Promise<LearningSession> {
+  /**
+   * `ids` (MEM-94): the items chosen on the preparation page, in this order;
+   * those that are not (or no longer) in the queue are left out.
+   */
+  async session(userId: string, now = new Date(), ids?: string[]): Promise<LearningSession> {
     const [[total, items], scheduling] = await Promise.all([
-      this.firstOfQueue(userId, 'Vocabulary'),
+      this.sessionItems(userId, 'Vocabulary', ids),
       spaceScheduling(this.prisma, userId), // MEM-75
     ]);
     return {
@@ -105,9 +112,9 @@ export class LearningService {
   }
 
   /** MEM-68: up to five quotes to learn, the first ones of their learning queue. */
-  async quoteSession(userId: string, now = new Date()): Promise<QuoteLearningSession> {
+  async quoteSession(userId: string, now = new Date(), ids?: string[]): Promise<QuoteLearningSession> {
     const [[total, items], scheduling] = await Promise.all([
-      this.firstOfQueue(userId, 'Quote'),
+      this.sessionItems(userId, 'Quote', ids),
       spaceScheduling(this.prisma, userId), // MEM-75
     ]);
     return {
@@ -119,18 +126,26 @@ export class LearningService {
     };
   }
 
-  /** How many items of this type are to learn, and the first ones of the queue, with the card first rated. */
-  private async firstOfQueue(userId: string, type: QueueType) {
+  /**
+   * How many items of this type are to learn, and those of the session, with
+   * the card first rated: the first ones of the queue, or the chosen ones
+   * (MEM-94), in their order.
+   */
+  private async sessionItems(userId: string, type: QueueType, ids?: string[]) {
     const where = IN_QUEUE(userId, type);
-    const [total, items] = await Promise.all([
+    const include = { cards: { where: { kind: FIRST_CARD[type] } } };
+    const [total, found] = await Promise.all([
       this.prisma.item.count({ where }),
-      this.prisma.item.findMany({
-        where,
-        include: { cards: { where: { kind: FIRST_CARD[type] } } },
-        orderBy: QUEUE_ORDER, // MEM-61: the first ones of the learning queue
-        take: SESSION_SIZE,
-      }),
+      ids
+        ? this.prisma.item.findMany({ where: { ...where, id: { in: ids } }, include })
+        : this.prisma.item.findMany({
+            where,
+            include,
+            orderBy: QUEUE_ORDER, // MEM-61: the first ones of the learning queue
+            take: SESSION_SIZE,
+          }),
     ]);
+    const items = ids ? found.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)) : found;
     return [total, items.filter((item) => item.cards.length > 0)] as const;
   }
 

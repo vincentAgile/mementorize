@@ -87,6 +87,27 @@ describe('LearningService', () => {
       const afterAgain = scheduler.review(card('fr-en', 'FrenchToEnglish', NOW), 'Again', NOW).card;
       expect(session.items[0].nextDueAfterAgain).toEqual(scheduler.preview(afterAgain, NOW));
     });
+
+    it('takes the chosen items of the queue, in the order given (MEM-94)', async () => {
+      prismaMock.item.count.mockResolvedValue(7);
+      prismaMock.item.findMany.mockResolvedValue([
+        { ...word(), cards: [card('fr-en', 'FrenchToEnglish', NOW)] },
+        { ...word(), id: 'item-3', cards: [card('fr-en-3', 'FrenchToEnglish', NOW)] },
+      ]);
+
+      const session = await service.session(userId, NOW, ['item-3', 'gone', 'item-1']);
+
+      const query = prismaMock.item.findMany.mock.calls[0][0];
+      expect(query.where).toEqual({
+        userId,
+        type: 'Vocabulary',
+        learningStatus: 'ToLearn',
+        id: { in: ['item-3', 'gone', 'item-1'] },
+      });
+      expect(query.take).toBeUndefined();
+      expect(session.total).toBe(7);
+      expect(session.items.map((item) => item.id)).toEqual(['item-3', 'item-1']);
+    });
   });
 
   describe('quoteSession (MEM-68)', () => {

@@ -149,8 +149,8 @@ function Summary({
           Apprendre · Réviser
         </Link>
         {remaining > 0 && (
-          // A plain link: the page loads a new session with the next quotes.
-          <a href="/apprendre?type=Quote" className="learning-done__next">
+          // MEM-94: the next session is prepared too.
+          <a href="/citations/preparer" className="learning-done__next">
             Apprendre les suivantes ({remaining})
           </a>
         )}

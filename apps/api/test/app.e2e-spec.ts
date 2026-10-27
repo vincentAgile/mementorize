@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
@@ -410,6 +411,21 @@ describe('API (e2e)', () => {
     expect(session.body.items[0]).toMatchObject({ author: 'Moi', source: null });
     expect(Object.keys(session.body.items[0].nextDueAfterAgain)).toEqual(['Again', 'Hard', 'Good', 'Easy']);
     await http().get('/learning/session?type=MindMap').set(auth).expect(400);
+
+    // MEM-94: the quotes chosen on the preparation page, in this order; a
+    // vocabulary item or an unknown id is left out.
+    const vocabularyId = (await http().get('/learning/session').set(auth).expect(200)).body.items[0].id;
+    const chosen = await http()
+      .get(`/learning/session?type=Quote&ids=${ids[3]},${ids[0]},${vocabularyId},${randomUUID()}`)
+      .set(auth)
+      .expect(200);
+    expect(chosen.body.total).toBe(6);
+    expect(chosen.body.items.map((item: { text: string }) => item.text)).toEqual(['Quatre', 'Un']);
+    await http().get('/learning/session?ids=nope').set(auth).expect(400);
+    await http()
+      .get(`/learning/session?ids=${Array.from({ length: 11 }, () => randomUUID()).join(',')}`)
+      .set(auth)
+      .expect(400);
     // The vocabulary session is not mixed with it.
     const words = await http().get('/learning/session').set(auth).expect(200);
     expect(words.body.items.map((item: { word: string }) => item.word)).toEqual(['snag']);
