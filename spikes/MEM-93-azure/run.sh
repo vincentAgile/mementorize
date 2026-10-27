@@ -9,7 +9,8 @@ cd "$(dirname "$0")"
 docker run --rm --memory 512m --cpus 1 --env-file .env -v "$PWD":/essai -w /essai node:24-alpine sh -c '
   apk add --no-cache ffmpeg >/dev/null
   if [ -f enregistrements.zip ]; then rm -rf enregistrements && mkdir enregistrements && unzip -q enregistrements.zip -d enregistrements; fi
-  node essai.mjs
-  chown -R '"$(id -u):$(id -g)"' resultats enregistrements'
+  node essai.mjs; status=$?
+  chown -R '"$(id -u):$(id -g)"' resultats enregistrements 2>/dev/null
+  exit $status'
 tar czf resultats.tar.gz resultats
 echo "Résultats : $PWD/resultats.tar.gz"

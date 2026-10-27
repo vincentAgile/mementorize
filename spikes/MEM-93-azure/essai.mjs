@@ -16,14 +16,20 @@ import { join } from 'node:path';
 import { promisify } from 'node:util';
 
 const run = promisify(execFile);
-const KEY = process.env.AZURE_SPEECH_KEY?.trim();
-const REGION = process.env.AZURE_SPEECH_REGION?.trim();
-const LANGUAGE = process.env.LANGUAGE?.trim() || 'en-US';
+// docker --env-file keeps the quotes of KEY="value": they are removed here.
+const env = (name) =>
+  process.env[name]
+    ?.trim()
+    .replace(/^(['"])(.*)\1$/, '$2')
+    .trim();
+const KEY = env('AZURE_SPEECH_KEY');
+const REGION = env('AZURE_SPEECH_REGION');
+const LANGUAGE = env('LANGUAGE') || 'en-US';
 if (!KEY || !REGION) {
   console.error('AZURE_SPEECH_KEY et AZURE_SPEECH_REGION sont requis (fichier .env).');
   process.exit(1);
 }
-const ENDPOINT = `${process.env.AZURE_SPEECH_ENDPOINT?.trim() || `https://${REGION}.stt.speech.microsoft.com`}/speech/recognition/conversation/cognitiveservices/v1?language=${LANGUAGE}&format=detailed`;
+const ENDPOINT = `${env('AZURE_SPEECH_ENDPOINT') || `https://${REGION}.stt.speech.microsoft.com`}/speech/recognition/conversation/cognitiveservices/v1?language=${LANGUAGE}&format=detailed`;
 /** The scores are at the top of the REST response, under PronunciationAssessment in the SDK's. */
 const scores = (node) => node?.PronunciationAssessment ?? node ?? {};
 
