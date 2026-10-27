@@ -9,7 +9,7 @@ import {
   wordQuality,
   weakSounds,
 } from '../../lib/pronunciation-assessment';
-import { stopPronouncing } from '../../lib/speech';
+import { PRONOUNCE_EVENT, stopPronouncing } from '../../lib/speech';
 
 /** As the API (MEM-90): 10 seconds at most. */
 const MAX_SECONDS = 10;
@@ -58,10 +58,50 @@ export function usePronunciationPractice(itemId: string) {
   const [state, setState] = useState<State>({ name: 'idle' });
   const [denied, setDenied] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  /** MEM-92: the last recording, to listen to it here, in the browser only. */
+  const [playback, setPlayback] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const player = useRef<HTMLAudioElement | null>(null);
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const request = useRef<AbortController | null>(null);
   const alive = useRef(true);
+
+  const stopPlayback = useCallback(() => {
+    player.current?.pause();
+    setPlaying(false);
+  }, []);
+
+  /** MEM-92: plays the user's recording; the reference stops. */
+  const listen = useCallback(() => {
+    if (!playback) return;
+    stopPronouncing();
+    if (!player.current) {
+      player.current = new Audio();
+      player.current.onended = () => setPlaying(false);
+    }
+    if (player.current.src !== playback) player.current.src = playback;
+    player.current.currentTime = 0;
+    void player.current.play().then(
+      () => setPlaying(true),
+      () => setPlaying(false),
+    );
+  }, [playback]);
+
+  // The reference read (« Écouter »): the user's recording stops.
+  useEffect(() => {
+    window.addEventListener(PRONOUNCE_EVENT, stopPlayback);
+    return () => window.removeEventListener(PRONOUNCE_EVENT, stopPlayback);
+  }, [stopPlayback]);
+
+  // MEM-92: the recording leaves the browser's memory with the item (next one, end of the session).
+  useEffect(() => {
+    return () => {
+      player.current?.pause();
+      player.current?.removeAttribute('src');
+      if (playback) URL.revokeObjectURL(playback);
+    };
+  }, [playback]);
 
   const release = useCallback(() => {
     stream.current?.getTracks().forEach((track) => track.stop());
@@ -107,6 +147,7 @@ export function usePronunciationPractice(itemId: string) {
   const start = useCallback(async () => {
     setDenied(false);
     stopPronouncing(); // the reference voice would be recorded too
+    stopPlayback(); // and the user's previous recording
     let media: MediaStream;
     try {
       media = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -135,12 +176,14 @@ export function usePronunciationPractice(itemId: string) {
       release();
       recorder.current = null;
       if (!alive.current) return;
-      void send(new Blob(chunks, { type: rec.mimeType }));
+      const audio = new Blob(chunks, { type: rec.mimeType });
+      setPlayback(URL.createObjectURL(audio)); // replaces the previous one (revoked by the effect)
+      void send(audio);
     };
     rec.start();
     setElapsed(0);
     setState({ name: 'recording', startedAt: Date.now() });
-  }, [release, send]);
+  }, [release, send, stopPlayback]);
 
   const stop = useCallback(() => {
     if (recorder.current?.state === 'recording') recorder.current.stop();
@@ -188,7 +231,7 @@ export function usePronunciationPractice(itemId: string) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [supported, toggle]);
 
-  return { supported, state, denied, elapsed, toggle, accept, cancel };
+  return { supported, state, denied, elapsed, toggle, accept, cancel, playback, playing, listen, stopPlayback };
 }
 
 export type PronunciationPractice = ReturnType<typeof usePronunciationPractice>;
@@ -274,6 +317,24 @@ export function PracticePanel({ practice }: { practice: PronunciationPractice })
           <Result result={state.result} open={open} onOpen={setOpen} />
         )}
       </div>
+      {practice.playback && state.name !== 'recording' && (
+        // MEM-92: the user's own voice, from the browser's memory, to compare with « Écouter ».
+        <button
+          type="button"
+          className="practice__listen"
+          aria-pressed={practice.playing}
+          onClick={practice.playing ? practice.stopPlayback : practice.listen}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            {practice.playing ? (
+              <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+            ) : (
+              <path d="M8 5.5v13l10.5-6.5z" fill="currentColor" />
+            )}
+          </svg>
+          {practice.playing ? 'Arrêter la lecture' : 'Écouter l’enregistrement'}
+        </button>
+      )}
     </div>
   );
 }

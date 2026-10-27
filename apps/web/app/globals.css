@@ -3476,3 +3476,29 @@ button.practice__word {
     color: #f28b82;
   }
 }
+
+/* --- MEM-92: listen to one's own recording --- */
+
+.practice__listen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid #147d80;
+  border-radius: 99px;
+  background: none;
+  color: #147d80;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.practice__listen[aria-pressed='true'] {
+  background: rgba(20, 125, 128, 0.1);
+}
+
+.practice__listen:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
+}
