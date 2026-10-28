@@ -114,7 +114,8 @@ export const learnedType = (type: string | null) => type ?? 'Vocabulary';
 export function inSession(space: Space, pathname: string, type: string | null): boolean {
   return (
     (pathname === '/review' && type === space.type) ||
-    pathname === space.prepareHref || // MEM-94: the preparation of a learning session
+    // MEM-94: the preparation of a learning session; MEM-95: its selection page.
+    (space.prepareHref !== undefined && startsWith(pathname, space.prepareHref)) ||
     (pathname === '/apprendre' && space.learnHref !== undefined && learnedType(type) === space.type)
   );
 }

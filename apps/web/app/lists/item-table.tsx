@@ -1,8 +1,7 @@
 'use client';
 
-import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ALL_TOPICS,
   effectiveSort,
   type Filter,
   filterRows,
@@ -11,7 +10,6 @@ import {
   type ListRow,
   moveInQueue,
   NO_FILTER,
-  NO_TOPIC,
   nextSort,
   reviewLabel,
   type Sort,
@@ -23,6 +21,7 @@ import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
 import { agree, countOf, type Noun } from '../../lib/nouns';
 import type { LearningStatus, ListType } from '../../lib/types';
 import { moveInQueueAction, savePageSizeAction } from './actions';
+import { ListFilters, SortHeader } from './list-filters';
 import { Pagination } from './pagination';
 import { QueueMenu } from './queue-menu';
 import { SelectionBar } from './selection-bar';
@@ -127,7 +126,6 @@ export function ItemTable<Row extends ListRow>({
     setPage(1);
     void savePageSizeAction(size);
   };
-  const searchId = useId();
 
   // MEM-64: the order of the queue shown at once after a move, until the
   // server's answer refreshes the list (or puts the previous one back).
@@ -212,11 +210,6 @@ export function ItemTable<Row extends ListRow>({
 
   const date = new Date(now);
   const filtered = isFiltered(filter);
-  // The chosen topic stays in the list even when no item has it any more (deleted, edited).
-  const topicChoices =
-    topics && (filter.topic === ALL_TOPICS || filter.topic === NO_TOPIC || topics.includes(filter.topic))
-      ? topics
-      : [...(topics ?? []), filter.topic];
   const allColumns: { key: string; label: string; title?: string }[] = [
     { key: 'position', label: 'N°', title: 'Position dans la file d’apprentissage' }, // MEM-64
     ...columns,
@@ -227,46 +220,7 @@ export function ItemTable<Row extends ListRow>({
 
   return (
     <section className="item-list" aria-label={label}>
-      <div className="item-list__filters">
-        <label htmlFor={searchId} className="visually-hidden">
-          {searchLabel}
-        </label>
-        <input
-          id={searchId}
-          type="search"
-          placeholder={searchLabel}
-          value={filter.search}
-          onChange={(event) => setFilter({ ...filter, search: event.target.value })}
-        />
-        <select
-          aria-label="Filtrer par état"
-          value={filter.status}
-          onChange={(event) => setFilter({ ...filter, status: event.target.value as Filter['status'] })}
-        >
-          <option value="all">Tous les états</option>
-          {STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {statusLabel(status)}
-            </option>
-          ))}
-        </select>
-        {topics && (
-          // MEM-56
-          <select
-            aria-label="Filtrer par thématique"
-            value={filter.topic}
-            onChange={(event) => setFilter({ ...filter, topic: event.target.value })}
-          >
-            <option value={ALL_TOPICS}>Toutes les thématiques</option>
-            {topicChoices.map((topic) => (
-              <option key={topic} value={topic}>
-                {topic}
-              </option>
-            ))}
-            <option value={NO_TOPIC}>Sans thématique</option>
-          </select>
-        )}
-      </div>
+      <ListFilters filter={filter} onChange={setFilter} searchLabel={searchLabel} statuses={STATUSES} topics={topics} />
 
       <p className="item-list__count">
         <span aria-live="polite">
@@ -375,23 +329,14 @@ export function ItemTable<Row extends ListRow>({
                     <span className="visually-hidden">Sélectionner les {noun.many} de la page</span>
                   </label>
                 </th>
-                {allColumns.map((column) => {
-                  const active = order?.key === column.key;
-                  return (
-                    <th
-                      key={column.key}
-                      scope="col"
-                      aria-sort={active ? (order.direction === 'asc' ? 'ascending' : 'descending') : undefined}
-                    >
-                      <button type="button" title={column.title} onClick={() => setSort(nextSort(order, column.key))}>
-                        {column.label}
-                        <span className="item-list__arrow" aria-hidden="true">
-                          {active ? (order.direction === 'asc' ? '▲' : '▼') : '↕'}
-                        </span>
-                      </button>
-                    </th>
-                  );
-                })}
+                {allColumns.map((column) => (
+                  <SortHeader
+                    key={column.key}
+                    column={column}
+                    order={order}
+                    onSort={(key) => setSort(nextSort(order, key))}
+                  />
+                ))}
                 <th scope="col">
                   <span className="visually-hidden">Actions</span>
                 </th>

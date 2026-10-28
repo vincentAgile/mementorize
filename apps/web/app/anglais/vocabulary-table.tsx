@@ -14,7 +14,8 @@ import {
 import { type Column, ItemTable } from '../lists/item-table';
 import { VocabularyActions } from './vocabulary-actions';
 
-const COLUMNS: Column<VocabularyRow>[] = [
+/** The columns of the vocabulary, between « N° » and « État »; also on the selection page of MEM-95. */
+export const VOCABULARY_COLUMNS: Column<VocabularyRow>[] = [
   {
     key: 'english',
     label: 'Anglais',
@@ -82,7 +83,7 @@ export function VocabularyTable({ items, now, translator, pageSize, initialStatu
       now={now}
       pageSize={pageSize}
       initialStatus={initialStatus}
-      columns={COLUMNS}
+      columns={VOCABULARY_COLUMNS}
       sorts={VOCABULARY_SORTS}
       matches={matchesVocabulary}
       topics={topics}
