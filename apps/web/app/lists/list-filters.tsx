@@ -9,7 +9,7 @@ interface ListFiltersProps {
   onChange: (filter: Filter) => void;
   /** What the search looks in: « Rechercher en anglais ou en français ». */
   searchLabel: string;
-  /** The states offered by the state filter. */
+  /** The states offered by the state filter; none, no state filter. */
   statuses: LearningStatus[];
   /** The topics in use (MEM-56); none, no topic filter. */
   topics?: string[];
@@ -38,18 +38,21 @@ export function ListFilters({ filter, onChange, searchLabel, statuses, topics }:
         value={filter.search}
         onChange={(event) => onChange({ ...filter, search: event.target.value })}
       />
-      <select
-        aria-label="Filtrer par état"
-        value={filter.status}
-        onChange={(event) => onChange({ ...filter, status: event.target.value as Filter['status'] })}
-      >
-        <option value="all">Tous les états</option>
-        {statuses.map((status) => (
-          <option key={status} value={status}>
-            {statusLabel(status)}
-          </option>
-        ))}
-      </select>
+      {statuses.length > 0 && (
+        // None: no state filter (the mind maps, MEM-98).
+        <select
+          aria-label="Filtrer par état"
+          value={filter.status}
+          onChange={(event) => onChange({ ...filter, status: event.target.value as Filter['status'] })}
+        >
+          <option value="all">Tous les états</option>
+          {statuses.map((status) => (
+            <option key={status} value={status}>
+              {statusLabel(status)}
+            </option>
+          ))}
+        </select>
+      )}
       {topics && (
         // MEM-56
         <select

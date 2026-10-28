@@ -3,11 +3,12 @@
 import { useRef, useTransition } from 'react';
 import { NNBSP } from '../../lib/format';
 import { agree, countOf, type Noun } from '../../lib/nouns';
-import type { ListType } from '../../lib/types';
+import type { DeletableType, ListType } from '../../lib/types';
 import { deleteItemsAction, queueItemsAction } from './actions';
 
 interface SelectionBarProps {
-  type: ListType;
+  /** MEM-98: the mind maps too, without the actions on the queue. */
+  type: DeletableType;
   noun: Noun;
   /** The ids selected: those checked, or all those of the search and filters. */
   ids: string[];
@@ -33,7 +34,7 @@ export function SelectionBar({ type, noun, ids, queue, deleteTitle, onClear, onD
   const count = ids.length;
 
   function changeQueue(op: 'add' | 'remove' | 'top') {
-    startTransition(async () => onQueued(op, await queueItemsAction(type, op, ids)));
+    startTransition(async () => onQueued(op, await queueItemsAction(type as ListType, op, ids)));
   }
 
   function remove() {

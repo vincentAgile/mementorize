@@ -2,16 +2,16 @@
 
 import { revalidatePath } from 'next/cache';
 import { ApiError, deleteItems, moveInLearningQueue, queueItems, relearnItem, savePreferences } from '../../lib/api';
-import type { ListType } from '../../lib/types';
+import type { DeletableType, ListType } from '../../lib/types';
 
 // The actions of the list of a space, the vocabulary (MEM-16) or the quotes
 // (MEM-69). A Server Action is a public endpoint: its arguments are checked.
 
 const LIST_TYPES: readonly ListType[] = ['Vocabulary', 'Quote'];
 
-function checkIds(type: ListType, ids: string[]) {
+function checkIds(type: DeletableType, ids: string[], types: readonly DeletableType[] = LIST_TYPES) {
   if (
-    !LIST_TYPES.includes(type) ||
+    !types.includes(type) ||
     !Array.isArray(ids) ||
     ids.length === 0 ||
     ids.length > 10_000 ||
@@ -39,8 +39,8 @@ export async function savePageSizeAction(size: number): Promise<void> {
  * MEM-59, MEM-69: deletes the selected items, with their cards and history,
  * in a single request. Returns how many were deleted, or null when it failed.
  */
-export async function deleteItemsAction(type: ListType, ids: string[]): Promise<number | null> {
-  checkIds(type, ids);
+export async function deleteItemsAction(type: DeletableType, ids: string[]): Promise<number | null> {
+  checkIds(type, ids, [...LIST_TYPES, 'MindMap']); // MEM-98: the mind maps too
   let deleted: number;
   try {
     deleted = await deleteItems(type, ids);

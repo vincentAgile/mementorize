@@ -64,8 +64,7 @@ export function nextUserSort(current: UserSort, key: UserSortKey): UserSort {
 
 const PARIS = { timeZone: 'Europe/Paris' } as const;
 
-/** « 12/09/2026 ». */
-export const shortDate = (date: string) => new Date(date).toLocaleDateString('fr-FR', PARIS);
+export { shortDate } from './format';
 
 /** « il y a 3 j », « jamais ». */
 export function lastActivity(date: string | null, now: Date): string {
