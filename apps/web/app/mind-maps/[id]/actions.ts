@@ -57,5 +57,5 @@ export async function deleteMindMapAction(id: string): Promise<void> {
   if (typeof id !== 'string') throw new Error('Invalid id');
   await deleteMindMap(id);
   revalidatePath('/', 'layout');
-  redirect('/cartes-mentales');
+  redirect('/cartes-mentales/liste'); // MEM-97: back to the tab « Liste »
 }

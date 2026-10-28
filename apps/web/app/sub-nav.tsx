@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { inSettings, SETTINGS_TABS } from '../lib/settings';
-import { activeSpace, inSession } from '../lib/spaces';
+import { activeSpace, highlightedTab } from '../lib/spaces';
 
 /**
  * The second band of the header (MEM-29): the sub-menu of the active space,
@@ -24,8 +24,9 @@ export function SubNav() {
   const settings = inSettings(pathname);
   const tabs = settings ? SETTINGS_TABS : space?.tabs;
   const label = settings ? 'Réglages' : `Espace ${space?.label}`;
-  // A learning or review session belongs to the first tab ("Apprendre · Réviser").
-  const session = space !== undefined && inSession(space, pathname, type);
+  // A learning or review session belongs to the first tab ("Apprendre · Réviser");
+  // the mind map editor to « Liste » (MEM-97).
+  const highlighted = space && highlightedTab(space, pathname, type);
   const nav = useRef<HTMLElement>(null);
 
   // Narrow screens, where the tabs scroll (MEM-24): the active one in view,
@@ -39,9 +40,9 @@ export function SubNav() {
       <div className="app-header__inner">
         {tabs && (
           <nav ref={nav} className="tabs" aria-label={label}>
-            {tabs.map((tab, index) => {
+            {tabs.map((tab) => {
               const open = pathname === tab.href;
-              const active = open || (session && index === 0);
+              const active = open || highlighted === tab.href;
               return (
                 <Link
                   key={tab.href}
