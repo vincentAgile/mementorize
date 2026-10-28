@@ -1652,6 +1652,11 @@ kbd {
   }
 }
 
+/* MEM-97: the Cartes mentales space, the review card only */
+.learn-review--single {
+  grid-template-columns: minmax(0, 28rem);
+}
+
 .learn-review__card {
   display: flex;
   flex-direction: column;

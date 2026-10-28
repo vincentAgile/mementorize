@@ -1,61 +1,11 @@
 import Link from 'next/link';
-import { getDueReviews, getItems } from '../../lib/api';
 import { formatDelay, NBSP } from '../../lib/format';
 import { LEARNING_STATUS_LABELS } from '../../lib/learning-status';
 import { branchesOf, rootOf } from '../../lib/mind-map';
-import { reviewHref, type Space } from '../../lib/spaces';
 import type { CardSummary, Item } from '../../lib/types';
-import { AppHeader } from '../app-header';
-import { NothingDue } from '../nothing-due';
-import { ItemForm } from '../items/item-form';
-
-/**
- * The page of a subject space (MEM-2): the items of a single type. Cartes
- * mentales uses it; the Anglais space has its own tabs since v0.4
- * (app/anglais/layout.tsx), the Citations space since v0.12 (MEM-66).
- *
- * Server Component: the data is fetched on the Next.js server (with the
- * session's token), and the browser receives ready-made HTML.
- */
-export async function SpacePage({ space }: { space: Space }) {
-  const [items, spaceDue] = await Promise.all([
-    getItems(space.type),
-    getDueReviews(1, space.type), // this subject only
-  ]);
-  const now = new Date();
-
-  return (
-    <>
-      <AppHeader />
-      <main className="page page--reading">
-        {/* MEM-28: the active menu entry says where we are; the h1 is for screen readers. */}
-        <h1 className="visually-hidden page__sr-title">{space.label}</h1>
-        {items.length > 0 && (
-          <div className="space__actions">
-            {spaceDue.total > 0 ? (
-              <Link href={reviewHref(space)} className="space__review">
-                {space.reviewLabel} <span className="space__review-count">{spaceDue.total}</span>
-              </Link>
-            ) : (
-              <NothingDue due={spaceDue} now={now} className="space__due" />
-            )}
-          </div>
-        )}
-
-        <ItemForm type={space.type} />
-
-        {items.length === 0 ? (
-          <p className="space__empty">{space.emptyText}</p>
-        ) : (
-          <SpaceItems items={items} now={now} />
-        )}
-      </main>
-    </>
-  );
-}
 
 /** The items of a space, each with its schedule. */
-function SpaceItems({ items, now }: { items: Item[]; now: Date }) {
+export function SpaceItems({ items, now }: { items: Item[]; now: Date }) {
   return (
     <ul className="items__list">
       {items.map((item) => (

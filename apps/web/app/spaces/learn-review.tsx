@@ -13,6 +13,8 @@ const plural = (count: number, one: string, many: string) => `${count}${NBSP}${c
  * of both. Two cards, one per process; each shows its action, or says why
  * there is nothing to do. The end of a learning or review session comes
  * back here.
+ * MEM-97: the tab « Réviser » of the Cartes mentales space, without
+ * learning process: the review card only.
  */
 export async function LearnReview({ space }: { space: Space }) {
   const [items, due] = await Promise.all([getItems(space.type), getDueReviews(1, space.type)]);
@@ -32,29 +34,31 @@ export async function LearnReview({ space }: { space: Space }) {
   }
 
   return (
-    <div className="learn-review">
-      <section className="learn-review__card" aria-labelledby="learn-title">
-        <h3 id="learn-title">Apprendre</h3>
-        {toLearn > 0 ? (
-          <>
-            <p>{countOf(toLearn, noun)} à apprendre, par sessions de cinq.</p>
-            {/* MEM-94: the session is prepared first. */}
-            <Link href={space.prepareHref ?? space.href} className="space__review space__review--learn">
-              Apprendre <span className="space__review-count">{toLearn}</span>
-            </Link>
-          </>
-        ) : waiting > 0 ? (
-          // MEM-61: the items "En attente" are not learned until they join the queue.
-          <p className="learn-review__none">
-            Rien à apprendre · {countOf(waiting, noun)} en attente.{' '}
-            <Link href={`${space.href}/liste?etat=Waiting`}>Voir les {noun.many} en attente</Link>
-          </p>
-        ) : (
-          <p className="learn-review__none">
-            Rien à apprendre. <Link href={`${space.href}/ajouter`}>Ajouter des {noun.many}</Link>
-          </p>
-        )}
-      </section>
+    <div className={space.learnHref ? 'learn-review' : 'learn-review learn-review--single'}>
+      {space.learnHref && (
+        <section className="learn-review__card" aria-labelledby="learn-title">
+          <h3 id="learn-title">Apprendre</h3>
+          {toLearn > 0 ? (
+            <>
+              <p>{countOf(toLearn, noun)} à apprendre, par sessions de cinq.</p>
+              {/* MEM-94: the session is prepared first. */}
+              <Link href={space.prepareHref ?? space.href} className="space__review space__review--learn">
+                Apprendre <span className="space__review-count">{toLearn}</span>
+              </Link>
+            </>
+          ) : waiting > 0 ? (
+            // MEM-61: the items "En attente" are not learned until they join the queue.
+            <p className="learn-review__none">
+              Rien à apprendre · {countOf(waiting, noun)} en attente.{' '}
+              <Link href={`${space.href}/liste?etat=Waiting`}>Voir les {noun.many} en attente</Link>
+            </p>
+          ) : (
+            <p className="learn-review__none">
+              Rien à apprendre. <Link href={`${space.href}/ajouter`}>Ajouter des {noun.many}</Link>
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="learn-review__card" aria-labelledby="review-title">
         <h3 id="review-title">Réviser</h3>
