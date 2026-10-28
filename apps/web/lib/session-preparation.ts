@@ -71,3 +71,19 @@ export function searchCandidates(candidates: Candidate[], query: string, chosen:
 export function nextOfQueue(candidates: Candidate[], chosen: ReadonlySet<string>): Candidate | undefined {
   return candidates.find((candidate) => candidate.status === 'ToLearn' && !chosen.has(candidate.id));
 }
+
+/**
+ * MEM-95: the composition of the session being prepared, kept in the
+ * address (?liste=a,b,c) while going to the selection page and back. The
+ * candidates among `ids`, in this order, ten at most; none when the address
+ * has no list (a new preparation: the first five of the queue).
+ */
+export function listOf(param: string | undefined, candidates: Candidate[]): Candidate[] | undefined {
+  if (param === undefined) return undefined;
+  const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+  const ids = [...new Set(param.split(','))];
+  return ids.flatMap((id) => byId.get(id) ?? []).slice(0, MAX_SESSION_SIZE);
+}
+
+/** The address of a page of the preparation, with the composition of the session. */
+export const withList = (href: string, ids: string[]) => `${href}?liste=${ids.map(encodeURIComponent).join(',')}`;
