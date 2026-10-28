@@ -35,60 +35,6 @@ body {
   margin-top: -0.5rem;
 }
 
-.items__form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin: 1.5rem 0;
-}
-
-.items__form textarea,
-.items__form input {
-  font: inherit;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.items__form button {
-  align-self: flex-start;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  background: #147d80;
-  color: white;
-  cursor: pointer;
-}
-
-.items__form button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.items__list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.items__list li {
-  border-left: 3px solid #147d80;
-  padding-left: 1rem;
-}
-
-.items__list blockquote {
-  margin: 0;
-}
-
-.items__list cite {
-  display: block;
-  margin-top: 0.25rem;
-  color: #666;
-  font-style: normal;
-}
-
 /* --- Phase 3: auth pages & header --- */
 
 .page--narrow {
@@ -732,12 +678,6 @@ body {
   text-align: center;
 }
 
-.items__schedule {
-  margin: 0.25rem 0 0;
-  color: #888;
-  font-size: 0.8rem;
-}
-
 kbd {
   font-family: ui-monospace, monospace;
   font-size: 0.7rem;
@@ -997,32 +937,6 @@ kbd {
 
 /* --- Phase 5: item types --- */
 
-.items__row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
-
-@media (max-width: 480px) {
-  .items__row {
-    grid-template-columns: 1fr;
-  }
-}
-
-.vocab {
-  margin: 0;
-}
-
-.vocab__arrow {
-  color: #888;
-}
-
-.vocab__example {
-  margin: 0.25rem 0 0;
-  color: #666;
-  font-style: italic;
-}
-
 .review-card__recall {
   margin: 0 0 0.5rem;
   color: #666;
@@ -1154,21 +1068,6 @@ kbd {
   color: white;
   font: inherit;
   cursor: pointer;
-}
-
-.mind-map-summary {
-  margin: 0;
-  font-weight: 600;
-}
-
-.mind-map-summary a {
-  color: #147d80;
-}
-
-.mind-map-summary__meta {
-  color: #888;
-  font-weight: 400;
-  font-size: 0.9rem;
 }
 
 /* Nodes: root > branches > details */
@@ -3852,4 +3751,26 @@ button.practice__word {
 .dialog__preview {
   margin: 0 0 0.5rem;
   font-weight: 600;
+}
+
+/* MEM-99: the tab « Ajouter » of the Cartes mentales space, a single field */
+.add-form--mind-map {
+  gap: 0.35rem;
+  max-width: 36rem;
+}
+
+.add-form__hint {
+  margin: 0;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.add-form--mind-map .add-form__actions {
+  margin-top: 0.6rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .add-form__hint {
+    color: #aaa;
+  }
 }

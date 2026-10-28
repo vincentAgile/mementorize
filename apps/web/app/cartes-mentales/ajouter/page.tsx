@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
-import { ItemForm } from '../../items/item-form';
+import { AddMindMapForm } from './add-mind-map-form';
 
 export const metadata: Metadata = { title: 'Ajouter · Cartes mentales' };
 
-/** Tab « Ajouter » (MEM-97): the creation of a mind map. */
+/** Tab « Ajouter » (MEM-99): the creation of a mind map, alone. */
 export default function MindMapsAddPage() {
-  return <ItemForm type="MindMap" />;
+  return <AddMindMapForm />;
 }
