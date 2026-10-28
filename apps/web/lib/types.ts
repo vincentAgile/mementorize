@@ -1,6 +1,8 @@
 export type ItemType = 'Quote' | 'Vocabulary' | 'MindMap';
 /** The spaces with a list, a learning queue and CSV files: the vocabulary and the quotes (v0.12). */
 export type ListType = 'Vocabulary' | 'Quote';
+/** The spaces whose list deletes in bulk (MEM-59, MEM-69, MEM-98). */
+export type DeletableType = ListType | 'MindMap';
 export type CardKind = 'QuoteRecall' | 'EnglishToFrench' | 'FrenchToEnglish' | 'BranchRecall';
 export type CardState = 'New' | 'Learning' | 'Review' | 'Relearning';
 /** Learning state of an item (MEM-15): vocabulary and quotes (MEM-67); mind maps are always `Learning`. */

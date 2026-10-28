@@ -961,6 +961,39 @@ describe('API (e2e)', () => {
     await http().post('/reminders/unsubscribe').send({ user: 'someone', token: 'forged' }).expect(400);
   });
 
+  it('deletes several mind maps at once, only those of the user (MEM-98)', async () => {
+    const auth = { Authorization: `Bearer ${await register('mona')}` };
+    const other = { Authorization: `Bearer ${await register('noor')}` };
+    const map = (topic: string, headers: Record<string, string>) =>
+      http()
+        .post('/mind-maps')
+        .set(headers)
+        .send({
+          nodes: [
+            { id: 'r', parentId: null, label: topic, position: { x: 0, y: 0 } },
+            { id: 'a', parentId: 'r', label: 'Branche', position: { x: 100, y: 0 } },
+          ],
+        })
+        .expect(201)
+        .then((res) => res.body.id as string);
+    const mine = [await map('Un', auth), await map('Deux', auth), await map('Trois', auth)];
+    const theirs = await map('Quatre', other);
+    const word = (await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201))
+      .body.id;
+
+    const result = await http()
+      .post('/mind-maps/delete')
+      .set(auth)
+      .send({ ids: [mine[0], mine[2], theirs, word, 'unknown'] })
+      .expect(200);
+    expect(result.body).toEqual({ deleted: 2 });
+    const left = (await http().get('/mind-maps').set(auth).expect(200)).body;
+    expect(left.map((m: { id: string }) => m.id)).toEqual([mine[1]]);
+    await http().get(`/mind-maps/${theirs}`).set(other).expect(200);
+    await http().get(`/vocabulary/${word}`).set(auth).expect(200);
+    await http().post('/mind-maps/delete').set(auth).send({ ids: [] }).expect(400);
+  });
+
   it('rejects an invalid mind map (cycle) with a 400', async () => {
     const token = await register('carol');
     const at = { x: 0, y: 0 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import {
   effectiveSort,
   type Filter,
@@ -25,6 +25,7 @@ import { ListFilters, SortHeader } from './list-filters';
 import { Pagination } from './pagination';
 import { QueueMenu } from './queue-menu';
 import { SelectionBar } from './selection-bar';
+import { SelectAllNotice, useSelection } from './use-selection';
 
 /** A column of the space, between « N° » and « État »: its header, its cell, and the class of its cells. */
 export interface Column<Row> {
@@ -99,15 +100,8 @@ export function ItemTable<Row extends ListRow>({
   const [filter, setFilterState] = useState<Filter>({ ...NO_FILTER, status: initialStatus ?? 'all' });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(initialPageSize);
-  // MEM-59: the items checked, or all those of the search and filters ("Gmail" selection).
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [allMatching, setAllMatching] = useState(false);
   // The result of the last action on the selection (MEM-59, MEM-63).
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | undefined>(undefined);
-  const clearSelection = () => {
-    setSelected(new Set());
-    setAllMatching(false);
-  };
   // A new search, filter, sort or page size: back to the first page. A new
   // search or filter also clears the selection: never delete items no
   // longer in view.
@@ -161,38 +155,14 @@ export function ItemTable<Row extends ListRow>({
   const current = Math.min(page, pageCount);
   const pageRows = shown.slice((current - 1) * pageSize, current * pageSize);
 
-  // In the order of the list: the queue gets them in this order (MEM-63).
-  const selectedIds = allMatching
-    ? shown.map((row) => row.id)
-    : shown.filter((row) => selected.has(row.id)).map((row) => row.id);
-  const isSelected = (id: string) => allMatching || selected.has(id);
-  const pageIds = pageRows.map((row) => row.id);
-  const pageAll = pageIds.length > 0 && pageIds.every(isSelected);
-  const pageSome = pageIds.some(isSelected);
-  const more = shown.length > pageIds.length; // other items than those of the page
-  const headerBox = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (headerBox.current) headerBox.current.indeterminate = pageSome && !pageAll;
-  }, [pageSome, pageAll]);
-
-  /** From "all those of the filters" back to a list of ids, to uncheck some of them. */
-  const explicit = () => (allMatching ? new Set(shown.map((row) => row.id)) : new Set(selected));
-  function toggleRow(id: string) {
-    const next = explicit();
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelected(next);
-    setAllMatching(false);
-  }
-  function togglePage() {
-    const next = explicit();
-    for (const id of pageIds) {
-      if (pageAll) next.delete(id);
-      else next.add(id);
-    }
-    setSelected(next);
-    setAllMatching(false);
-  }
+  // MEM-59: the items checked, or all those of the search and filters ("Gmail" selection),
+  // in the order of the list: the queue gets them in this order (MEM-63).
+  const selection = useSelection(
+    shown.map((row) => row.id),
+    pageRows.map((row) => row.id),
+  );
+  const { ids: selectedIds, isSelected, pageAll, headerBox, toggleRow, togglePage } = selection;
+  const clearSelection = selection.clear;
   /** MEM-64: moves an item of the queue, shown at once, saved on the server. */
   async function move(row: Row, position: number) {
     const next = moveInQueue(queue, row.id, position);
@@ -290,26 +260,13 @@ export function ItemTable<Row extends ListRow>({
         />
       )}
 
-      {pageAll && more && (
-        <p className="selection-all">
-          {allMatching ? (
-            <>
-              Les {countOf(shown.length, noun)} sont {agree('sélectionné', noun, shown.length)}.{' '}
-              <button type="button" className="link-button" onClick={clearSelection}>
-                Annuler la sélection
-              </button>
-            </>
-          ) : (
-            <>
-              Les {countOf(pageIds.length, noun)} de cette page sont {agree('sélectionné', noun, pageIds.length)}.{' '}
-              <button type="button" className="link-button" onClick={() => setAllMatching(true)}>
-                Sélectionner les {countOf(shown.length, noun)}{' '}
-                {filtered ? 'correspondant à la recherche et aux filtres' : 'de la liste'}
-              </button>
-            </>
-          )}
-        </p>
-      )}
+      <SelectAllNotice
+        selection={selection}
+        noun={noun}
+        shownCount={shown.length}
+        pageCount={pageRows.length}
+        filtered={filtered}
+      />
 
       {shown.length === 0 ? (
         <p className="item-list__none">

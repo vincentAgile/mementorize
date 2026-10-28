@@ -3826,3 +3826,30 @@ button.practice__word {
     background: rgba(79, 179, 182, 0.15);
   }
 }
+
+/* MEM-98: the table of the mind maps */
+.item-list__table--MindMap {
+  min-width: 40rem;
+}
+
+.item-list__table--MindMap a.item-list__main {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(20, 125, 128, 0.5);
+  text-underline-offset: 3px;
+}
+
+.item-list__table--MindMap a.item-list__main:hover {
+  color: #147d80;
+}
+
+.item-list__number,
+.item-list__date {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.dialog__preview {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}

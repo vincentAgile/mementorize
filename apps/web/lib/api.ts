@@ -15,6 +15,7 @@ import type {
   Item,
   QuoteLearningSession,
   ItemType,
+  DeletableType,
   ListType,
   MindMap,
   MindMapNode,
@@ -210,12 +211,19 @@ export function moveInLearningQueue(
   });
 }
 
-/** MEM-59, MEM-69: deletes several items of a space at once; returns how many were deleted. */
-export async function deleteItems(type: ListType, ids: string[]): Promise<number> {
-  const { deleted } = await authedFetch<{ deleted: number }>(
-    type === 'Quote' ? '/quotes/delete' : '/vocabulary/delete',
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) },
-  );
+const DELETE_PATHS: Record<DeletableType, string> = {
+  Vocabulary: '/vocabulary/delete',
+  Quote: '/quotes/delete',
+  MindMap: '/mind-maps/delete', // MEM-98
+};
+
+/** MEM-59, MEM-69, MEM-98: deletes several items of a space at once; returns how many were deleted. */
+export async function deleteItems(type: DeletableType, ids: string[]): Promise<number> {
+  const { deleted } = await authedFetch<{ deleted: number }>(DELETE_PATHS[type], {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
   return deleted;
 }
 
