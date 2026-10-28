@@ -15,6 +15,7 @@ import type { AuthUser } from '../../auth/auth-user.js';
 import { CurrentUser } from '../../auth/current-user.decorator.js';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard.js';
 import type { MindMapContent } from '../item-content.js';
+import { DeleteItemsDto } from '../delete-items.dto.js';
 import { ItemsService } from '../items.service.js';
 import { SaveMindMapDto } from './dto/save-mind-map.dto.js';
 import { validateMindMap } from './mind-map-tree.js';
@@ -48,6 +49,16 @@ export class MindMapsController {
   @Put(':id')
   async update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: SaveMindMapDto) {
     return toMindMapView(await this.items.update(user.id, id, 'MindMap', checkedContent(dto)));
+  }
+
+  /**
+   * POST /mind-maps/delete { ids } — deletes several maps at once, with their
+   * cards and history (MEM-98). Only the user's own maps; the other ids are ignored.
+   */
+  @Post('delete')
+  @HttpCode(HttpStatus.OK)
+  async removeMany(@CurrentUser() user: AuthUser, @Body() dto: DeleteItemsDto) {
+    return { deleted: await this.items.removeMany(user.id, dto.ids, 'MindMap') };
   }
 
   @Delete(':id')

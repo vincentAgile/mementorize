@@ -24,7 +24,7 @@ export default async function MindMapPage({ params }: { params: Promise<{ id: st
       <AppHeader />
       <main className="page">
         <p className="mind-map-page__back">
-          <Link href="/cartes-mentales">← Mes cartes mentales</Link>
+          <Link href="/cartes-mentales/liste">← Mes cartes mentales</Link>
         </p>
         <h1 className="mind-map-page__title">{map.title}</h1>
         {/* initialNodes is only read on mount: after a save, the editor keeps

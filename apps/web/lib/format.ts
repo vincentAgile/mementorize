@@ -37,3 +37,6 @@ export function nothingDueLines(due: { nextDueAt: string | null }, now: Date): s
   const nothing = `Rien à réviser pour le moment${NNBSP}!`;
   return due.nextDueAt ? [nothing, `Prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}`] : [nothing];
 }
+
+/** « 12/09/2026 », in the time zone of the app (the server and the browser render the same date). */
+export const shortDate = (date: string) => new Date(date).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });

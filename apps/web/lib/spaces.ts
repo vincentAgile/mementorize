@@ -56,8 +56,14 @@ export const SPACES: Space[] = [
     label: 'Cartes mentales',
     shortLabel: 'Cartes',
     href: '/cartes-mentales',
-    emptyText: 'Aucune carte mentale pour le moment : donne un sujet central à ta première carte ci-dessus.',
+    emptyText: 'Aucune carte mentale pour le moment : commence par en créer une, autour d’un sujet central.',
     reviewLabel: 'Réviser les cartes mentales',
+    // MEM-97: the same sub-menu as the other spaces, without learning nor import.
+    tabs: [
+      { href: '/cartes-mentales', label: 'Réviser' },
+      { href: '/cartes-mentales/liste', label: 'Liste' },
+      { href: '/cartes-mentales/ajouter', label: 'Ajouter' },
+    ],
     noun: { one: 'carte mentale', many: 'cartes mentales', feminine: true },
   },
   {
@@ -118,6 +124,17 @@ export function inSession(space: Space, pathname: string, type: string | null): 
     (space.prepareHref !== undefined && startsWith(pathname, space.prepareHref)) ||
     (pathname === '/apprendre' && space.learnHref !== undefined && learnedType(type) === space.type)
   );
+}
+
+/**
+ * The tab shown as the one of the page, when it is not a tab itself: the
+ * first one (« Apprendre · Réviser », « Réviser ») during a session or its
+ * preparation; « Liste » in the mind map editor (MEM-97).
+ */
+export function highlightedTab(space: Space, pathname: string, type: string | null): string | undefined {
+  if (inSession(space, pathname, type)) return space.tabs?.[0]?.href;
+  if (space.type === 'MindMap' && startsWith(pathname, '/mind-maps')) return '/cartes-mentales/liste';
+  return undefined;
 }
 
 /** Address of the review of one subject (MEM-4). */

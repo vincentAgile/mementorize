@@ -148,7 +148,7 @@ export function SubmitButton({
   );
 }
 
-const ICON = {
+export const ICON = {
   viewBox: '0 0 24 24',
   width: 17,
   height: 17,
@@ -208,7 +208,7 @@ function PencilIcon() {
   );
 }
 
-function TrashIcon() {
+export function TrashIcon() {
   return (
     <svg {...ICON}>
       <path d="M4 7h16" />
