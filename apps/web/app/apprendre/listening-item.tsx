@@ -34,7 +34,7 @@ export function ListeningItem({ item, audioUrl, canAssess }: ListeningItemProps)
 
   return (
     <article className="review-card review-card--wide">
-      <div className="review-card__body review-card__body--with-practice">
+      <div className="review-card__body review-card__body--with-practice listening__body">
         <div className="review-card__body-main">
           <p className="listening__actions">
             <SpeakButton text={item.word} audioUrl={audioUrl} label="Réécouter" />
