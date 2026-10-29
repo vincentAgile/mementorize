@@ -39,7 +39,7 @@ Production : https://mementorize.delaneuville.fr
 - **API** : NestJS (ESM, imports en `.js`) + Prisma (adapter-pg) + PostgreSQL 16. Authentification JWT + Passport, sessions avec jeton de renouvellement.
 - **Web** : Next.js (App Router, Server Actions). Le navigateur n'appelle **jamais** l'API directement : Next.js joue le rôle de BFF et garde le JWT dans un cookie httpOnly.
 - **Répétition espacée** : ts-fsrs, seulement via `SchedulerService`.
-- **Voix** : prononciation générée par Kokoro (serveur, conteneur dédié), repli sur la voix du navigateur.
+- **Voix** : prononciation générée par Kokoro (serveur, conteneur dédié), repli sur la voix du navigateur. Évaluation de la prononciation de l'utilisateur par **Azure AI Speech** (service externe, facultatif, derrière la couche `apps/api/src/voice/` ; détail dans `apps/api/README.md` et `deploy/README.md`).
 - **Conteneurs** : Docker multi-stage ; démarrage ordonné postgres → migrate → api → web ; seul `web` est publié.
 - **CI/CD** : GitHub Actions. Six jobs de CI ; sur `main`, images publiées sur GHCR, puis déploiement par SSH, sans coupure (docker-rollout).
 - **Exploitation** : VPS OVH, Traefik (HTTPS Let's Encrypt), Uptime Kuma, sonde externe healthchecks.io, sauvegarde quotidienne chiffrée (rclone vers OVH Object Storage).

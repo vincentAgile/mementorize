@@ -362,6 +362,16 @@ Le JSON des requêtes peut atteindre 3 Mo (`main.ts`), pour un fichier de 1 Mo.
 - **Réglages** : `KOKORO_URL` (sans lui, rien n'est généré) et `KOKORO_VOICE` (`af_heart` par défaut).
 - **Tests** : `pronunciation.service.spec.ts` (file, rattrapage, contrôle d'accès) ; `test/pronunciation.e2e-spec.ts` fait tourner un faux serveur Kokoro à côté de l'API et d'une vraie base.
 
+## Évaluation de la prononciation (MEM-90)
+
+`src/voice/` est la couche voix : des interfaces indépendantes de tout fournisseur (`pronunciation-assessor.ts`) et une première implémentation, [Azure AI Speech](https://learn.microsoft.com/azure/ai-services/speech-service/) (Pronunciation Assessment, `azure-pronunciation-assessor.ts`), retenue après l'essai MEM-93. Aucun autre module ne parle à Azure.
+
+- **Routes** : `GET /pronunciation/assessment` dit si la fonctionnalité est proposée (`{ enabled, maxSeconds }`), pour le bouton « Répéter » (MEM-91). `POST /pronunciation/assess?itemId=…` reçoit l'enregistrement tel que le navigateur l'a fait (`Content-Type: audio/webm`, `audio/mp4`, `audio/ogg`…) et le compare à l'anglais de l'élément. Erreurs : 400, 404, 413 (plus de 1 Mo ou de 10 s), 415, 429 (limites), 503 (désactivée ou indisponible).
+- **Confidentialité** : ffmpeg convertit l'audio en WAV en mémoire, sans fichier ; il part chez Azure, puis est effacé. L'API ne demande pas à Azure de le conserver.
+- **Évaluation** : en-US, avec le texte de référence, jusqu'au phonème (alphabet phonétique international), sans prosodie. Pour un seul mot, le score est la justesse du mot ; pour plusieurs, le score global de prononciation. Un mot noté sous 80 est détaillé son par son. 15 secondes au plus par évaluation.
+- **Réglages** : `AZURE_SPEECH_KEY` et `AZURE_SPEECH_REGION` (sans eux, la fonctionnalité est désactivée) ; `PRONUNCIATION_PER_MINUTE` (10) et `PRONUNCIATION_PER_DAY` (100) par utilisateur. Création de la ressource Azure : [deploy/README.md](../../deploy/README.md#évaluation-de-la-prononciation-avec-azure-mem-90).
+- **Tests** : `azure-pronunciation-assessor.spec.ts` ; `test/pronunciation-assessment.e2e-spec.ts` pour la route.
+
 ## Sens de révision du vocabulaire (MEM-40)
 
 Un élément de vocabulaire garde ses deux cartes (`EnglishToFrench`, `FrenchToEnglish`), chacune avec son calendrier, mais **seule la carte français → anglais est révisée et comptée** : `REVIEWED_CARD` (`src/reviews/in-review.ts`) s'ajoute à `IN_REVIEW` dans toutes les requêtes sur les cartes dues (révision, compteurs, e-mail de rappel, prochaine révision). Les cartes anglais → français et leur historique restent en base, ignorés : un futur réglage du sens pourra les réactiver.
