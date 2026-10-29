@@ -22,7 +22,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 // The learning process (MEM-21): a session of up to five new items, the
 // first ones of the learning queue, before they join the review; or the
 // items chosen on the preparation page, ?ids=a,b,c (MEM-94). The
-// vocabulary in two steps (discovered, then rated); with ?type=Quote, the
+// vocabulary in two steps (listened to and pronounced, then evaluated,
+// MEM-100); with ?type=Quote, the
 // quotes in one, as a review (MEM-68).
 export default async function LearningPage({ searchParams }: Props) {
   const params = await searchParams;
@@ -44,7 +45,7 @@ async function VocabularySession({ now, ids }: { now: string; ids?: string[] }) 
   const [session, { showReviewDelays }, canAssess] = await Promise.all([
     getLearningSession(ids),
     getPreferences(),
-    pronunciationAssessmentEnabled(), // MEM-91: « Répéter », if configured
+    pronunciationAssessmentEnabled(), // « Évaluer ma prononciation », if configured (MEM-101)
   ]);
   if (session.items.length === 0) {
     return (

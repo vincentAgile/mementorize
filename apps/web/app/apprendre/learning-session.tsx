@@ -31,15 +31,19 @@ interface LearningSessionViewProps {
  *    the item back in the series (MEM-47). A rating moves the item to "En
  *    cours d'apprentissage"; « Appris » straight to "Appris", out of the
  *    review (MEM-46).
- * The answers of step 2 are kept here and only sent at the end of the
- * session, in their order (the first one moves the item to "En cours
- * d'apprentissage", the next ones are reviews of its card): leaving the
- * session ("Arrêter", another page) keeps every item "À apprendre".
+ * The step 1 leads straight to step 2, on the same page (MEM-104).
+ * MEM-104: the answers of an item are sent as soon as it is through step 2
+ * (its last answer is not « À revoir »), in their order: the first one moves
+ * it to "En cours d'apprentissage" (or "Appris"), the next ones are reviews
+ * of its card. Leaving the session ("Arrêter", another page) keeps those;
+ * the others, not answered yet or waiting after « À revoir », stay in their
+ * state ("À apprendre"). Leaving during step 1 changes nothing.
  */
 export function LearningSessionView({ session, now, showDelays, canAssess = false }: LearningSessionViewProps) {
   const [items] = useState(session.items);
   const [phase, setPhase] = useState<Phase>('listen');
-  const answers = useRef(new Map<LearningItem, Answer[]>()); // step 2, sent at the end
+  // The answers being sent, one item after the other, in the order they got through.
+  const sending = useRef<Promise<void>>(Promise.resolve());
   const [learned, setLearned] = useState<LearningItem[]>([]); // now in the review
   const [known, setKnown] = useState<LearningItem[]>([]); // « Appris »: out of the review
   const [failed, setFailed] = useState(0);
@@ -47,21 +51,22 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
   // Leaving the session stops the reading (MEM-37).
   useEffect(() => stopPronouncing, []);
 
+  /** MEM-104: an item through step 2: its answers are sent at once, after those already on their way. */
   const itemDone = useCallback((item: LearningItem, given: Answer[]) => {
-    answers.current.set(item, given);
+    sending.current = sending.current.then(async () => {
+      const outcome = await sendAnswers(item.id, item.cardId, given).catch(() => 'failed' as const);
+      if (outcome === 'failed') setFailed((count) => count + 1);
+      else if (outcome === 'learned') setKnown((done) => [...done, item]);
+      else if (outcome === 'learning') setLearned((done) => [...done, item]);
+    });
   }, []);
 
-  /** End of step 2: the answers of each item, in the order of the series. */
+  /** End of step 2: the summary, once the last answers have reached the API. */
   const finish = useCallback(async () => {
     setPhase('saving');
-    for (const it of items) {
-      const outcome = await sendAnswers(it.id, it.cardId, answers.current.get(it) ?? []);
-      if (outcome === 'failed') setFailed((count) => count + 1);
-      else if (outcome === 'learned') setKnown((done) => [...done, it]);
-      else if (outcome === 'learning') setLearned((done) => [...done, it]);
-    }
+    await sending.current;
     setPhase('done');
-  }, [items]);
+  }, []);
 
   if (phase === 'done') {
     const remaining = session.total - learned.length - known.length;

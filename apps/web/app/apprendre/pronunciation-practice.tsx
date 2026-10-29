@@ -47,7 +47,8 @@ function rememberConsent(): void {
 const mmss = (ms: number) => `0:${String(Math.min(MAX_SECONDS, Math.floor(ms / 1000))).padStart(2, '0')}`;
 
 /**
- * MEM-91: « Répéter », at step 1 of the learning: the user records
+ * MEM-91: « Évaluer ma prononciation », in the review and at the step
+ * « Écoute et prononciation » of the learning (MEM-101): the user records
  * themselves saying the item they just heard, and sees how they pronounced
  * it (MEM-90). Optional: nothing waits for it, and the result has no effect
  * on the scheduling. One per item (keyed by the item): changing item stops
@@ -244,9 +245,9 @@ export function RepeatButton({ practice }: { practice: PronunciationPractice }) 
     <button
       type="button"
       className={`speak-button repeat-button${recording ? ' is-recording' : ''}`}
-      aria-label={recording ? 'Arrêter l’enregistrement' : 'Répéter : m’enregistrer pour évaluer ma prononciation'}
+      aria-label={recording ? 'Arrêter l’enregistrement' : 'M’enregistrer pour évaluer ma prononciation'}
       aria-pressed={recording}
-      title={recording ? 'Arrêter (R)' : 'Répéter (R)'}
+      title={recording ? 'Arrêter (R)' : 'M’enregistrer (R)'}
       disabled={assessing}
       onClick={practice.toggle}
     >

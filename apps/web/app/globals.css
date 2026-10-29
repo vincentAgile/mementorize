@@ -1475,11 +1475,6 @@ kbd {
   background: #a86400;
 }
 
-.review-card__answer + .review-card__reveal,
-.review-card__note + .review-card__reveal {
-  margin-top: 1.25rem;
-}
-
 .learning-steps {
   display: flex;
   gap: 0.35rem;
@@ -1501,12 +1496,6 @@ kbd {
 
 .learning-steps li.is-current {
   background: rgba(20, 125, 128, 0.5);
-}
-
-.review-card__answer {
-  margin: 1rem 0 0;
-  font-size: 1.25rem;
-  font-weight: 600;
 }
 
 .learning-done {

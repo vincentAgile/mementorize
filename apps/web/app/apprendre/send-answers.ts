@@ -11,8 +11,9 @@ export type Outcome = 'learning' | 'learned' | 'failed';
  * « Appris » straight to "Appris" (MEM-46), a rating to "En cours
  * d'apprentissage" as the first review of its card; the next ones are
  * reviews of that card (« À revoir » put it back in the pile, MEM-47), or
- * « Appris » in the end. Sent only at the end, so that leaving the session
- * keeps every item "À apprendre".
+ * « Appris » in the end. Sent once the item is through (the vocabulary,
+ * MEM-104) or at the end of the session (the quotes): an item not sent
+ * stays "À apprendre".
  */
 export async function sendAnswers(itemId: string, cardId: string, answers: Answer[]): Promise<Outcome | null> {
   const [first, ...next] = answers;
