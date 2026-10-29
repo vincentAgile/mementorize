@@ -19,7 +19,7 @@ interface RecognitionStepProps {
  * the evaluation. Each item of the series as an English → French card: the
  * English, written for the first time (with its loudspeaker button, P),
  * then « Afficher la réponse » shows the French and the examples, and the
- * button at the bottom of the page goes on to the next item, or to the
+ * same button, at the same place, goes on to the next item, or to the
  * evaluation after the last one. No heading and no question on the card. No
  * rating: nothing is sent to the API, no state changes. Shortcut: Space (or
  * Enter) reveals, then goes on.
@@ -75,38 +75,38 @@ export function RecognitionStep({ items, onDone }: RecognitionStepProps) {
             {item.word}
           </blockquote>
         </Speakable>
-        {revealed ? (
-          <>
-            <p className="recognition__answer" lang="fr">
-              {item.translation}
+        {/* The answer keeps its room while hidden: the button below stays where it is (MEM-100). */}
+        <div
+          className={revealed ? undefined : 'review-card__face--ghost'}
+          aria-hidden={revealed ? undefined : true}
+          inert={!revealed}
+        >
+          <p className="recognition__answer" lang="fr">
+            {item.translation}
+          </p>
+          {item.example && (
+            <p className="review-card__note" lang="en">
+              {item.example}
             </p>
-            {item.example && (
-              <p className="review-card__note" lang="en">
-                {item.example}
-              </p>
-            )}
-            {item.frenchExample && (
-              <p className="review-card__note review-card__note--fr" lang="fr">
-                {item.frenchExample}
-              </p>
-            )}
-          </>
-        ) : (
-          <p className="listening__next">
+          )}
+          {item.frenchExample && (
+            <p className="review-card__note review-card__note--fr" lang="fr">
+              {item.frenchExample}
+            </p>
+          )}
+        </div>
+        <p className="review-card__reveal-row">
+          {revealed ? (
+            <button type="button" className="review-card__reveal" onClick={goOn}>
+              {last ? 'Passer à l’évaluation' : 'Élément suivant'} <kbd>Espace</kbd>
+            </button>
+          ) : (
             <button type="button" className="review-card__reveal" onClick={() => setRevealed(true)}>
               Afficher la réponse <kbd>Espace</kbd>
             </button>
-          </p>
-        )}
-      </article>
-
-      {revealed && (
-        <p className="listening__next">
-          <button type="button" className="review-card__reveal" onClick={goOn}>
-            {last ? 'Passer à l’évaluation' : 'Élément suivant'} <kbd>Espace</kbd>
-          </button>
+          )}
         </p>
-      )}
+      </article>
     </section>
   );
 }

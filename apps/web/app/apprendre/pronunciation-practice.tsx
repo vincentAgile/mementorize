@@ -28,6 +28,11 @@ const noop = () => () => undefined;
 const canRecord = () =>
   typeof window !== 'undefined' && typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
 
+/** Whether this browser can record (false on the server, and until hydrated). */
+function useCanRecord(): boolean {
+  return useSyncExternalStore(noop, canRecord, () => false);
+}
+
 function consented(): boolean {
   try {
     return localStorage.getItem(CONSENT_KEY) === 'yes';
@@ -55,7 +60,7 @@ const mmss = (ms: number) => `0:${String(Math.min(MAX_SECONDS, Math.floor(ms / 1
  * and forgets everything.
  */
 export function usePronunciationPractice(itemId: string) {
-  const supported = useSyncExternalStore(noop, canRecord, () => false);
+  const supported = useCanRecord();
   const [state, setState] = useState<State>({ name: 'idle' });
   const [denied, setDenied] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -289,6 +294,27 @@ function AssessmentFrame({ itemId }: { itemId: string }) {
       </div>
       <PracticePanel practice={practice} />
     </section>
+  );
+}
+
+/**
+ * The place the frame will take once the answer is revealed: the same box,
+ * empty of anything that works (no recording, no shortcut). Hidden by its
+ * parent (review-card.tsx), so that revealing the answer moves nothing.
+ */
+export function PronunciationFramePlaceholder({ available = true }: { available?: boolean }) {
+  const supported = useCanRecord();
+  if (available && !supported) return null; // as AssessmentFrame
+  return (
+    <div className="review-card__practice">
+      <div className="review-card__practice-head">
+        <span className="review-card__practice-title">Évaluer ma prononciation</span>
+        <span className="speak-button repeat-button" />
+      </div>
+      {!available && (
+        <p className="practice__message practice__message--unavailable">Service d’évaluation indisponible</p>
+      )}
+    </div>
   );
 }
 
