@@ -28,14 +28,15 @@ interface LearningEvaluationProps {
 
 const RATINGS = ['Again', 'Hard', 'Good'] as const;
 
-/** The French → English card of an item, as the review shows it (review/page.tsx). */
+/**
+ * The French → English card of an item, as the review shows it
+ * (review/page.tsx): no heading and no question (MEM-100).
+ */
 function facesOf(item: LearningItem, canAssess: boolean): { front: CardFace; back: CardFace } {
-  const heading = 'Français → anglais';
   const english = { main: item.word, lang: 'en', speak: true, audioUrl: pronunciationUrl(item.id, item.word) };
   return {
-    front: { heading, main: item.translation, lang: 'fr', prompt: 'Comment le dit-on en anglais ?' },
+    front: { main: item.translation, lang: 'fr' },
     back: {
-      heading,
       ...english,
       ...(canAssess && { assessItemId: item.id }),
       note: item.example,
@@ -96,7 +97,7 @@ export function LearningEvaluation({
   const { front, back } = facesOf(item, canAssess);
 
   return (
-    <section aria-label="Évaluation de l’apprentissage">
+    <section className="learning-evaluation" aria-label="Évaluation de l’apprentissage">
       <p className="review-progress">
         <strong>Étape 3 · Évaluation de l’apprentissage</strong> ·{' '}
         <span aria-label={`Élément ${position + 1} sur ${items.length}`}>

@@ -76,8 +76,9 @@ function facesOf(
         repeatFront: true,
       }
     : {
-        front: { heading: 'Français → anglais', ...french, prompt: 'Comment le dit-on en anglais ?' },
-        back: { heading: 'Français → anglais', ...assessed, ...notes },
+        // MEM-100: no heading and no question, as in the evaluation of the learning.
+        front: { ...french },
+        back: { ...assessed, ...notes },
         repeatFront: true,
       };
 }
