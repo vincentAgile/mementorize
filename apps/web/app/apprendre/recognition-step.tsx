@@ -55,7 +55,7 @@ export function RecognitionStep({ items, onDone }: RecognitionStepProps) {
   });
 
   return (
-    <section className="learning-session" aria-label="Anglais → français">
+    <section aria-label="Anglais → français">
       <p className="review-progress">
         <strong>Étape 2 · Anglais → français</strong> ·{' '}
         <span aria-label={`Élément ${index + 1} sur ${items.length}`}>

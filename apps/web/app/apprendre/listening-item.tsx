@@ -33,7 +33,7 @@ export function ListeningItem({ item, audioUrl, canAssess }: ListeningItemProps)
   }, [item.word, audioUrl]);
 
   return (
-    <article className="review-card review-card--wide">
+    <article className="review-card">
       <div className="review-card__body review-card__body--with-practice listening__body">
         <div className="review-card__body-main">
           <p className="listening__actions">
