@@ -937,12 +937,41 @@ kbd {
 
 /* --- Phase 5: item types --- */
 
-/* « Évaluer ma prononciation » : in the review and the evaluation of the learning, a frame under the vocabulary, above the ratings */
-.review-card__body:not(.review-card__body--with-practice) > .review-card__body-main + .review-card__practice {
-  margin-top: 1rem;
+/*
+ * MEM-100: in the review and the evaluation of the learning, the French and
+ * the English on the left, the frame on the right (below them on a phone).
+ * The card keeps from the start the room of an English on two lines and of
+ * a full result of the frame, so that neither the next card nor an
+ * assessment moves the rating buttons.
+ */
+@media (min-width: 800px) {
+  .page--reading > .review-card--wide,
+  .page--reading > .learning-evaluation:has(.review-card--wide) {
+    max-width: 760px;
+  }
 }
 
-/* At the step « Écoute et prononciation » : the frame next to « Réécouter », below it on a narrow screen */
+/* The rating buttons keep the size they have in the reading width */
+.review-card--wide .review-card__ratings {
+  max-width: 528px;
+}
+
+.review-card__body--assess {
+  align-content: start;
+  min-height: 14.875rem; /* a result whose words take two lines, with the sounds of a word */
+}
+
+.review-card__body--assess > .review-card__practice {
+  width: auto; /* the whole column: the result appears without moving the frame sideways */
+}
+
+@media (max-width: 639px) {
+  .review-card__body--assess {
+    min-height: 29rem; /* the French and the English, then the frame under them, its words on two lines */
+  }
+}
+
+/* Reviewed, evaluated or listened to: the frame next to the text or « Réécouter », below it on a narrow screen */
 .review-card__body--with-practice {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);

@@ -8,7 +8,7 @@ import { type Answer, answerOfKey, RatingButtons } from './rating-buttons';
 
 /** One side of a card: built by the page, depending on the card's kind. */
 export interface CardFace {
-  heading: string; // "Socrates", "Anglais → français"
+  heading?: string; // "Socrates", "Anglais → français"; none: no heading line (MEM-100)
   subheading?: string | null; // source of a quote
   main: string; // the cue (front) or the answer (back)
   figure?: ReactNode; // shown instead of `main` (mind maps), rendered by the page
@@ -97,7 +97,13 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
   // A mind map is not doubled: its two sides already have the same size.
   const stacked = !front.figure && !back.figure;
   const backBody = (ghost: boolean) => (
-    <div className="review-card__body">
+    <div
+      className={
+        assessItemId
+          ? 'review-card__body review-card__body--with-practice review-card__body--assess'
+          : 'review-card__body'
+      }
+    >
       <div className="review-card__body-main">
         {repeatFront && (
           <Line face={front} ghost={ghost}>
@@ -137,16 +143,18 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
           </blockquote>
         </Line>
       )}
-      <p className="review-card__question">{front.prompt}</p>
+      {front.prompt && <p className="review-card__question">{front.prompt}</p>}
     </>
   );
 
   return (
-    <article className="review-card">
-      <p className="review-card__author">
-        {face.heading}
-        {face.subheading && <span className="review-card__source"> · {face.subheading}</span>}
-      </p>
+    <article className={`review-card${assessItemId ? ' review-card--wide' : ''}`}>
+      {face.heading && (
+        <p className="review-card__author">
+          {face.heading}
+          {face.subheading && <span className="review-card__source"> · {face.subheading}</span>}
+        </p>
+      )}
 
       <div className={stacked ? 'review-card__faces' : undefined}>
         <div className="review-card__face">{revealed ? backBody(false) : frontBody(false)}</div>
