@@ -27,6 +27,7 @@ Projet personnel de veille technique : chaque phase de développement est aussi 
 - **Base de données** — PostgreSQL (via Prisma)
 - **Algorithme de révision** — [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs)
 - **Cartes mentales** — [@xyflow/react](https://www.npmjs.com/package/@xyflow/react)
+- **Voix** — Kokoro pour la synthèse vocale de la prononciation (conteneur dédié) ; [Azure AI Speech](https://learn.microsoft.com/azure/ai-services/speech-service/) (Pronunciation Assessment) pour évaluer la prononciation de l'utilisateur, en option
 - **Conteneurisation** — Docker, Docker Compose, Traefik (HTTPS via Let's Encrypt)
 - **CI/CD** — GitHub Actions
 
@@ -94,6 +95,8 @@ navigateur ──3001──▶ web ──(frontend)──▶ api ──(backend)
 | `api`      | `apps/api/Dockerfile`, cible `runtime` | l'API NestJS ; démarre une fois `migrate` terminé avec succès                       |
 | `web`      | `apps/web/Dockerfile`                  | le serveur Next.js ; démarre une fois l'API déclarée en bonne santé                 |
 | `kokoro`   | image `kokoro-fastapi-cpu`             | la synthèse vocale (MEM-39) ; en local avec `--profile tts`, toujours en production |
+
+**Service externe.** L'évaluation de la prononciation (MEM-90) passe par [Azure AI Speech](https://learn.microsoft.com/azure/ai-services/speech-service/), hors des conteneurs : l'API lui envoie l'enregistrement, converti en mémoire et jamais conservé. Sans `AZURE_SPEECH_KEY` et `AZURE_SPEECH_REGION`, la fonctionnalité est désactivée et l'application ne la propose pas. Mise en place : [deploy/README.md](./deploy/README.md#évaluation-de-la-prononciation-avec-azure-mem-90).
 
 **Ordre de démarrage.** `depends_on` avec conditions : `postgres` _healthy_ (`pg_isready`) → `migrate` _completed successfully_ → `api` _healthy_ (`GET /health`, qui interroge aussi la base) → `web`. Sans ces conditions, les services démarreraient en même temps et l'API tenterait de se connecter à une base pas encore prête.
 
