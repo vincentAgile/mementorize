@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getDueReviews, getPreferences } from '../../lib/api';
+import { getDueReviews, getPreferences, pronunciationAssessmentEnabled } from '../../lib/api';
 import { formatDelay } from '../../lib/format';
 import { subtreeIds } from '../../lib/mind-map';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
@@ -18,7 +18,10 @@ import { ReviewSession, type SessionCard } from './review-session';
  * What each side of a card shows, depending on its kind. This is the only
  * place in the web app that knows how to turn an item into a question.
  */
-function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; repeatFront: boolean } {
+function facesOf(
+  { item, card }: DueItem,
+  canAssess: boolean,
+): { front: CardFace; back: CardFace; repeatFront: boolean } {
   if (item.type === 'MindMap') {
     const { nodes } = item.content;
     const root = nodes.find((node) => node.parentId === null);
@@ -60,6 +63,8 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
   const { word, translation, example, frenchExample } = item.content;
   const notes = { note: example, frenchNote: frenchExample ?? null }; // back only (MEM-42)
   const english = { main: word, lang: 'en', speak: true, audioUrl: pronunciationUrl(item.id, word) };
+  // MEM-91: the frame « Évaluer ma prononciation » on the answer, when it is English and the assessment is configured.
+  const assessed = canAssess ? { ...english, assessItemId: item.id } : english;
   const french = { main: translation, lang: 'fr' };
 
   // MEM-40: the API only serves French → English cards; the English → French
@@ -72,7 +77,7 @@ function facesOf({ item, card }: DueItem): { front: CardFace; back: CardFace; re
       }
     : {
         front: { heading: 'Français → anglais', ...french, prompt: 'Comment le dit-on en anglais ?' },
-        back: { heading: 'Français → anglais', ...english, ...notes },
+        back: { heading: 'Français → anglais', ...assessed, ...notes },
         repeatFront: true,
       };
 }
@@ -95,7 +100,11 @@ const SESSION_LIMIT = 100;
 
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
   const space = findSpace((await searchParams).type);
-  const [due, preferences] = await Promise.all([getDueReviews(SESSION_LIMIT, space?.type), getPreferences()]);
+  const [due, preferences, canAssess] = await Promise.all([
+    getDueReviews(SESSION_LIMIT, space?.type),
+    getPreferences(),
+    pronunciationAssessmentEnabled(),
+  ]);
   const now = new Date();
 
   // End of a subject's session: back to its space, which says when the
@@ -127,7 +136,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
             key={randomUUID()}
             cards={due.items.map((next): SessionCard => ({
               cardId: next.card.id,
-              ...facesOf(next),
+              ...facesOf(next, canAssess),
               // Learned per item, except a mind map: per branch (MEM-48, MEM-67).
               learned: next.item.type === 'MindMap' ? { cardId: next.card.id } : { itemId: next.item.id },
               nextDue: next.nextDue,
