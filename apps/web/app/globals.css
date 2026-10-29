@@ -3290,9 +3290,30 @@ kbd {
   margin-top: 0;
 }
 
-/* « Réécouter » centred on the frame « Évaluer ma prononciation », beside it */
+/*
+ * MEM-100, trial on the step « Écoute et prononciation » only: the frame
+ * « Évaluer ma prononciation » keeps from the start the room of a result
+ * (score, words, sounds of a word, « Écouter l'enregistrement »), so that assessing moves
+ * neither the card nor « Élément suivant ». « Réécouter » stays at the top,
+ * aligned with the title of the frame (its padding and border above).
+ */
 .review-card__body--with-practice.listening__body {
-  align-items: center;
+  align-items: start;
+}
+
+.listening__body .listening__actions {
+  margin-top: calc(0.75rem + 1px);
+}
+
+.listening__body .review-card__practice {
+  width: 20rem;
+  min-height: 12.875rem; /* a result with the sounds of a word shown */
+}
+
+@media (max-width: 639px) {
+  .listening__body .review-card__practice {
+    min-height: 14.5rem; /* the words wrap on a phone */
+  }
 }
 
 /* MEM-100: step 2, « Anglais → français », the translation once revealed */
@@ -3402,6 +3423,7 @@ kbd {
   border-radius: 99px;
   font-size: 0.85rem;
   font-weight: 600;
+  white-space: nowrap; /* « Très bien » on one line, on a phone too */
 }
 
 .practice__label--good {
