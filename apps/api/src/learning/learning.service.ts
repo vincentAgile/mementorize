@@ -32,9 +32,9 @@ export interface LearningItem {
   nextDue: NextDueByRating;
   /**
    * The same, once rated « À revoir » (any number of times): the answers of
-   * step 2 are only sent at the end of the session, so that leaving it keeps
-   * every item "À apprendre"; the buttons of an item put back at the bottom
-   * of the pile show these.
+   * an item are only sent once it is through the evaluation (MEM-104), so
+   * that leaving the session keeps it "À apprendre"; the buttons of an item
+   * put back at the bottom of the pile show these.
    */
   nextDueAfterAgain: NextDueByRating;
 }
