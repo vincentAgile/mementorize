@@ -81,6 +81,8 @@ Une conversation par rôle, pas de conversation « fourre-tout » :
 
 Règle : **une décision importante est consignée ici ou dans Jira, jamais seulement dans une conversation** (l'historique est compressé et ne se retrouve que par recherche).
 
+**Aiguillage des demandes.** Conversation « backlog » : les demandes deviennent des stories groupées en epic dans Jira, sans code ; le développement ne commence qu'après accord. Autre conversation : développement direct, sauf si la demande dépasse une PR, ajoute une migration ou touche plusieurs écrans, auquel cas Claude propose de passer par le backlog. Le libellé de la conversation est un repère ; le message de lancement (§8) fait foi.
+
 ### Cycle d'un ticket
 
 1. La story est écrite dans Jira (objectif, critères d'acceptation, dépendances).
