@@ -23,9 +23,10 @@ export function usePronunciationAudio(audioUrl: string | undefined): boolean {
  * (MEM-39), else the browser's voice. Hidden when neither is available.
  * Shortcut: P. Only one is shown at a time on a card. It doesn't stop the
  * reading when it disappears: the card does, when it changes
- * (lib/speech.ts, stopPronouncing).
+ * (lib/speech.ts, stopPronouncing). With `label`, the text is shown next
+ * to the icon (« Réécouter », MEM-101).
  */
-export function SpeakButton({ text, audioUrl }: { text: string; audioUrl?: string }) {
+export function SpeakButton({ text, audioUrl, label }: { text: string; audioUrl?: string; label?: string }) {
   // Unknown on the server (false); in the browser, follows the list of voices.
   const voice = useSyncExternalStore(subscribeToVoices, canPronounce, () => false);
   const audio = usePronunciationAudio(audioUrl);
@@ -50,9 +51,9 @@ export function SpeakButton({ text, audioUrl }: { text: string; audioUrl?: strin
   return (
     <button
       type="button"
-      className="speak-button"
-      aria-label="Écouter la prononciation"
-      title="Écouter la prononciation (P)"
+      className={label ? 'speak-button speak-button--labeled' : 'speak-button'}
+      aria-label={label ? undefined : 'Écouter la prononciation'}
+      title={`${label ?? 'Écouter la prononciation'} (P)`}
       onClick={() => pronounce(text, audioUrl)}
     >
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -71,6 +72,7 @@ export function SpeakButton({ text, audioUrl }: { text: string; audioUrl?: strin
           strokeLinecap="round"
         />
       </svg>
+      {label}
     </button>
   );
 }

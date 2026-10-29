@@ -255,18 +255,78 @@ export function RepeatButton({ practice }: { practice: PronunciationPractice }) 
           <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
         </svg>
       ) : (
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <rect x="9" y="3.5" width="6" height="11" rx="3" fill="currentColor" />
-          <path
-            d="M6 11a6 6 0 0 0 12 0M12 17v3.5M8.5 20.5h7"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-          />
-        </svg>
+        <MicrophoneIcon />
       )}
     </button>
+  );
+}
+
+/**
+ * The frame « Évaluer ma prononciation », next to the English: the user
+ * records it and hears about it (MEM-90, MEM-91). Optional, and with no
+ * effect on the rating or on the state of the item. Keyed by the item by its
+ * parent, so the recording and the result are forgotten with it (MEM-92).
+ * Shared by the review and the learning (MEM-101). `available`: the
+ * assessment is configured on the server; when it isn't, the button is shown
+ * disabled, with the reason (MEM-101).
+ */
+export function PronunciationFrame({ itemId, available = true }: { itemId: string; available?: boolean }) {
+  return available ? <AssessmentFrame itemId={itemId} /> : <UnavailableFrame itemId={itemId} />;
+}
+
+function AssessmentFrame({ itemId }: { itemId: string }) {
+  const practice = usePronunciationPractice(itemId);
+  if (!practice.supported) return null;
+  return (
+    <section className="review-card__practice" aria-labelledby={`practice-title-${itemId}`}>
+      <div className="review-card__practice-head">
+        <h2 className="review-card__practice-title" id={`practice-title-${itemId}`}>
+          Évaluer ma prononciation
+        </h2>
+        <RepeatButton practice={practice} />
+      </div>
+      <PracticePanel practice={practice} />
+    </section>
+  );
+}
+
+/** MEM-101: the service is not configured (or the API can't say): the button, disabled, and why. */
+function UnavailableFrame({ itemId }: { itemId: string }) {
+  return (
+    <section className="review-card__practice" aria-labelledby={`practice-title-${itemId}`}>
+      <div className="review-card__practice-head">
+        <h2 className="review-card__practice-title" id={`practice-title-${itemId}`}>
+          Évaluer ma prononciation
+        </h2>
+        <button
+          type="button"
+          className="speak-button repeat-button"
+          aria-label="Évaluer ma prononciation"
+          aria-describedby={`practice-unavailable-${itemId}`}
+          disabled
+        >
+          <MicrophoneIcon />
+        </button>
+      </div>
+      <p className="practice__message practice__message--unavailable" id={`practice-unavailable-${itemId}`}>
+        Service d’évaluation indisponible
+      </p>
+    </section>
+  );
+}
+
+function MicrophoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <rect x="9" y="3.5" width="6" height="11" rx="3" fill="currentColor" />
+      <path
+        d="M6 11a6 6 0 0 0 12 0M12 17v3.5M8.5 20.5h7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
