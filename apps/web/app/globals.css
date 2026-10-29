@@ -937,10 +937,11 @@ kbd {
 
 /* --- Phase 5: item types --- */
 
-/* With the frame, the card is wider than the reading column (on a window), so the texts don't wrap for nothing */
+/* With the frame, the card takes the whole column of the page, aligned with the menu (on a window), as do the steps of the learning: the texts do not wrap for nothing */
 @media (min-width: 800px) {
-  .page--reading > .review-card--wide {
-    max-width: 760px;
+  .page--reading > .review-card--wide,
+  .page--reading > .learning-session {
+    max-width: none;
   }
 }
 
@@ -3249,6 +3250,11 @@ kbd {
 
 .listening__actions {
   margin: 0;
+}
+
+/* « Réécouter » centred on the frame « Évaluer ma prononciation », beside it */
+.review-card__body--with-practice.listening__body {
+  align-items: center;
 }
 
 /* MEM-100: step 2, « Anglais → français », the translation once revealed */

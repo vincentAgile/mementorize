@@ -56,7 +56,7 @@ export function ListeningStep({ items, canAssess, onDone }: ListeningStepProps) 
   });
 
   return (
-    <section aria-label="Écoute et prononciation">
+    <section className="learning-session" aria-label="Écoute et prononciation">
       <p className="review-progress">
         <strong>Étape 1 · Écoute et prononciation</strong> ·{' '}
         <span aria-label={`Élément ${index + 1} sur ${items.length}`}>
