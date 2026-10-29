@@ -8,7 +8,7 @@ import type { LearningItem, LearningSession } from '../../lib/types';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
 import { type Answer, answerOfKey, RatingButtons } from '../review/rating-buttons';
-import { PracticePanel, RepeatButton, usePronunciationPractice } from './pronunciation-practice';
+import { ListeningItem } from './listening-item';
 import { sendAnswers } from './send-answers';
 
 type Phase = 'discover' | 'rate' | 'done';
@@ -25,11 +25,12 @@ interface LearningSessionViewProps {
 
 /**
  * A learning session (MEM-21), in two steps over the same items:
- * 1. discovery: the English, then its French translation, without a rating;
+ * 1. « Écoute et prononciation » (MEM-101): the English, read at once, with
+ *    its translation, « Réécouter » and « Évaluer ma prononciation »; no rating;
  * 2. as in the review: the French → English card, rated with the four
  *    buttons. That rating moves the item to "En cours d'apprentissage";
  *    « Appris » straight to "Appris", out of the review (MEM-46).
- * Same shortcuts as the review: Space reveals (and goes on in step 1), 1-4 answer (4: « Appris »).
+ * Same shortcuts as the review: Space goes on in step 1, reveals in step 2, 1-4 answer (4: « Appris »).
  * MEM-47: as in the review, an item rated « À revoir » at step 2 is put back
  * at the bottom of the pile, until it gets another answer.
  * The answers of step 2 are kept here and only sent at the end of the
@@ -113,7 +114,8 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
         // Let a focused button handle Enter/Space itself, once.
         if (event.target instanceof HTMLButtonElement || event.target instanceof HTMLAnchorElement) return;
         event.preventDefault();
-        if (!revealed) reveal();
+        if (phase === 'discover') goOn();
+        else if (!revealed) reveal();
         else goOn();
       } else if (phase === 'rate' && revealed) {
         const answer = answerOfKey(event.key, true);
@@ -176,7 +178,7 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
   }
 
   const discovering = phase === 'discover';
-  const step = discovering ? 'Étape 1 · Découverte' : 'Étape 2 · Français → anglais';
+  const step = discovering ? 'Étape 1 · Écoute et prononciation' : 'Étape 2 · Français → anglais';
   // Step 2: the items answered so far (« À revoir » put back in the pile does not count).
   const position = discovering ? index : items.length - pile.length;
   const due = answers[item.id]?.length ? item.nextDueAfterAgain : item.nextDue; // put back after « À revoir »
@@ -197,85 +199,55 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
         ))}
       </ol>
 
-      <article className="review-card">
-        <p className="review-card__author">{discovering ? 'Nouvel élément' : 'Français → anglais'}</p>
-
-        {discovering ? (
-          <>
-            <DiscoveredWord key={item.id} item={item} audioUrl={audioUrl} canAssess={canAssess} />
-            {revealed ? (
-              <>
-                <p className="review-card__answer">{item.translation}</p>
-                <Examples item={item} />
-                <button type="button" className="review-card__reveal" onClick={goOn}>
-                  {last ? 'Passer à l’étape 2' : 'Suivant'} <kbd>Espace</kbd>
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="review-card__question">Lis-le, puis découvre sa traduction.</p>
-                <button type="button" className="review-card__reveal" onClick={reveal}>
-                  Afficher la traduction <kbd>Espace</kbd>
-                </button>
-              </>
-            )}
-          </>
-        ) : revealed ? (
-          <>
-            <p className="review-card__recall">{item.translation}</p>
-            <Speakable text={item.word} audioUrl={audioUrl}>
-              <blockquote className="review-card__text" lang="en">
-                {item.word}
-              </blockquote>
-            </Speakable>
-            <Examples item={item} />
-            <RatingButtons
-              onAnswer={rate}
-              withLearned
-              delays={
-                showDelays
-                  ? Object.fromEntries(
-                      (['Again', 'Hard', 'Good'] as const).map((rating) => [
-                        rating,
-                        formatDelay(new Date(clock), new Date(due[rating])),
-                      ]),
-                    )
-                  : undefined
-              }
-              disabled={sending}
-            />
-          </>
-        ) : (
-          <>
-            <blockquote className="review-card__text review-card__text--cue">{item.translation}</blockquote>
-            <p className="review-card__question">Comment le dit-on en anglais ?</p>
-            <button type="button" className="review-card__reveal" onClick={reveal}>
-              Afficher la réponse <kbd>Espace</kbd>
+      {discovering ? (
+        <>
+          <ListeningItem key={item.id} item={item} audioUrl={audioUrl} canAssess={canAssess} />
+          <p className="listening__next">
+            <button type="button" className="review-card__reveal" onClick={goOn}>
+              {last ? 'Passer à l’étape 2' : 'Suivant'} <kbd>Espace</kbd>
             </button>
-          </>
-        )}
-      </article>
+          </p>
+        </>
+      ) : (
+        <article className="review-card">
+          <p className="review-card__author">Français → anglais</p>
+          {revealed ? (
+            <>
+              <p className="review-card__recall">{item.translation}</p>
+              <Speakable text={item.word} audioUrl={audioUrl}>
+                <blockquote className="review-card__text" lang="en">
+                  {item.word}
+                </blockquote>
+              </Speakable>
+              <Examples item={item} />
+              <RatingButtons
+                onAnswer={rate}
+                withLearned
+                delays={
+                  showDelays
+                    ? Object.fromEntries(
+                        (['Again', 'Hard', 'Good'] as const).map((rating) => [
+                          rating,
+                          formatDelay(new Date(clock), new Date(due[rating])),
+                        ]),
+                      )
+                    : undefined
+                }
+                disabled={sending}
+              />
+            </>
+          ) : (
+            <>
+              <blockquote className="review-card__text review-card__text--cue">{item.translation}</blockquote>
+              <p className="review-card__question">Comment le dit-on en anglais ?</p>
+              <button type="button" className="review-card__reveal" onClick={reveal}>
+                Afficher la réponse <kbd>Espace</kbd>
+              </button>
+            </>
+          )}
+        </article>
+      )}
     </section>
-  );
-}
-
-/**
- * The English of the item at step 1, with « Écouter » and, when the
- * assessment is offered, « Répéter » and its result (MEM-91). Keyed by the
- * item: the next one starts afresh.
- */
-function DiscoveredWord({ item, audioUrl, canAssess }: { item: LearningItem; audioUrl?: string; canAssess: boolean }) {
-  const practice = usePronunciationPractice(item.id);
-  const offered = canAssess && practice.supported;
-  return (
-    <>
-      <Speakable text={item.word} audioUrl={audioUrl} actions={offered && <RepeatButton practice={practice} />}>
-        <blockquote className="review-card__text" lang="en">
-          {item.word}
-        </blockquote>
-      </Speakable>
-      {offered && <PracticePanel practice={practice} />}
-    </>
   );
 }
 

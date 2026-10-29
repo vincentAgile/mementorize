@@ -2,7 +2,7 @@
 
 import { type ReactNode, useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { pronounce, stopPronouncing } from '../../lib/speech';
-import { PracticePanel, RepeatButton, usePronunciationPractice } from '../apprendre/pronunciation-practice';
+import { PronunciationFrame } from '../apprendre/pronunciation-practice';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
 import { type Answer, answerOfKey, RatingButtons } from './rating-buttons';
 
@@ -158,27 +158,5 @@ function Line({ face, children }: { face: CardFace; children: ReactNode }) {
     </Speakable>
   ) : (
     children
-  );
-}
-
-/**
- * The frame « Évaluer ma prononciation », next to the answer once revealed:
- * the user records the English they just read and hears about it (MEM-90,
- * MEM-91). Optional, and with no effect on the rating. Mounted on reveal, so
- * the recording and the result are forgotten with the card.
- */
-function PronunciationFrame({ itemId }: { itemId: string }) {
-  const practice = usePronunciationPractice(itemId);
-  if (!practice.supported) return null;
-  return (
-    <section className="review-card__practice" aria-labelledby={`practice-title-${itemId}`}>
-      <div className="review-card__practice-head">
-        <h2 className="review-card__practice-title" id={`practice-title-${itemId}`}>
-          Évaluer ma prononciation
-        </h2>
-        <RepeatButton practice={practice} />
-      </div>
-      <PracticePanel practice={practice} />
-    </section>
   );
 }

@@ -3238,6 +3238,39 @@ kbd {
   cursor: progress;
 }
 
+/* MEM-101: the assessment is not offered: disabled, with the reason under it */
+.repeat-button:disabled[aria-describedby] {
+  cursor: not-allowed;
+}
+
+.practice__message--unavailable {
+  margin: 0.5rem 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* MEM-101: the step « Écoute et prononciation » — « Réécouter », a button with its label */
+.speak-button--labeled {
+  width: auto;
+  gap: 0.4rem;
+  padding: 0 0.9rem 0 0.7rem;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.listening__translation {
+  margin: 1rem 0 0;
+  font-size: 1.1rem;
+}
+
+.listening__actions {
+  margin-top: 1rem;
+}
+
+.listening__next {
+  margin: 1.25rem 0 0;
+}
+
 @keyframes repeat-pulse {
   50% {
     box-shadow: 0 0 0 6px rgba(179, 38, 30, 0.2);
