@@ -937,6 +937,46 @@ kbd {
 
 /* --- Phase 5: item types --- */
 
+/* « Évaluer ma prononciation » : a frame next to the answer, below it on a narrow screen */
+.review-card__body--with-practice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
+  gap: 1rem 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 639px) {
+  .review-card__body--with-practice {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.review-card__practice {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #c9dcdc;
+  border-radius: 8px;
+  background: rgba(20, 125, 128, 0.04);
+}
+
+.review-card__practice-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.review-card__practice-help {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.review-card__practice .practice {
+  margin-bottom: 0;
+}
+
 .review-card__recall {
   margin: 0 0 0.5rem;
   color: #666;
