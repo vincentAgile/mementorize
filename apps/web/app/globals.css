@@ -937,6 +937,13 @@ kbd {
 
 /* --- Phase 5: item types --- */
 
+/* With the frame, the card is wider than the reading column (on a window), so the texts don't wrap for nothing */
+@media (min-width: 800px) {
+  .page--reading > .review-card--wide {
+    max-width: 760px;
+  }
+}
+
 /* « Évaluer ma prononciation » : a frame next to the answer, below it on a narrow screen */
 .review-card__body--with-practice {
   display: grid;
@@ -958,19 +965,17 @@ kbd {
   background: rgba(20, 125, 128, 0.04);
 }
 
-.review-card__practice-title {
-  margin: 0 0 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.review-card__practice-help {
+.review-card__practice-head {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.review-card__practice-title {
   margin: 0;
-  color: #555;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .review-card__practice .practice {
