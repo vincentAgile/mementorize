@@ -2,7 +2,7 @@
 
 import { type ReactNode, useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { pronounce, stopPronouncing } from '../../lib/speech';
-import { PronunciationFrame } from '../apprendre/pronunciation-practice';
+import { PronunciationFrame, PronunciationFramePlaceholder } from '../apprendre/pronunciation-practice';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
 import { type Answer, answerOfKey, RatingButtons } from './rating-buttons';
 
@@ -91,6 +91,56 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
   const face = revealed ? back : front;
   const assessItemId = back.speak ? back.assessItemId : undefined;
 
+  // Both sides take the same place, one over the other: the hidden one only
+  // keeps its room (no button, no shortcut). « Afficher la réponse » is thus
+  // where the rating buttons will be, and revealing moves nothing (MEM-100).
+  // A mind map is not doubled: its two sides already have the same size.
+  const stacked = !front.figure && !back.figure;
+  const backBody = (ghost: boolean) => (
+    <div className="review-card__body">
+      <div className="review-card__body-main">
+        {repeatFront && (
+          <Line face={front} ghost={ghost}>
+            <p className="review-card__recall" lang={front.lang}>
+              {front.main}
+            </p>
+          </Line>
+        )}
+        {back.figure ?? (
+          <Line face={back} ghost={ghost}>
+            <blockquote className="review-card__text" lang={back.lang}>
+              {back.main}
+            </blockquote>
+          </Line>
+        )}
+        {back.note && (
+          <p className="review-card__note" lang="en">
+            {back.note}
+          </p>
+        )}
+        {back.frenchNote && (
+          <p className="review-card__note review-card__note--fr" lang="fr">
+            {back.frenchNote}
+          </p>
+        )}
+      </div>
+      {assessItemId &&
+        (ghost ? <PronunciationFramePlaceholder /> : <PronunciationFrame key={assessItemId} itemId={assessItemId} />)}
+    </div>
+  );
+  const frontBody = (ghost: boolean) => (
+    <>
+      {front.figure ?? (
+        <Line face={front} ghost={ghost}>
+          <blockquote className="review-card__text review-card__text--cue" lang={front.lang}>
+            {front.main}
+          </blockquote>
+        </Line>
+      )}
+      <p className="review-card__question">{front.prompt}</p>
+    </>
+  );
+
   return (
     <article className="review-card">
       <p className="review-card__author">
@@ -98,65 +148,45 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
         {face.subheading && <span className="review-card__source"> · {face.subheading}</span>}
       </p>
 
-      {revealed ? (
-        <>
-          <div className="review-card__body">
-            <div className="review-card__body-main">
-              {repeatFront && (
-                <Line face={front}>
-                  <p className="review-card__recall" lang={front.lang}>
-                    {front.main}
-                  </p>
-                </Line>
-              )}
-              {back.figure ?? (
-                <Line face={back}>
-                  <blockquote className="review-card__text" lang={back.lang}>
-                    {back.main}
-                  </blockquote>
-                </Line>
-              )}
-              {back.note && (
-                <p className="review-card__note" lang="en">
-                  {back.note}
-                </p>
-              )}
-              {back.frenchNote && (
-                <p className="review-card__note review-card__note--fr" lang="fr">
-                  {back.frenchNote}
-                </p>
-              )}
-            </div>
-            {assessItemId && <PronunciationFrame key={assessItemId} itemId={assessItemId} />}
+      <div className={stacked ? 'review-card__faces' : undefined}>
+        <div className="review-card__face">{revealed ? backBody(false) : frontBody(false)}</div>
+        {stacked && (
+          <div className="review-card__face review-card__face--ghost" aria-hidden="true" inert>
+            {revealed ? frontBody(true) : backBody(true)}
           </div>
-          <RatingButtons onAnswer={answer} withLearned={withLearned} delays={delays} disabled={pending} />
-        </>
+        )}
+      </div>
+
+      {revealed ? (
+        <RatingButtons onAnswer={answer} withLearned={withLearned} delays={delays} disabled={pending} />
       ) : (
-        <>
-          {front.figure ?? (
-            <Line face={front}>
-              <blockquote className="review-card__text review-card__text--cue" lang={front.lang}>
-                {front.main}
-              </blockquote>
-            </Line>
-          )}
-          <p className="review-card__question">{front.prompt}</p>
+        <p className="review-card__reveal-row">
           <button type="button" className="review-card__reveal" onClick={reveal}>
             Afficher la réponse <kbd>Espace</kbd>
           </button>
-        </>
+        </p>
       )}
     </article>
   );
 }
 
-/** The text of a face, with the loudspeaker button when it is English vocabulary (MEM-37). */
-function Line({ face, children }: { face: CardFace; children: ReactNode }) {
-  return face.speak ? (
+/**
+ * The text of a face, with the loudspeaker button when it is English
+ * vocabulary (MEM-37). `ghost`: the hidden side, the button's room only.
+ */
+function Line({ face, ghost = false, children }: { face: CardFace; ghost?: boolean; children: ReactNode }) {
+  if (!face.speak) return children;
+  if (ghost) {
+    return (
+      <div className="speakable">
+        {children}
+        <span className="speak-button" />
+      </div>
+    );
+  }
+  return (
     <Speakable text={face.main} audioUrl={face.audioUrl}>
       {children}
     </Speakable>
-  ) : (
-    children
   );
 }
