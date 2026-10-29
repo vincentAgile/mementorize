@@ -263,8 +263,9 @@ export function RepeatButton({ practice }: { practice: PronunciationPractice }) 
 }
 
 /**
- * The frame « Évaluer ma prononciation », next to the English: the user
- * records it and hears about it (MEM-90, MEM-91). Optional, and with no
+ * The frame « Évaluer ma prononciation », under the English (review,
+ * evaluation) or next to « Réécouter » (listening): the user records it
+ * and hears about it (MEM-90, MEM-91). Optional, and with no
  * effect on the rating or on the state of the item. Keyed by the item by its
  * parent, so the recording and the result are forgotten with it (MEM-92).
  * Shared by the review and the learning (MEM-101). `available`: the

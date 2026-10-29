@@ -92,7 +92,7 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
   const assessItemId = back.speak ? back.assessItemId : undefined;
 
   return (
-    <article className={`review-card${back.speak && back.assessItemId ? ' review-card--wide' : ''}`}>
+    <article className="review-card">
       <p className="review-card__author">
         {face.heading}
         {face.subheading && <span className="review-card__source"> · {face.subheading}</span>}
@@ -100,7 +100,7 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
 
       {revealed ? (
         <>
-          <div className={assessItemId ? 'review-card__body review-card__body--with-practice' : undefined}>
+          <div className="review-card__body">
             <div className="review-card__body-main">
               {repeatFront && (
                 <Line face={front}>

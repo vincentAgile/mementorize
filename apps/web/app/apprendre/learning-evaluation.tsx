@@ -96,7 +96,7 @@ export function LearningEvaluation({
   const { front, back } = facesOf(item, canAssess);
 
   return (
-    <section className="learning-session" aria-label="Évaluation de l’apprentissage">
+    <section aria-label="Évaluation de l’apprentissage">
       <p className="review-progress">
         <strong>Étape 3 · Évaluation de l’apprentissage</strong> ·{' '}
         <span aria-label={`Élément ${position + 1} sur ${items.length}`}>
