@@ -92,7 +92,7 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
   const assessItemId = back.speak ? back.assessItemId : undefined;
 
   return (
-    <article className="review-card">
+    <article className={`review-card${back.speak && back.assessItemId ? ' review-card--wide' : ''}`}>
       <p className="review-card__author">
         {face.heading}
         {face.subheading && <span className="review-card__source"> · {face.subheading}</span>}
@@ -127,7 +127,7 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
                 </p>
               )}
             </div>
-            {assessItemId && <PronunciationFrame key={assessItemId} itemId={assessItemId} text={back.main} />}
+            {assessItemId && <PronunciationFrame key={assessItemId} itemId={assessItemId} />}
           </div>
           <RatingButtons onAnswer={answer} withLearned={withLearned} delays={delays} disabled={pending} />
         </>
@@ -167,20 +167,17 @@ function Line({ face, children }: { face: CardFace; children: ReactNode }) {
  * MEM-91). Optional, and with no effect on the rating. Mounted on reveal, so
  * the recording and the result are forgotten with the card.
  */
-function PronunciationFrame({ itemId, text }: { itemId: string; text: string }) {
+function PronunciationFrame({ itemId }: { itemId: string }) {
   const practice = usePronunciationPractice(itemId);
   if (!practice.supported) return null;
   return (
     <section className="review-card__practice" aria-labelledby={`practice-title-${itemId}`}>
-      <h2 className="review-card__practice-title" id={`practice-title-${itemId}`}>
-        Évaluer ma prononciation
-      </h2>
-      <p className="review-card__practice-help">
+      <div className="review-card__practice-head">
+        <h2 className="review-card__practice-title" id={`practice-title-${itemId}`}>
+          Évaluer ma prononciation
+        </h2>
         <RepeatButton practice={practice} />
-        <span>
-          Dites « <span lang="en">{text}</span> » (<kbd>R</kbd>)
-        </span>
-      </p>
+      </div>
       <PracticePanel practice={practice} />
     </section>
   );
