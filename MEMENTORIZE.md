@@ -94,6 +94,8 @@ Règle : **une décision importante est consignée ici ou dans Jira, jamais seul
 4. **Chaque fusion sur `main` déclenche un déploiement en production.** Une PR à la fois : fusionner, vérifier que le déploiement est vert, puis la suivante (rebase sur `main` avant de fusionner).
 5. Transition des stories en « Terminé » dans Jira, suppression des branches, clôture de l'epic.
 
+Mises à jour de `MEMENTORIZE.md` : Claude peut fusionner la PR (CI verte) et resynchroniser la copie du projet Claude sans redemander l'accord.
+
 ### Règles de parallélisation
 
 - Deux ou trois développements en parallèle au maximum (le goulot, c'est la relecture).
