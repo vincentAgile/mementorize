@@ -113,14 +113,9 @@ Règle : **une décision importante est consignée ici ou dans Jira, jamais seul
 
 ## 7. État du backlog (Jira, projet MEM)
 
-Epics terminées : v0.1 (MEM-1) à v0.15 (MEM-81) : espaces par sujet, profil et réglages, apprentissage du vocabulaire, ergonomie Anglais, identité visuelle, prononciation, saisie bilingue, révision simplifiée, thématiques et import/export CSV, pagination et actions groupées, file d'apprentissage, espace Citations, réglages FSRS, réglages en onglets, console d'administration et sessions.
+Epics terminées : v0.1 (MEM-1) à v0.17 (MEM-96) : espaces par sujet, profil et réglages, apprentissage du vocabulaire, ergonomie Anglais, identité visuelle, prononciation, saisie bilingue, révision simplifiée, thématiques et import/export CSV, pagination et actions groupées, file d'apprentissage, espace Citations, réglages FSRS, réglages en onglets, console d'administration et sessions, entraînement à la prononciation (v0.16), espace Cartes mentales aux onglets Réviser, Liste et Ajouter (v0.17).
 
-| Epic   | Intitulé                                                              | Statut Jira | Constat                                                                                        |
-| ------ | --------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
-| MEM-89 | v0.16 : entraînement à la prononciation                               | À faire     | ses 4 stories (MEM-90 à MEM-93) sont « Terminé » : **à clôturer, après vérification du livré** |
-| MEM-96 | v0.17 : espace Cartes mentales, même ergonomie que les autres espaces | À faire     | PR #116 fusionnée, MEM-97 à MEM-99 « Terminé » : **à clôturer**                                |
-
-Aucune story ouverte (hors epics) à la date de mise à jour : le prochain travail est à définir.
+Toutes les epics sont closes (MEM-89 et MEM-96 clôturées le 2026-10-29) et aucune story n'est ouverte : le prochain travail est à définir.
 
 ### Idées et suite possible
 
@@ -128,7 +123,7 @@ Aucune story ouverte (hors epics) à la date de mise à jour : le prochain trava
 - Mesure de l'usage : page « Statistiques » à partir de `review_logs`, éventuellement Umami (hébergé sur le VPS).
 - Optimisation FSRS sur l'historique (MEM-76) : à reprendre quand l'historique de révisions sera suffisant (de l'ordre de 1 000 révisions par espace).
 - Import de séries de cartes déjà connues (directement dans « Appris »).
-- Point ouvert historique (phase 6) : blocage ponctuel de l'écran de révision après une réponse, débloqué par F5, jamais reproduit. **À confirmer : toujours d'actualité ?**
+- Le blocage ponctuel de l'écran de révision (phase 6) n'existe plus : point clos.
 
 ## 8. Lancer une nouvelle conversation
 
@@ -146,4 +141,4 @@ Message type pour le backlog :
 - À la clôture de chaque epic : mettre à jour §7 (statuts, prochaines idées) et ajouter les décisions de §3.
 - À chaque nouvelle règle de méthode : §5.
 - Un fait qui existe déjà dans un README ou dans Jira : y renvoyer plutôt que le recopier.
-- Le document vit dans le dépôt : il se modifie par PR comme le reste. Une copie est gardée dans le projet Claude « Mementorize » (à resynchroniser après chaque mise à jour).
+- Le document vit dans le dépôt : il se modifie par PR comme le reste. Une copie est gardée dans le projet Claude « Mementorize », qui regroupe aussi les conversations « Mementorize Dev » et « Mementorize backlog » (à resynchroniser après chaque mise à jour).

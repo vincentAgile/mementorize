@@ -167,6 +167,8 @@ Mise en place sur le serveur : [deploy/README.md](./deploy/README.md#rappels-sup
 
 Voir [CONTRIBUTING.md](./CONTRIBUTING.md) pour les conventions de branches et de commits.
 
+Voir [MEMENTORIZE.md](./MEMENTORIZE.md) pour le document maître du projet : décisions d'architecture, méthode de travail, état du backlog.
+
 ## Feuille de route
 
 Le détail des phases (apprentissages visés, livrables, technos) vit dans le document de suivi partagé, hors de ce repo.
