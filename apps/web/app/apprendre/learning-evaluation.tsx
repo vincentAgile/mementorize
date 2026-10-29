@@ -98,7 +98,7 @@ export function LearningEvaluation({
   return (
     <section aria-label="Évaluation de l’apprentissage">
       <p className="review-progress">
-        <strong>Étape 2 · Évaluation de l’apprentissage</strong> ·{' '}
+        <strong>Étape 3 · Évaluation de l’apprentissage</strong> ·{' '}
         <span aria-label={`Élément ${position + 1} sur ${items.length}`}>
           {position + 1} / {items.length}
         </span>{' '}
