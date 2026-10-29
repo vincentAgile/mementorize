@@ -3247,13 +3247,14 @@ kbd {
   font-size: 0.95rem;
 }
 
-.listening__translation {
-  margin: 1rem 0 0;
-  font-size: 1.1rem;
+.listening__actions {
+  margin: 0;
 }
 
-.listening__actions {
-  margin-top: 1rem;
+/* MEM-100: step 2, « Anglais → français », the translation once revealed */
+.recognition__answer {
+  margin: 1rem 0 0;
+  font-size: 1.1rem;
 }
 
 .listening__next {

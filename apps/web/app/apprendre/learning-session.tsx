@@ -7,9 +7,10 @@ import type { LearningItem, LearningSession } from '../../lib/types';
 import type { Answer } from '../review/rating-buttons';
 import { LearningEvaluation } from './learning-evaluation';
 import { ListeningStep } from './listening-step';
+import { RecognitionStep } from './recognition-step';
 import { sendAnswers } from './send-answers';
 
-type Phase = 'listen' | 'evaluate' | 'saving' | 'done';
+type Phase = 'listen' | 'recognize' | 'evaluate' | 'saving' | 'done';
 
 interface LearningSessionViewProps {
   session: LearningSession;
@@ -22,22 +23,24 @@ interface LearningSessionViewProps {
 }
 
 /**
- * A learning session (MEM-21), in two steps over the whole series:
+ * A learning session (MEM-21), in three steps over the whole series:
  * 1. « Écoute et prononciation » (MEM-101, MEM-102): one item after the
- *    other, its English read at once, with its translation, « Réécouter »
+ *    other, only heard (nothing written), read at once, with « Réécouter »
  *    and « Évaluer ma prononciation »; no rating, no state changed;
- * 2. « Évaluation de l'apprentissage » (MEM-103), as in the review: the
+ * 2. « Anglais → français » (MEM-100, adjustment): the English written,
+ *    then its French on demand; no rating, no state changed;
+ * 3. « Évaluation de l'apprentissage » (MEM-103), as in the review: the
  *    French → English card, rated with the four buttons; « À revoir » puts
  *    the item back in the series (MEM-47). A rating moves the item to "En
  *    cours d'apprentissage"; « Appris » straight to "Appris", out of the
  *    review (MEM-46).
- * The step 1 leads straight to step 2, on the same page (MEM-104).
- * MEM-104: the answers of an item are sent as soon as it is through step 2
+ * The steps follow each other on the same page (MEM-104).
+ * MEM-104: the answers of an item are sent as soon as it is through step 3
  * (its last answer is not « À revoir »), in their order: the first one moves
  * it to "En cours d'apprentissage" (or "Appris"), the next ones are reviews
  * of its card. Leaving the session ("Arrêter", another page) keeps those;
  * the others, not answered yet or waiting after « À revoir », stay in their
- * state ("À apprendre"). Leaving during step 1 changes nothing.
+ * state ("À apprendre"). Leaving during step 1 or 2 changes nothing.
  */
 export function LearningSessionView({ session, now, showDelays, canAssess = false }: LearningSessionViewProps) {
   const [items] = useState(session.items);
@@ -51,7 +54,7 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
   // Leaving the session stops the reading (MEM-37).
   useEffect(() => stopPronouncing, []);
 
-  /** MEM-104: an item through step 2: its answers are sent at once, after those already on their way. */
+  /** MEM-104: an item through step 3: its answers are sent at once, after those already on their way. */
   const itemDone = useCallback((item: LearningItem, given: Answer[]) => {
     sending.current = sending.current.then(async () => {
       const outcome = await sendAnswers(item.id, item.cardId, given).catch(() => 'failed' as const);
@@ -61,7 +64,7 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
     });
   }, []);
 
-  /** End of step 2: the summary, once the last answers have reached the API. */
+  /** End of step 3: the summary, once the last answers have reached the API. */
   const finish = useCallback(async () => {
     setPhase('saving');
     await sending.current;
@@ -111,7 +114,11 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
   }
 
   if (phase === 'listen') {
-    return <ListeningStep items={items} canAssess={canAssess} onDone={() => setPhase('evaluate')} />;
+    return <ListeningStep items={items} canAssess={canAssess} onDone={() => setPhase('recognize')} />;
+  }
+
+  if (phase === 'recognize') {
+    return <RecognitionStep items={items} onDone={() => setPhase('evaluate')} />;
   }
 
   if (phase === 'evaluate') {

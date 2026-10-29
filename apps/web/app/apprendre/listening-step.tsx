@@ -13,15 +13,15 @@ interface ListeningStepProps {
   items: LearningItem[];
   /** The pronunciation assessment is configured on the server (MEM-90). */
   canAssess: boolean;
-  /** After the last item: on to « Évaluation de l'apprentissage ». */
+  /** After the last item: on to step 2, « Anglais → français ». */
   onDone: () => void;
 }
 
 /**
  * MEM-102: the step « Écoute et prononciation », over the whole series, at
  * the user's pace: one item at a time (MEM-101), « 3 / 10 », and at the
- * bottom of the page the button to the next item, or to the evaluation
- * after the last one. Shortcut: Space (or Enter). Going on changes no state:
+ * bottom of the page the button to the next item, or to step 2 after the
+ * last one. Shortcut: Space (or Enter). Going on changes no state:
  * nothing is sent to the API during this step.
  */
 export function ListeningStep({ items, canAssess, onDone }: ListeningStepProps) {
@@ -74,7 +74,7 @@ export function ListeningStep({ items, canAssess, onDone }: ListeningStepProps) 
 
       <p className="listening__next">
         <button type="button" className="review-card__reveal" onClick={goOn}>
-          {last ? 'Passer à l’évaluation' : 'Élément suivant'} <kbd>Espace</kbd>
+          {last ? 'Passer à l’étape 2' : 'Élément suivant'} <kbd>Espace</kbd>
         </button>
       </p>
     </section>

@@ -16,8 +16,9 @@ interface ListeningItemProps {
 
 /**
  * MEM-101: an item at the step « Écoute et prononciation » of the learning.
- * Its English is read as soon as it is shown (Kokoro, else the browser's
- * voice), « Réécouter » reads it again, and « Évaluer ma prononciation » is
+ * Nothing written: the item is only heard (MEM-100, adjustment), its
+ * English read as soon as the page shows it (Kokoro, else the browser's
+ * voice); « Réécouter » reads it again, and « Évaluer ma prononciation » is
  * the frame of the review (same components, MEM-90 to MEM-92): optional,
  * it never holds back the next item. Nothing here changes the state of the
  * item. Keyed by the item by its parent: the next one starts afresh, and
@@ -33,25 +34,8 @@ export function ListeningItem({ item, audioUrl, canAssess }: ListeningItemProps)
 
   return (
     <article className="review-card review-card--wide">
-      <p className="review-card__author">Nouvel élément</p>
       <div className="review-card__body review-card__body--with-practice">
         <div className="review-card__body-main">
-          <blockquote className="review-card__text" lang="en">
-            {item.word}
-          </blockquote>
-          <p className="listening__translation" lang="fr">
-            {item.translation}
-          </p>
-          {item.example && (
-            <p className="review-card__note" lang="en">
-              {item.example}
-            </p>
-          )}
-          {item.frenchExample && (
-            <p className="review-card__note review-card__note--fr" lang="fr">
-              {item.frenchExample}
-            </p>
-          )}
           <p className="listening__actions">
             <SpeakButton text={item.word} audioUrl={audioUrl} label="Réécouter" />
           </p>
