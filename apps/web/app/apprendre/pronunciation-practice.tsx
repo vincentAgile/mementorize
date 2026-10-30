@@ -242,27 +242,34 @@ export function usePronunciationPractice(itemId: string) {
 
 export type PronunciationPractice = ReturnType<typeof usePronunciationPractice>;
 
-/** The microphone button, next to « Écouter ». */
+/**
+ * The head of the frame, as one button (MEM-100): « Évaluer ma prononciation »
+ * and its microphone, the whole of it clickable. Starts or stops the
+ * recording (R); the microphone becomes a square while recording.
+ */
 export function RepeatButton({ practice }: { practice: PronunciationPractice }) {
   const recording = practice.state.name === 'recording';
   const assessing = practice.state.name === 'assessing';
   return (
     <button
       type="button"
-      className={`speak-button repeat-button${recording ? ' is-recording' : ''}`}
-      aria-label={recording ? 'Arrêter l’enregistrement' : 'M’enregistrer pour évaluer ma prononciation'}
+      className="review-card__practice-head practice__toggle"
       aria-pressed={recording}
-      title={recording ? 'Arrêter (R)' : 'M’enregistrer (R)'}
+      title={recording ? 'Arrêter l’enregistrement (R)' : 'M’enregistrer pour évaluer ma prononciation (R)'}
       disabled={assessing}
       onClick={practice.toggle}
     >
-      {recording ? (
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-          <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
-        </svg>
-      ) : (
-        <MicrophoneIcon />
-      )}
+      <span className="review-card__practice-title">Évaluer ma prononciation</span>
+      <span className={`speak-button repeat-button${recording ? ' is-recording' : ''}`} aria-hidden="true">
+        {recording ? (
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+          </svg>
+        ) : (
+          <MicrophoneIcon />
+        )}
+      </span>
+      {recording && <span className="visually-hidden"> : arrêter l’enregistrement</span>}
     </button>
   );
 }
@@ -285,13 +292,8 @@ function AssessmentFrame({ itemId }: { itemId: string }) {
   const practice = usePronunciationPractice(itemId);
   if (!practice.supported) return null;
   return (
-    <section className="review-card__practice" aria-labelledby={`practice-title-${itemId}`}>
-      <div className="review-card__practice-head">
-        <h2 className="review-card__practice-title" id={`practice-title-${itemId}`}>
-          Évaluer ma prononciation
-        </h2>
-        <RepeatButton practice={practice} />
-      </div>
+    <section className="review-card__practice" aria-label="Évaluer ma prononciation">
+      <RepeatButton practice={practice} />
       <PracticePanel practice={practice} />
     </section>
   );
@@ -307,10 +309,10 @@ export function PronunciationFramePlaceholder({ available = true }: { available?
   if (available && !supported) return null; // as AssessmentFrame
   return (
     <div className="review-card__practice">
-      <div className="review-card__practice-head">
+      <span className="review-card__practice-head practice__toggle">
         <span className="review-card__practice-title">Évaluer ma prononciation</span>
         <span className="speak-button repeat-button" />
-      </div>
+      </span>
       {!available && (
         <p className="practice__message practice__message--unavailable">Service d’évaluation indisponible</p>
       )}
@@ -321,21 +323,18 @@ export function PronunciationFramePlaceholder({ available = true }: { available?
 /** MEM-101: the service is not configured (or the API can't say): the button, disabled, and why. */
 function UnavailableFrame({ itemId }: { itemId: string }) {
   return (
-    <section className="review-card__practice" aria-labelledby={`practice-title-${itemId}`}>
-      <div className="review-card__practice-head">
-        <h2 className="review-card__practice-title" id={`practice-title-${itemId}`}>
-          Évaluer ma prononciation
-        </h2>
-        <button
-          type="button"
-          className="speak-button repeat-button"
-          aria-label="Évaluer ma prononciation"
-          aria-describedby={`practice-unavailable-${itemId}`}
-          disabled
-        >
+    <section className="review-card__practice" aria-label="Évaluer ma prononciation">
+      <button
+        type="button"
+        className="review-card__practice-head practice__toggle"
+        aria-describedby={`practice-unavailable-${itemId}`}
+        disabled
+      >
+        <span className="review-card__practice-title">Évaluer ma prononciation</span>
+        <span className="speak-button repeat-button" aria-hidden="true">
           <MicrophoneIcon />
-        </button>
-      </div>
+        </span>
+      </button>
       <p className="practice__message practice__message--unavailable" id={`practice-unavailable-${itemId}`}>
         Service d’évaluation indisponible
       </p>
