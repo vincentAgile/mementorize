@@ -260,7 +260,11 @@ describe('Administration console (e2e)', () => {
     for (const word of ['secret-word-1', 'secret-word-2', 'secret-word-3']) {
       await http().post('/vocabulary').set(auth).send({ word, translation: 'mot secret' }).expect(201);
     }
-    await http().post('/quotes').set(auth).send({ text: 'Une citation confidentielle.' }).expect(201);
+    await http()
+      .post('/quotes')
+      .set(auth)
+      .send({ text: 'Une citation confidentielle.', hint: 'Un secret' })
+      .expect(201);
     const map = await http()
       .post('/mind-maps')
       .set(auth)

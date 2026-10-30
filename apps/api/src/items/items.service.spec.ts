@@ -54,7 +54,7 @@ describe('ItemsService', () => {
   describe('create', () => {
     it('gives a quote a single card, due now, last in the learning queue of the quotes (MEM-67)', async () => {
       prismaMock.item.aggregate.mockResolvedValue({ _max: { learnPosition: 3 } });
-      const content = { text: 'Hello', author: null, source: null };
+      const content = { text: 'Hello', author: null, source: null, hint: 'Un indice' };
 
       await service.create(userId, 'Quote', content, NOW);
 

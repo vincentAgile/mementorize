@@ -12,7 +12,7 @@ describe('API views', () => {
     const item = {
       ...base,
       type: 'Quote',
-      content: { text: 'Hello', author: 'Me', source: null },
+      content: { text: 'Hello', author: 'Me', source: null, hint: 'Une salutation' },
       learningStatus: 'ToLearn',
       learnPosition: 2,
       cards: [{ id: 'card-1', kind: 'QuoteRecall', nodeId: null, due: NOW, state: 'New', learnedAt: null }],
@@ -23,6 +23,7 @@ describe('API views', () => {
       text: 'Hello',
       author: 'Me',
       source: null,
+      hint: 'Une salutation', // MEM-106
       learningStatus: 'ToLearn', // MEM-67
       learnPosition: 2,
       card: { id: 'card-1', due: NOW, state: 'New' },

@@ -44,7 +44,7 @@ describe('LearningService', () => {
     userId,
     type: 'Quote',
     learningStatus,
-    content: { text: 'Connais-toi toi-même.', author: 'Socrate', source: null },
+    content: { text: 'Connais-toi toi-même.', author: 'Socrate', source: null, hint: 'Se connaître' },
     cards: [card('q-card', 'QuoteRecall', NOW)],
   });
 
@@ -137,6 +137,7 @@ describe('LearningService', () => {
             text: 'Connais-toi toi-même.',
             author: 'Socrate',
             source: null,
+            hint: 'Se connaître', // MEM-106
             nextDue: scheduler.preview(quoteCard, NOW),
             nextDueAfterAgain: scheduler.preview(scheduler.review(quoteCard, 'Again', NOW).card, NOW),
           },
