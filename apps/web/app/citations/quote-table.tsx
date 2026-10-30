@@ -11,7 +11,8 @@ import { QuoteActions, quoteName } from './quote-actions';
 /** Beyond this length, the text of a quote is cut in the list, with « Lire la suite ». */
 const SHORT = 160;
 
-const COLUMNS: Column<QuoteRow>[] = [
+/** The columns of the quotes, between « N° » and « État »; also on the selection page of a session. */
+export const QUOTE_COLUMNS: Column<QuoteRow>[] = [
   { key: 'text', label: 'Texte', className: 'item-list__quote', cell: (row) => <QuoteText text={row.text} /> },
   { key: 'author', label: 'Auteur', className: 'item-list__author', cell: (row) => row.author },
   { key: 'source', label: 'Source', className: 'item-list__source', cell: (row) => row.source },
@@ -50,7 +51,7 @@ export function QuoteTable({ items, now, pageSize, initialStatus, advanced = fal
       now={now}
       pageSize={pageSize}
       initialStatus={initialStatus}
-      columns={COLUMNS}
+      columns={QUOTE_COLUMNS}
       sorts={QUOTE_SORTS}
       matches={matchesQuote}
       name={quoteName}
