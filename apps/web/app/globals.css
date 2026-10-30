@@ -1950,8 +1950,16 @@ div.review-card__reveal-row {
   gap: 0.9rem 1.25rem;
 }
 
-.quote-fields .quote-fields__text {
+.quote-fields .quote-fields__text,
+.quote-fields .quote-fields__hint {
   grid-column: 1 / -1;
+}
+
+/* MEM-106: a short help under a field, with its example */
+.field-help {
+  color: #666;
+  font-size: 0.85rem;
+  font-weight: 400;
 }
 
 .quote-fields label {

@@ -11,6 +11,7 @@ export type QuoteItem = Item & { type: 'Quote'; content: QuoteContent };
 
 export interface QuoteRow extends ListRow {
   text: string;
+  hint: string; // MEM-106
   author: string | null;
   source: string | null;
 }
@@ -20,6 +21,7 @@ export function toQuoteRow(item: QuoteItem): QuoteRow {
   return {
     id: item.id,
     text: item.content.text,
+    hint: item.content.hint,
     author: item.content.author,
     source: item.content.source,
     status: item.learningStatus,

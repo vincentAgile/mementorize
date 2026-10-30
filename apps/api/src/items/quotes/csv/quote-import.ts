@@ -2,13 +2,15 @@ import type { CsvRecord } from '../../csv/csv.js';
 import { type ImportProblem, readImportFile } from '../../csv/import-file.js';
 
 /** Same limits as the entry form (CreateQuoteDto). */
-const MAX = { text: 2000, author: 200, source: 300 } as const;
+const MAX = { text: 2000, author: 200, source: 300, hint: 300 } as const;
 
 /** The values of a line, trimmed, in the order of the columns. */
 export interface QuoteImportValues {
   text: string;
   author: string;
   source: string;
+  /** MEM-106: required; the file has no column for it yet (MEM-107), so every line is in error. */
+  hint: string;
 }
 
 export type QuoteImportRow = QuoteImportValues & { line: number } & (
@@ -64,8 +66,8 @@ export function analyzeQuoteImport(text: string, separator: string, existing: Ex
   }
 
   const rows = file.records.map((record): QuoteImportRow => {
-    const [text = '', author = '', source = ''] = record.fields.map((field) => field.trim());
-    const values = { line: record.line, text, author, source };
+    const [text = '', author = '', source = '', hint = ''] = record.fields.map((field) => field.trim());
+    const values = { line: record.line, text, author, source, hint };
     const error = errorOf(record, values);
     if (error) return { ...values, status: 'error', error };
 
@@ -89,5 +91,8 @@ function errorOf(record: CsvRecord, values: QuoteImportValues): string | null {
   if (values.text.length > MAX.text) return `Texte trop long (${MAX.text} caractères au plus)`;
   if (values.author.length > MAX.author) return `Auteur trop long (${MAX.author} caractères au plus)`;
   if (values.source.length > MAX.source) return `Source trop longue (${MAX.source} caractères au plus)`;
+  // MEM-106: no quote without its recall hint.
+  if (!values.hint) return 'Indice de rappel manquant';
+  if (values.hint.length > MAX.hint) return `Indice de rappel trop long (${MAX.hint} caractères au plus)`;
   return null;
 }

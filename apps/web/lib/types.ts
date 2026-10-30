@@ -13,6 +13,8 @@ export interface QuoteContent {
   text: string;
   author: string | null;
   source: string | null;
+  /** MEM-106: the recall hint, always there (« Indice de rappel » for the quotes migrated). */
+  hint: string;
 }
 
 export interface VocabularyContent {
@@ -67,6 +69,7 @@ export type Item =
 
 export interface CreateQuoteInput {
   text: string;
+  hint: string; // MEM-106, required
   author?: string;
   source?: string;
   queue?: boolean; // MEM-71: false, the quote is "En attente" (true by default)
@@ -136,6 +139,7 @@ export interface QuoteLearningItem {
   text: string;
   author: string | null;
   source: string | null;
+  hint: string; // MEM-106
   /** When the card comes back, for each rating. */
   nextDue: Record<ReviewRating, string>;
   /** The same once rated « À revoir »: the answers are only sent at the end of the session. */

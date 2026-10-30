@@ -6,6 +6,13 @@ export type QuoteContent = {
   text: string;
   author: string | null;
   source: string | null;
+  /**
+   * MEM-106: the recall hint, what the quote is about (« Citation relative à
+   * l'importance de la culture générale »): required, 300 characters at most.
+   * The quotes created before it got « Indice de rappel » (migration
+   * 20261030090000_quote_hint).
+   */
+  hint: string;
 };
 
 export type VocabularyContent = {

@@ -153,8 +153,11 @@ export function createQuote(input: CreateQuoteInput): Promise<CreatedItem> {
   });
 }
 
-/** Changes a quote (MEM-69): its text, author or source; an empty author or source removes it. */
-export function updateQuote(id: string, input: { text: string; author: string; source: string }): Promise<unknown> {
+/** Changes a quote (MEM-69): its text, recall hint (MEM-106), author or source; an empty author or source removes it. */
+export function updateQuote(
+  id: string,
+  input: { text: string; hint: string; author: string; source: string },
+): Promise<unknown> {
   return authedFetch(`/quotes/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

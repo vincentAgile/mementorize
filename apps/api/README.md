@@ -48,7 +48,7 @@ curl http://localhost:3000/auth/me -H "Authorization: Bearer $TOKEN"
 # Créer / lister ses quotes (même contrat qu'avant la phase 5)
 curl -X POST http://localhost:3000/quotes \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
-  -d '{"text":"The only true wisdom is in knowing you know nothing.","author":"Socrates"}'
+  -d '{"text":"The only true wisdom is in knowing you know nothing.","author":"Socrates","hint":"Citation sur les limites du savoir"}'
 curl http://localhost:3000/quotes -H "Authorization: Bearer $TOKEN"
 
 # Créer / lister du vocabulaire (l'exemple est facultatif)
@@ -107,10 +107,10 @@ Une nouvelle quote est à réviser tout de suite. Avec « Good », elle revient 
 
 Toutes les fiches, quel que soit leur type, vivent dans une seule table `items` :
 
-| colonne   | rôle                                                                                                                                        |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`    | `Quote` ou `Vocabulary` (enum PostgreSQL)                                                                                                   |
-| `content` | colonne **jsonb** dont la forme dépend du type : `{ text, author, source }` pour une citation, `{ word, translation, example }` pour un mot |
+| colonne   | rôle                                                                                                                                                                                                  |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`    | `Quote` ou `Vocabulary` (enum PostgreSQL)                                                                                                                                                             |
+| `content` | colonne **jsonb** dont la forme dépend du type : `{ text, author, source, hint }` pour une citation (`hint` : l'indice de rappel, obligatoire, MEM-106), `{ word, translation, example }` pour un mot |
 
 La base ne vérifie pas la forme de `content` : c'est l'API qui le fait, avec un DTO par type (`CreateQuoteDto`, `CreateVocabularyDto`). `ItemsService` stocke et relit les fiches sans jamais regarder ce qu'il y a dedans ; seuls les contrôleurs `/quotes` et `/vocabulary` connaissent leur type.
 
@@ -120,6 +120,8 @@ Une fiche a une carte par « face » à réviser (`cards.kind`) :
 - un mot : `EnglishToFrench` et `FrenchToEnglish`, chacune avec son propre calendrier FSRS. La seconde démarre un jour plus tard, pour ne pas enchaîner les deux sens du même mot.
 
 La migration `generic_items` est écrite à la main : à partir du seul schéma, Prisma aurait supprimé la table `quotes` pour en créer une nouvelle, en perdant les cartes et l'historique. Elle renomme la table, transforme les colonnes `text` / `author` / `source` en `content` jsonb, et conserve les identifiants, les cartes et les `review_logs`.
+
+**Indice de rappel (MEM-106).** Chaque citation a un `hint` obligatoire (300 caractères au plus, ni vide ni fait d'espaces), exigé par `POST /quotes` et accepté par `PATCH /quotes/:id`. La migration `quote_hint`, écrite à la main et sans changement de schéma, donne l'indice provisoire « Indice de rappel » aux citations qui n'en ont pas ; elle est idempotente et testée dans `test/quote-hint.e2e-spec.ts` (citations créées sans indice, migration rejouée).
 
 ## Cartes mentales (phase 6)
 

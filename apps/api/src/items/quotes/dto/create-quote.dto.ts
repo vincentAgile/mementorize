@@ -1,4 +1,4 @@
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 
 export class CreateQuoteDto {
   @IsString()
@@ -15,6 +15,12 @@ export class CreateQuoteDto {
   @IsString()
   @MaxLength(300)
   source?: string;
+
+  /** MEM-106: the recall hint, required; not made of spaces only. */
+  @IsString()
+  @Matches(/\S/, { message: 'hint must not be empty' })
+  @MaxLength(300)
+  hint!: string;
 
   /**
    * MEM-71, at creation only: true (by default), the quote goes last in the

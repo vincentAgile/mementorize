@@ -60,7 +60,7 @@ function EditForm({ row, authors }: { row: QuoteRow; authors: string[] }) {
     if (state.saved) closeDialog(form.current);
   }, [state]);
 
-  const values = state.values ?? { text: row.text, author: row.author ?? '', source: row.source ?? '' };
+  const values = state.values ?? { text: row.text, hint: row.hint, author: row.author ?? '', source: row.source ?? '' };
 
   return (
     <form ref={form} action={action} className="dialog__form" noValidate>

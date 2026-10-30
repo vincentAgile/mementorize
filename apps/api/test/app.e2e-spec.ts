@@ -125,7 +125,7 @@ describe('API (e2e)', () => {
     const created = await http()
       .post('/quotes')
       .set('Authorization', `Bearer ${alice}`)
-      .send({ text: 'Connais-toi toi-même.', author: 'Socrate' })
+      .send({ text: 'Connais-toi toi-même.', author: 'Socrate', hint: 'Se connaître soi-même' })
       .expect(201);
     expect(created.body.card).toMatchObject({ state: 'New' });
     // MEM-67: a new quote waits in the learning queue of the quotes, out of the review.
@@ -326,7 +326,13 @@ describe('API (e2e)', () => {
   it('gives the quotes the four states and a learning queue of their own (MEM-67)', async () => {
     const auth = { Authorization: `Bearer ${await register('quinn')}` };
     const quote = async (text: string, queue?: boolean) =>
-      (await http().post('/quotes').set(auth).send({ text, queue }).expect(201)).body;
+      (
+        await http()
+          .post('/quotes')
+          .set(auth)
+          .send({ text, queue, hint: `Indice de ${text}` })
+          .expect(201)
+      ).body;
     const word = async (text: string) =>
       (await http().post('/vocabulary').set(auth).send({ word: text, translation: text }).expect(201)).body;
     const positions = async (path: string) =>
@@ -394,7 +400,15 @@ describe('API (e2e)', () => {
     const auth = { Authorization: `Bearer ${await register('rose')}` };
     const ids: string[] = [];
     for (const text of ['Un', 'Deux', 'Trois', 'Quatre', 'Cinq', 'Six']) {
-      ids.push((await http().post('/quotes').set(auth).send({ text, author: 'Moi' }).expect(201)).body.id);
+      ids.push(
+        (
+          await http()
+            .post('/quotes')
+            .set(auth)
+            .send({ text, author: 'Moi', hint: `Indice de ${text}` })
+            .expect(201)
+        ).body.id,
+      );
     }
     await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201);
     await http().post('/learning/queue/move').set(auth).send({ type: 'Quote', id: ids[5], position: 1 }).expect(200);
@@ -469,14 +483,18 @@ describe('API (e2e)', () => {
     await http().post(`/learning/${word.id}/learned`).set(auth).expect(409);
   });
 
-  it('exports the quotes as CSV and imports them back, "En attente" (MEM-72)', async () => {
+  it('exports the quotes as CSV; imports none without a recall hint (MEM-72, MEM-106)', async () => {
     const auth = { Authorization: `Bearer ${await register('wes')}` };
     await http()
       .post('/quotes')
       .set(auth)
-      .send({ text: 'Il dit : "Viens; vite".\nPuis partit.', author: 'Moi', source: 'Ici' })
+      .send({ text: 'Il dit : "Viens; vite".\nPuis partit.', author: 'Moi', source: 'Ici', hint: 'Un départ' })
       .expect(201);
-    await http().post('/quotes').set(auth).send({ text: 'La vie est un songe.', queue: false }).expect(201);
+    await http()
+      .post('/quotes')
+      .set(auth)
+      .send({ text: 'La vie est un songe.', queue: false, hint: 'La vie et le rêve' })
+      .expect(201);
     await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201);
 
     const exported = await http().get('/quotes-csv/export').set(auth).expect(200);
@@ -487,25 +505,20 @@ describe('API (e2e)', () => {
       '\uFEFFTexte;Auteur;Source\r\n"Il dit : ""Viens; vite"".\nPuis partit.";Moi;Ici\r\nLa vie est un songe.;;\r\n',
     );
 
-    // Round trip, in another account: the same quotes.
+    // MEM-106: until the file has a column for the recall hint (MEM-107), no
+    // line can be imported: each one is in error, nothing is created.
     const other = { Authorization: `Bearer ${await register('xia')}` };
     const preview = await http().post('/quotes-csv/preview').set(other).send({ content: exported.text }).expect(200);
-    expect(preview.body.summary).toEqual({ total: 2, new: 2, duplicate: 0, error: 0 });
+    expect(preview.body.summary).toEqual({ total: 2, new: 0, duplicate: 0, error: 2 });
+    expect(preview.body.rows.map((row: { error: string }) => row.error)).toEqual([
+      'Indice de rappel manquant',
+      'Indice de rappel manquant',
+    ]);
     const imported = await http().post('/quotes-csv/import').set(other).send({ content: exported.text }).expect(200);
-    expect(imported.body).toEqual({ ok: true, imported: 2, duplicate: 0, error: 0 });
-    const quotes = (await http().get('/quotes').set(other).expect(200)).body as Record<string, unknown>[];
-    expect(
-      quotes.map(({ text, author, source, learningStatus }) => ({ text, author, source, learningStatus })),
-    ).toEqual(
-      expect.arrayContaining([
-        { text: 'Il dit : "Viens; vite".\nPuis partit.', author: 'Moi', source: 'Ici', learningStatus: 'Waiting' },
-        { text: 'La vie est un songe.', author: null, source: null, learningStatus: 'Waiting' },
-      ]),
-    );
+    expect(imported.body).toEqual({ ok: true, imported: 0, duplicate: 0, error: 2 });
+    expect((await http().get('/quotes').set(other).expect(200)).body).toEqual([]);
 
-    // Again: only duplicates; the other separator is reported.
-    const again = await http().post('/quotes-csv/import').set(other).send({ content: exported.text }).expect(200);
-    expect(again.body).toEqual({ ok: true, imported: 0, duplicate: 2, error: 0 });
+    // The other separator is reported.
     const comma = await http()
       .post('/quotes-csv/preview')
       .set(other)
@@ -654,7 +667,9 @@ describe('API (e2e)', () => {
     const theirs = (
       await http().post('/vocabulary').set(other).send({ word: 'four', translation: 'quatre' }).expect(201)
     ).body.id;
-    const quote = (await http().post('/quotes').set(auth).send({ text: 'Une citation.' }).expect(201)).body.id;
+    const quote = (
+      await http().post('/quotes').set(auth).send({ text: 'Une citation.', hint: 'Un indice' }).expect(201)
+    ).body.id;
 
     const result = await http()
       .post('/vocabulary/delete')
@@ -680,10 +695,18 @@ describe('API (e2e)', () => {
     const ids: string[] = [];
     for (const text of ['Un', 'Deux', 'Trois']) {
       ids.push(
-        (await http().post('/quotes').set(auth).send({ text, author: 'Moi', source: 'Ici' }).expect(201)).body.id,
+        (
+          await http()
+            .post('/quotes')
+            .set(auth)
+            .send({ text, author: 'Moi', source: 'Ici', hint: `Indice de ${text}` })
+            .expect(201)
+        ).body.id,
       );
     }
-    const theirs = (await http().post('/quotes').set(other).send({ text: 'Quatre' }).expect(201)).body.id;
+    const theirs = (
+      await http().post('/quotes').set(other).send({ text: 'Quatre', hint: 'Le nombre quatre' }).expect(201)
+    ).body.id;
     const word = (await http().post('/vocabulary').set(auth).send({ word: 'snag', translation: 'accroc' }).expect(201))
       .body.id;
 

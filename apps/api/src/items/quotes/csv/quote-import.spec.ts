@@ -6,7 +6,9 @@ const analyze = (text: string, separator = ';') => analyzeQuoteImport(text, sepa
 const HEAD = 'Texte;Auteur;Source\n';
 
 describe('analyzeQuoteImport (MEM-72)', () => {
-  it('skips the header line and reads the three columns, trimmed; only the text is required', () => {
+  // MEM-106: the recall hint is required, and the file has no column for it
+  // yet (MEM-107): every line that is right otherwise is in error.
+  it('skips the header line and reads the three columns, trimmed; each line misses its recall hint (MEM-106)', () => {
     const result = analyze(
       '﻿Texte;Auteur;Source\r\n Je pense, donc je suis. ; Descartes ;Discours de la méthode\r\nLa vie est un songe.\r\n',
     );
@@ -18,11 +20,21 @@ describe('analyzeQuoteImport (MEM-72)', () => {
           text: 'Je pense, donc je suis.',
           author: 'Descartes',
           source: 'Discours de la méthode',
-          status: 'new',
+          hint: '',
+          status: 'error',
+          error: 'Indice de rappel manquant',
         },
-        { line: 3, text: 'La vie est un songe.', author: '', source: '', status: 'new' },
+        {
+          line: 3,
+          text: 'La vie est un songe.',
+          author: '',
+          source: '',
+          hint: '',
+          status: 'error',
+          error: 'Indice de rappel manquant',
+        },
       ],
-      summary: { total: 2, new: 2, duplicate: 0, error: 0 },
+      summary: { total: 2, new: 0, duplicate: 0, error: 2 },
     });
   });
 
@@ -31,7 +43,7 @@ describe('analyzeQuoteImport (MEM-72)', () => {
     expect(result.ok && result.rows[0]).toMatchObject({
       line: 2,
       text: 'Il dit : "Viens; vite".\nPuis partit.',
-      status: 'new',
+      status: 'error',
     });
   });
 
@@ -46,17 +58,9 @@ describe('analyzeQuoteImport (MEM-72)', () => {
     ]);
   });
 
-  it('finds the duplicates of a quote or an earlier line, ignoring case and spaces, not accents', () => {
+  it('imports nothing while the file has no recall hint, duplicates included (MEM-106)', () => {
     const result = analyze(`${HEAD} connais-toi   TOI-MÊME. ;Autre\nUn texte.\nun  texte.;X\nUn texté.`);
-    expect(result.ok && result.rows.map((row) => [row.line, row.status, row.status === 'duplicate' && row.of])).toEqual(
-      [
-        [2, 'duplicate', { existing: 'Connais-toi toi-même. — Socrate' }],
-        [3, 'new', false],
-        [4, 'duplicate', { line: 3 }],
-        [5, 'new', false],
-      ],
-    );
-    expect(result.ok && result.summary).toEqual({ total: 4, new: 2, duplicate: 2, error: 0 });
+    expect(result.ok && result.summary).toEqual({ total: 4, new: 0, duplicate: 0, error: 4 });
   });
 
   it('reports the other separator, by the header line or by the lines', () => {

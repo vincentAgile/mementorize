@@ -2,34 +2,18 @@
 
 import { revalidatePath } from 'next/cache';
 import { ApiError, createQuote, deleteQuote, updateQuote } from '../../lib/api';
-import { QUOTE_MAX, type QuoteField, type QuoteValues } from './quote-fields';
-
-const field = (formData: FormData, name: string) => String(formData.get(name) ?? '').trim();
-
-const valuesOf = (formData: FormData): QuoteValues => ({
-  text: field(formData, 'text'),
-  author: field(formData, 'author'),
-  source: field(formData, 'source'),
-});
-
-/** The text is required; each field has the length limit of the API. One message per field. */
-function errorsOf(values: QuoteValues): Partial<Record<QuoteField, string>> {
-  const errors: Partial<Record<QuoteField, string>> = {};
-  if (!values.text) errors.text = 'Saisis le texte de la citation.';
-  for (const name of Object.keys(QUOTE_MAX) as QuoteField[]) {
-    if (values[name].length > QUOTE_MAX[name]) errors[name] = `${QUOTE_MAX[name]} caractères au plus.`;
-  }
-  return errors;
-}
+import type { QuoteField, QuoteValues } from './quote-fields';
+import { quoteErrorsOf as errorsOf, quoteValuesOf as valuesOf } from './quote-validation';
 
 export interface QuoteAddState {
   /**
    * The quote just added, for the confirmation; a new object each time. Its
    * author and source stay in the form, for the next quotes of the same
-   * author or work, and so does the choice of the learning queue;
+   * author or work (not its recall hint, MEM-106), and so does the choice of
+   * the learning queue;
    * `position` is its place in the queue, null when it is "En attente".
    */
-  added?: { text: string; author: string; source: string; queue: boolean; position: number | null };
+  added?: { text: string; hint: string; author: string; source: string; queue: boolean; position: number | null };
   /** Sent back with an error, with `values`: the choice of the learning queue. */
   queue?: boolean;
   /** One message per field, shown next to it. */
@@ -54,6 +38,7 @@ export async function addQuoteAction(_previous: QuoteAddState, formData: FormDat
   try {
     created = await createQuote({
       text: values.text,
+      hint: values.hint,
       author: values.author || undefined,
       source: values.source || undefined,
       queue,
@@ -75,9 +60,9 @@ export interface QuoteEditState {
 }
 
 /**
- * MEM-69: changes the text, the author or the source of a quote; its state
- * and its review history stay as they are. An empty author or source
- * removes it.
+ * MEM-69: changes the text, the recall hint (MEM-106), the author or the
+ * source of a quote; its state and its review history stay as they are. An
+ * empty author or source removes it.
  */
 export async function updateQuoteAction(
   id: string,

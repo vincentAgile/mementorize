@@ -35,7 +35,7 @@ describe('Optimization of the FSRS weights (e2e)', () => {
       const quote = await http()
         .post('/quotes')
         .set(auth)
-        .send({ text: `Citation ${index}` })
+        .send({ text: `Citation ${index}`, hint: `Indice ${index}` })
         .expect(201);
       const cardId = quote.body.card.id as string;
       let day = index % 7;

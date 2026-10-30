@@ -7,13 +7,14 @@ import type { ItemWithCards } from '../items.service.js';
  * with its learning state and its place in the learning queue (MEM-67).
  */
 export function toQuoteView(item: ItemWithCards) {
-  const { text, author, source } = contentOf(item as ItemWithCards & { type: 'Quote' });
+  const { text, author, source, hint } = contentOf(item as ItemWithCards & { type: 'Quote' });
   const card = item.cards[0];
   return {
     id: item.id,
     text,
     author,
     source,
+    hint, // MEM-106
     learningStatus: item.learningStatus,
     learnPosition: item.learnPosition,
     userId: item.userId,

@@ -27,7 +27,9 @@ describe('cardSlots', () => {
   });
 
   it('keeps the fixed cards of quotes and vocabulary', () => {
-    expect(cardSlots('Quote', { text: 'x', author: null, source: null }).map((s) => s.kind)).toEqual(['QuoteRecall']);
+    expect(cardSlots('Quote', { text: 'x', author: null, source: null, hint: 'Un indice' }).map((s) => s.kind)).toEqual(
+      ['QuoteRecall'],
+    );
     expect(cardSlots('Vocabulary', { word: 'a', translation: 'b', example: null }).map((s) => s.kind)).toEqual([
       'EnglishToFrench',
       'FrenchToEnglish',

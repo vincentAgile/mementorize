@@ -22,7 +22,12 @@ export class QuotesController {
     const item = await this.items.create(
       user.id,
       'Quote',
-      { text: dto.text.trim(), author: dto.author?.trim() || null, source: dto.source?.trim() || null },
+      {
+        text: dto.text.trim(),
+        author: dto.author?.trim() || null,
+        source: dto.source?.trim() || null,
+        hint: dto.hint.trim(),
+      },
       new Date(),
       dto.queue === false ? 'Waiting' : 'ToLearn',
     );
@@ -40,8 +45,9 @@ export class QuotesController {
   }
 
   /**
-   * Changes the text, the author or the source (MEM-69); the state, the card
-   * and its history stay as they are. An empty author or source removes it.
+   * Changes the text, the author, the source (MEM-69) or the recall hint
+   * (MEM-106); the state, the card and its history stay as they are. An empty
+   * author or source removes it; the hint can't be emptied (400).
    */
   @Patch(':id')
   async update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: UpdateQuoteDto) {
@@ -49,6 +55,7 @@ export class QuotesController {
       ...(dto.text !== undefined && { text: dto.text.trim() }),
       ...(dto.author !== undefined && { author: dto.author.trim() || null }),
       ...(dto.source !== undefined && { source: dto.source.trim() || null }),
+      ...(dto.hint !== undefined && { hint: dto.hint.trim() }),
     };
     return toQuoteView(await this.items.update(user.id, id, 'Quote', changes));
   }

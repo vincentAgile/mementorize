@@ -7,14 +7,14 @@ import { ordinal } from '../../lists/ordinal';
 import { addQuoteAction, type QuoteAddState } from '../actions';
 import { QuoteFields, type QuoteValues } from '../quote-fields';
 
-const EMPTY: QuoteValues = { text: '', author: '', source: '' };
+const EMPTY: QuoteValues = { text: '', hint: '', author: '', source: '' };
 
 /**
  * The form of the "Ajouter" tab of the Citations space (MEM-71), made to
  * add several quotes in a row: the cursor starts in the text and comes
  * back to it after each quote, a message says where the quote went, and
- * errors show next to their field. The author and the source stay after a
- * quote is added, for the next quotes of the same author or work, and so
+ * errors show next to their field. The text and the recall hint are emptied
+ * after a quote is added (MEM-106); the author and the source stay, for the next quotes of the same author or work, and so
  * does the choice of the learning queue, checked when the tab opens.
  */
 export function AddQuoteForm({ authors }: { authors: string[] }) {

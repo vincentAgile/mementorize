@@ -53,6 +53,7 @@ export interface QuoteLearningItem {
   text: string;
   author: string | null;
   source: string | null;
+  hint: string; // MEM-106: the recall hint, the question of the card (MEM-108)
   /** When the card comes back, for each of the four ratings. */
   nextDue: NextDueByRating;
   /** The same, once rated « À revoir » (the answers are only sent at the end of the session). */
@@ -120,8 +121,8 @@ export class LearningService {
     return {
       total,
       items: items.map((item) => {
-        const { text, author, source } = contentOf({ ...item, type: 'Quote' as const });
-        return { id: item.id, text, author, source, ...this.previews(item.cards[0], now, scheduling.Quote) };
+        const { text, author, source, hint } = contentOf({ ...item, type: 'Quote' as const });
+        return { id: item.id, text, author, source, hint, ...this.previews(item.cards[0], now, scheduling.Quote) };
       }),
     };
   }

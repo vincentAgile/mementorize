@@ -94,7 +94,11 @@ describe('Pronunciation assessment (e2e, MEM-90)', () => {
       .set(owner)
       .send({ word: 'squirrel', translation: 'écureuil' })
       .expect(201);
-    const quote = await http().post('/quotes').set(owner).send({ text: 'Carpe diem.' }).expect(201);
+    const quote = await http()
+      .post('/quotes')
+      .set(owner)
+      .send({ text: 'Carpe diem.', hint: 'Profiter du jour' })
+      .expect(201);
     const post = (itemId: string, auth?: Record<string, string>) => {
       const req = http().post(`/pronunciation/assess?itemId=${itemId}`).set('Content-Type', 'audio/webm');
       return (auth ? req.set(auth) : req).send(Buffer.alloc(100, 1));

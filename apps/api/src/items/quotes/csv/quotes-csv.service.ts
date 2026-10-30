@@ -62,7 +62,7 @@ export class QuotesCsvService {
     const created = await this.items.createMany(
       userId,
       'Quote',
-      rows.map((row) => ({ text: row.text, author: row.author || null, source: row.source || null })),
+      rows.map((row) => ({ text: row.text, author: row.author || null, source: row.source || null, hint: row.hint })),
       new Date(),
       'Waiting',
     );

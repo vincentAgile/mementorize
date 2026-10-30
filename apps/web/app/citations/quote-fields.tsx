@@ -1,8 +1,8 @@
-export type QuoteField = 'text' | 'author' | 'source';
+export type QuoteField = 'text' | 'hint' | 'author' | 'source';
 export type QuoteValues = Record<QuoteField, string>;
 
 /** Same limits as the API (CreateQuoteDto). */
-export const QUOTE_MAX: Record<QuoteField, number> = { text: 2000, author: 200, source: 300 };
+export const QUOTE_MAX: Record<QuoteField, number> = { text: 2000, hint: 300, author: 200, source: 300 };
 
 interface QuoteFieldsProps {
   values: QuoteValues;
@@ -17,13 +17,15 @@ interface QuoteFieldsProps {
 }
 
 /**
- * The fields of a quote: its text (required), its author and its source.
+ * The fields of a quote: its text and its recall hint (both required,
+ * MEM-106), its author and its source.
  * Shared by the "Ajouter" tab (MEM-71) and the edit form of the list
  * (MEM-69). Errors show under their field (aria-invalid, aria-describedby).
  */
 export function QuoteFields({ values, errors, idPrefix, autoFocus = false, authors }: QuoteFieldsProps) {
   const described = (field: QuoteField) =>
     errors?.[field] ? { 'aria-invalid': true as const, 'aria-describedby': `${idPrefix}-${field}-error` } : undefined;
+  const hintError = errors?.hint ? ` ${idPrefix}-hint-error` : '';
   const error = (field: QuoteField) =>
     errors?.[field] && (
       <span id={`${idPrefix}-${field}-error`} className="field-error">
@@ -51,6 +53,28 @@ export function QuoteFields({ values, errors, idPrefix, autoFocus = false, autho
           {...described('text')}
         />
         {error('text')}
+      </label>
+      {/* MEM-106: what the quote is about, the question of its card in the review. */}
+      <label className="quote-fields__hint">
+        <span>
+          Indice de rappel{' '}
+          <span className="vocab-fields__required" aria-hidden="true">
+            *
+          </span>
+        </span>
+        <input
+          name="hint"
+          autoComplete="off"
+          defaultValue={values.hint}
+          maxLength={QUOTE_MAX.hint}
+          aria-required
+          aria-invalid={errors?.hint ? true : undefined}
+          aria-describedby={`${idPrefix}-hint-help${hintError}`}
+        />
+        <span id={`${idPrefix}-hint-help`} className="field-help">
+          Ce que la citation évoque, par exemple « Citation relative à l’importance de la culture générale ».
+        </span>
+        {error('hint')}
       </label>
       <label>
         <span>
