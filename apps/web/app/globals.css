@@ -966,8 +966,23 @@ kbd {
 }
 
 @media (max-width: 639px) {
+  /*
+   * MEM-100, on a phone: only the French and the English keep a fixed room;
+   * the rating buttons come right under « Évaluer ma prononciation », and
+   * the frame of the result pushes them down when it appears.
+   */
   .review-card__body--assess {
-    min-height: 30.875rem; /* the French and the English, then the frame under them, its words on two lines */
+    min-height: 0;
+  }
+
+  .review-card__body--assess > .review-card__body-main {
+    min-height: 12rem; /* the French and the English with their examples */
+  }
+
+  /* « Afficher la réponse »: the height of one rating button, where the first row of them will be */
+  .review-card__reveal--wide {
+    bottom: auto;
+    height: calc((100% - 2rem) / 2); /* (the room − its margin − the gap of the rows) / 2 */
   }
 }
 
@@ -994,7 +1009,6 @@ kbd {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.5rem;
 }
 
 /*
@@ -1109,6 +1123,11 @@ div.review-card__reveal-row {
 
 .review-card__practice .practice {
   margin: 0;
+}
+
+/* The space above the second frame is its own: an empty one takes no room at all */
+.review-card__practice .practice--shown {
+  margin-top: 0.5rem;
 }
 
 /* The second frame: the recording, the result, an error, the user's recording */
@@ -3390,7 +3409,7 @@ div.review-card__reveal-row {
 }
 
 .practice__message--unavailable {
-  margin: 0; /* under the button, the gap of the frame above it */
+  margin: 0.5rem 0 0;
   color: #666;
   font-size: 0.9rem;
 }
