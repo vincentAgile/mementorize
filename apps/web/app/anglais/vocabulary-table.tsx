@@ -63,6 +63,8 @@ interface VocabularyTableProps {
   pageSize: number;
   /** Opened filtered on a state (?etat=Waiting, MEM-61). */
   initialStatus?: LearningStatus;
+  /** MEM-111: the mode of use is Avancé (MEM-110): « Réinitialiser l’apprentissage » on each row. */
+  advanced?: boolean;
 }
 
 /**
@@ -70,7 +72,14 @@ interface VocabularyTableProps {
  * with the quotes (ItemTable), with the columns of the vocabulary, its
  * topic filter (MEM-56) and its learning queue (MEM-63, MEM-64).
  */
-export function VocabularyTable({ items, now, translator, pageSize, initialStatus }: VocabularyTableProps) {
+export function VocabularyTable({
+  items,
+  now,
+  translator,
+  pageSize,
+  initialStatus,
+  advanced = false,
+}: VocabularyTableProps) {
   const rows = useMemo(() => items.map(toRow), [items]);
   const topics = useMemo(() => topicsOf(rows.map((row) => row.topic)), [rows]); // MEM-51
   return (
@@ -91,7 +100,13 @@ export function VocabularyTable({ items, now, translator, pageSize, initialStatu
       queue
       deleteTitle={deleteTitle}
       actions={(row, queueMenu) => (
-        <VocabularyActions row={row} translator={translator} topics={topics} queueMenu={queueMenu} />
+        <VocabularyActions
+          row={row}
+          translator={translator}
+          topics={topics}
+          queueMenu={queueMenu}
+          advanced={advanced}
+        />
       )}
     />
   );

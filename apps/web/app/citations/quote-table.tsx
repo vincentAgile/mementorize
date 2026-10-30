@@ -27,6 +27,8 @@ interface QuoteTableProps {
   pageSize: number;
   /** Opened filtered on a state (?etat=Waiting). */
   initialStatus?: LearningStatus;
+  /** MEM-111: the mode of use is Avancé (MEM-110): « Réinitialiser l’apprentissage » on each row. */
+  advanced?: boolean;
 }
 
 /**
@@ -35,7 +37,7 @@ interface QuoteTableProps {
  * source, and a single search in all three. The learning queue of the
  * quotes is changed and reordered from it, as the vocabulary's (MEM-70).
  */
-export function QuoteTable({ items, now, pageSize, initialStatus }: QuoteTableProps) {
+export function QuoteTable({ items, now, pageSize, initialStatus, advanced = false }: QuoteTableProps) {
   const rows = useMemo(() => items.map(toQuoteRow), [items]);
   const authors = useMemo(() => distinctValues(rows.map((row) => row.author)), [rows]);
   return (
@@ -54,7 +56,9 @@ export function QuoteTable({ items, now, pageSize, initialStatus }: QuoteTablePr
       name={quoteName}
       queue
       deleteTitle={deleteTitle}
-      actions={(row, queueMenu) => <QuoteActions row={row} authors={authors} queue queueMenu={queueMenu} />}
+      actions={(row, queueMenu) => (
+        <QuoteActions row={row} authors={authors} queue queueMenu={queueMenu} advanced={advanced} />
+      )}
     />
   );
 }

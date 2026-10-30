@@ -345,6 +345,15 @@ export function relearnItem(itemId: string): Promise<unknown> {
   return authedFetch(`/learning/${encodeURIComponent(itemId)}/relearn`, { method: 'POST' });
 }
 
+/**
+ * MEM-111, mode Avancé only (403 otherwise): the item starts its learning
+ * again, "À apprendre" last in the queue, its cards from scratch, its
+ * history kept.
+ */
+export function resetLearning(itemId: string): Promise<unknown> {
+  return authedFetch(`/learning/items/${encodeURIComponent(itemId)}/reset`, { method: 'POST' });
+}
+
 /** « Appris » for a mind map branch (MEM-48): the card leaves the review. */
 export function markCardLearned(cardId: string): Promise<unknown> {
   return authedFetch(`/reviews/${encodeURIComponent(cardId)}/learned`, { method: 'POST' });
