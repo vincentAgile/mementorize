@@ -975,14 +975,13 @@ kbd {
     min-height: 0;
   }
 
-  .review-card__body--assess > .review-card__body-main {
-    min-height: 12rem; /* the French and the English with their examples */
+  .review-card__body--assess .review-card__terms {
+    min-height: 7rem; /* the French and the English, one more line for either; the examples take what they need */
   }
 
-  /* « Afficher la réponse »: the height of one rating button, where the first row of them will be */
-  .review-card__reveal--wide {
-    bottom: auto;
-    height: calc((100% - 2rem) / 2); /* (the room − its margin − the gap of the rows) / 2 */
+  /* « Afficher la réponse »: the first row of the rating buttons only, at the bottom of the card */
+  .review-card__reveal-room .review-card__ratings > :nth-child(n + 3) {
+    display: none;
   }
 }
 
@@ -1144,7 +1143,7 @@ div.review-card__reveal-row {
 
 @media (max-width: 639px) {
   .review-card__practice .practice--shown {
-    min-height: 13.5rem; /* narrower: the appreciation goes under the score */
+    min-height: 12rem; /* a result with one line of words; it grows when it needs more */
   }
 }
 

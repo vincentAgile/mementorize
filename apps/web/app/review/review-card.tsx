@@ -105,20 +105,23 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
       }
     >
       <div className="review-card__body-main">
-        {repeatFront && (
-          <Line face={front} ghost={ghost}>
-            <p className="review-card__recall" lang={front.lang}>
-              {front.main}
-            </p>
-          </Line>
-        )}
-        {back.figure ?? (
-          <Line face={back} ghost={ghost}>
-            <blockquote className="review-card__text" lang={back.lang}>
-              {back.main}
-            </blockquote>
-          </Line>
-        )}
+        {/* The French and the English: on a phone, a fixed room; the examples under it, as long as they are (MEM-100) */}
+        <div className="review-card__terms">
+          {repeatFront && (
+            <Line face={front} ghost={ghost}>
+              <p className="review-card__recall" lang={front.lang}>
+                {front.main}
+              </p>
+            </Line>
+          )}
+          {back.figure ?? (
+            <Line face={back} ghost={ghost}>
+              <blockquote className="review-card__text" lang={back.lang}>
+                {back.main}
+              </blockquote>
+            </Line>
+          )}
+        </div>
         {back.note && (
           <p className="review-card__note" lang="en">
             {back.note}
