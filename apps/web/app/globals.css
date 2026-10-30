@@ -4070,3 +4070,58 @@ button.practice__word {
     color: #aaa;
   }
 }
+
+/* --- MEM-108: the front of a quote, the author and the start shown on request --- */
+
+.quote-reveals {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1.25rem 0 0;
+}
+
+.quote-reveals__row {
+  display: flex;
+  flex-wrap: wrap; /* on a phone, the label above the button */
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+}
+
+.quote-reveals__label {
+  min-width: 11rem;
+  color: #555;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.quote-reveals__value {
+  margin: 0;
+}
+
+.quote-reveals__button {
+  padding: 0.3rem 0.85rem;
+  border: 1px solid #147d80;
+  border-radius: 99px;
+  background: none;
+  color: #147d80;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.quote-reveals__button:hover {
+  background: rgba(20, 125, 128, 0.08);
+}
+
+.quote-reveals__button:focus-visible,
+.quote-reveals__shown:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
+}
+
+.quote-reveals__shown:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.quote-reveals__missing {
+  color: #666;
+}
