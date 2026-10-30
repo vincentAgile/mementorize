@@ -6,8 +6,11 @@ import { contentOf } from '../../item-content.js';
 import { ItemsService } from '../../items.service.js';
 import { analyzeQuoteImport, type QuoteImportAnalysis } from './quote-import.js';
 
-/** The columns of the file, in this order (MEM-72): the same for the export and the import. */
-export const QUOTE_CSV_HEADERS = ['Texte', 'Auteur', 'Source'];
+/**
+ * The columns of the file, in this order (MEM-72): the same for the export
+ * and the import. MEM-107: the recall hint last, required.
+ */
+export const QUOTE_CSV_HEADERS = ['Texte', 'Auteur', 'Source', 'Indice de rappel'];
 
 /** Import / export of the quotes as CSV files (MEM-72), as the vocabulary (MEM-50). */
 @Injectable()
@@ -38,8 +41,8 @@ export class QuotesCsvService {
       this.prisma.item.findMany({ where: { userId, type: 'Quote' }, orderBy: { createdAt: 'asc' } }),
     ]);
     const lines = items.map((item) => {
-      const { text, author, source } = contentOf({ ...item, type: 'Quote' as const });
-      return [text, author ?? '', source ?? ''];
+      const { text, author, source, hint } = contentOf({ ...item, type: 'Quote' as const });
+      return [text, author ?? '', source ?? '', hint];
     });
     return { csv: toCsv([QUOTE_CSV_HEADERS, ...lines], separator), count: items.length };
   }

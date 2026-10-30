@@ -31,7 +31,7 @@ const plural = (count: number, one: string, many = `${one}s`) => `${count}${NBSP
 interface ImportKind<Row extends AnyRow> {
   noun: Noun;
   /** The format of the file, said above the drop zone. */
-  format: ReactNode;
+  format: ReactNode | ((separator: string) => ReactNode);
   /** The columns of the grid, after « Ligne » and before « Statut ». */
   headers: string[];
   cells: (row: Row) => ReactNode[];
@@ -85,12 +85,25 @@ const VOCABULARY: ImportKind<ImportRow> = {
 
 const QUOTES: ImportKind<QuoteImportRow> = {
   noun: QUOTE_NOUN,
-  format: (
-    <>Un fichier CSV au format de l’export : le texte de la citation, puis, facultatifs, son auteur et sa source.</>
+  // MEM-107: four columns, the recall hint last and required; the example with the user's separator.
+  format: (separator) => (
+    <>
+      Un fichier CSV au format de l’export, quatre colonnes : le texte de la citation, son auteur et sa source
+      (facultatifs), puis son <strong>indice de rappel, obligatoire</strong>. Exemple de ligne :{' '}
+      <code>
+        {[
+          'La culture générale est la véritable école du commandement.',
+          'Général de Gaulle',
+          '',
+          'Citation relative à l’importance de la culture générale',
+        ].join(separator)}
+      </code>
+      . Une ligne sans indice (ancien fichier à trois colonnes) est signalée en erreur.
+    </>
   ),
-  headers: ['Texte', 'Auteur', 'Source'],
-  cells: (row) => [row.text, row.author, row.source],
-  cellClasses: ['import-preview__text', 'item-list__author', 'item-list__source'],
+  headers: ['Texte', 'Auteur', 'Source', 'Indice de rappel'],
+  cells: (row) => [row.text, row.author, row.source, row.hint],
+  cellClasses: ['import-preview__text', 'item-list__author', 'item-list__source', 'import-preview__hint'],
   duplicate: (row) =>
     'existing' in row.of
       ? `déjà dans les citations : «\u00a0${row.of.existing}\u00a0»`
@@ -165,9 +178,10 @@ export function ImportSection({ type, separator }: { type: ListType; separator: 
     <section className="import-export__section" aria-labelledby="import-title">
       <h2 id="import-title">Importer</h2>
       <p>
-        {kind.format} Séparateur : {separatorName(separator)}. La première ligne, celle des en-têtes, est ignorée. Les{' '}
-        {kind.noun.many} {agree('importé', kind.noun, 2)} seront « En attente » : vous les ajouterez à la file
-        d’apprentissage depuis la Liste.
+        {typeof kind.format === 'function' ? kind.format(separator) : kind.format} Séparateur :{' '}
+        {separatorName(separator)}. La première ligne, celle des en-têtes, est ignorée. Les {kind.noun.many}{' '}
+        {agree('importé', kind.noun, 2)} seront « En attente » : vous les ajouterez à la file d’apprentissage depuis la
+        Liste.
       </p>
 
       {done && 'result' in done && done.result.ok && <Imported kind={kind} result={done.result} onAgain={reset} />}

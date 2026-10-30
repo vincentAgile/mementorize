@@ -236,7 +236,7 @@ export type ImportRow = {
 );
 
 /** A line of a CSV file of quotes to import, and what importing it would do (MEM-72). */
-export type QuoteImportRow = { line: number; text: string; author: string; source: string } & (
+export type QuoteImportRow = { line: number; text: string; author: string; source: string; hint: string } & (
   | { status: 'new' }
   | { status: 'duplicate'; of: { existing: string } | { line: number } }
   | { status: 'error'; error: string }

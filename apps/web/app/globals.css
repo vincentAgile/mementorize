@@ -2445,6 +2445,21 @@ div.review-card__reveal-row {
   padding: 0.55rem 0.6rem;
 }
 
+/* MEM-107: the recall hint of each line, a step back from the text */
+.import-preview__hint {
+  color: #555;
+  font-style: italic;
+}
+
+/* An example line of a file, in the help of the import */
+.import-export code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+  background: rgba(127, 127, 127, 0.12);
+  font-size: 0.85em;
+  overflow-wrap: anywhere;
+}
+
 .import-export__separator {
   margin: 0;
   color: #555;

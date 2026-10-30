@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Import / export · Citations' };
 
 /**
  * Tab "Import / export" of the Citations space (MEM-72): the quotes to and
- * from CSV files (text, author, source), with the separator chosen in the
+ * from CSV files (text, author, source, recall hint: MEM-107), with the separator chosen in the
  * settings (MEM-55). As in the Anglais space, the import shows the lines of
  * the file before anything is saved.
  */
@@ -35,7 +35,7 @@ export default async function QuotesImportExportPage() {
           <>
             <p>
               Toutes les citations, quel que soit leur état : {countOf(count, QUOTE_NOUN)}. Une ligne par citation :
-              texte, auteur, source. Le fichier se réimporte tel quel.
+              texte, auteur, source, indice de rappel. Le fichier se réimporte tel quel.
             </p>
             {/* A plain link: the route sends the file, the browser downloads it. */}
             <a href="/citations/import-export/export" className="button-link" download>
