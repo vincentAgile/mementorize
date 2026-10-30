@@ -199,7 +199,12 @@ export interface Preferences {
   vocabularyRetention: number;
   quoteRetention: number;
   mindMapRetention: number;
+  /** MEM-110: the mode of use; Advanced adds the actions that change the learning (MEM-111). */
+  usageMode: UsageMode;
 }
+
+/** The modes of use (MEM-110): Standard by default, or Advanced. */
+export type UsageMode = 'Standard' | 'Advanced';
 
 /** MEM-76: where a space stands, for the optimization of its FSRS weights. */
 export interface SpaceOptimization {

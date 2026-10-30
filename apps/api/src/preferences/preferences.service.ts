@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ItemType, Translator } from '@prisma/client';
+import type { ItemType, Translator, UsageMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { PreferencesDto } from './dto/preferences.dto.js';
 
@@ -14,6 +14,8 @@ export interface Preferences {
   vocabularyRetention: number;
   quoteRetention: number;
   mindMapRetention: number;
+  /** The mode of use (MEM-110): Standard, or Advanced. */
+  usageMode: UsageMode;
 }
 
 const SELECT = {
@@ -25,6 +27,7 @@ const SELECT = {
   vocabularyRetention: true,
   quoteRetention: true,
   mindMapRetention: true,
+  usageMode: true,
 } as const;
 
 const toPreferences = ({ csvDelimiter, ...rest }: { csvDelimiter: string } & Omit<Preferences, 'csvSeparator'>) => ({
@@ -32,7 +35,7 @@ const toPreferences = ({ csvDelimiter, ...rest }: { csvDelimiter: string } & Omi
   csvSeparator: csvDelimiter,
 });
 
-/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55, MEM-58, MEM-75), stored on their account. */
+/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55, MEM-58, MEM-75, MEM-110), stored on their account. */
 @Injectable()
 export class PreferencesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -54,6 +57,7 @@ export class PreferencesService {
         vocabularyRetention: dto.vocabularyRetention,
         quoteRetention: dto.quoteRetention,
         mindMapRetention: dto.mindMapRetention,
+        usageMode: dto.usageMode,
       },
       select: SELECT,
     });

@@ -1,4 +1,4 @@
-import type { ItemType, Translator } from '@prisma/client';
+import type { ItemType, Translator, UsageMode } from '@prisma/client';
 import { IsBoolean, IsEnum, IsIn, ValidateBy, ValidateIf } from 'class-validator';
 import { separatorProblem } from '../../items/csv/separator.js';
 import { ITEM_TYPES } from '../../items/item-content.js';
@@ -6,6 +6,12 @@ import { type Retention, RETENTIONS } from '../../scheduling/scheduler.service.j
 
 /** Runtime list of the translation services (MEM-44), in sync with the Prisma enum. */
 export const TRANSLATORS = { DeepL: 'DeepL', Google: 'Google' } as const satisfies Record<Translator, Translator>;
+
+/** Runtime list of the modes of use (MEM-110), in sync with the Prisma enum. */
+export const USAGE_MODES = { Standard: 'Standard', Advanced: 'Advanced' } as const satisfies Record<
+  UsageMode,
+  UsageMode
+>;
 
 /** A separator of the CSV files (MEM-80): a single character, but the double quote and the line breaks. */
 const IsCsvSeparator = () =>
@@ -65,4 +71,9 @@ export class PreferencesDto {
   @IfSent()
   @IsIn(RETENTIONS)
   mindMapRetention?: Retention;
+
+  /** The mode of use (MEM-110): Advanced adds the actions that change the learning. */
+  @IfSent()
+  @IsEnum(USAGE_MODES)
+  usageMode?: UsageMode;
 }
