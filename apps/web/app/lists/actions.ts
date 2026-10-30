@@ -1,7 +1,15 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { ApiError, deleteItems, moveInLearningQueue, queueItems, relearnItem, savePreferences } from '../../lib/api';
+import {
+  ApiError,
+  deleteItems,
+  moveInLearningQueue,
+  queueItems,
+  relearnItem,
+  resetLearning,
+  savePreferences,
+} from '../../lib/api';
 import type { DeletableType, ListType } from '../../lib/types';
 
 // The actions of the list of a space, the vocabulary (MEM-16) or the quotes
@@ -109,6 +117,22 @@ export async function moveInQueueAction(
  * en apprentissage » a word (MEM-22), « Remettre en révision » a quote
  * (MEM-69).
  */
+/**
+ * MEM-111, mode Avancé: the learning of the item starts again (« À
+ * apprendre », last in the queue, cards from scratch, history kept). The API
+ * checks the mode; refused (the mode changed in another tab), the list is
+ * rendered again, without the action.
+ */
+export async function resetLearningAction(id: string): Promise<void> {
+  if (typeof id !== 'string') throw new Error('Invalid item');
+  try {
+    await resetLearning(id);
+  } catch (error) {
+    if (!(error instanceof ApiError)) throw error; // e.g. the redirect of an expired session
+  }
+  revalidatePath('/', 'layout'); // the list, the counters of « Apprendre » and of the review
+}
+
 export async function relearnAction(id: string): Promise<void> {
   if (typeof id !== 'string') throw new Error('Invalid item');
   await relearnItem(id);

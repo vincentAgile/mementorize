@@ -93,6 +93,17 @@ export class LearningController {
     return this.learning.markLearned(user.id, itemId);
   }
 
+  /**
+   * POST /learning/items/:itemId/reset — MEM-111, mode Avancé only (403
+   * otherwise): the item starts its learning again, "À apprendre" last in the
+   * queue, its cards from scratch, its history kept.
+   */
+  @Post('items/:itemId/reset')
+  @HttpCode(HttpStatus.OK)
+  reset(@CurrentUser() user: AuthUser, @Param('itemId') itemId: string) {
+    return this.learning.reset(user.id, itemId);
+  }
+
   /** POST /learning/:itemId/relearn — a learned item (vocabulary, quote) goes back to the review, same schedule (MEM-22). */
   @Post(':itemId/relearn')
   relearn(@CurrentUser() user: AuthUser, @Param('itemId') itemId: string) {

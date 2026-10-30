@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Card, CardKind, ItemType, LearningStatus } from '@prisma/client';
 import { contentOf } from '../items/item-content.js';
 import { IN_QUEUE, QUEUE_ORDER, type QueueType, queueIds, renumberQueue } from './learning-queue.js';
@@ -323,6 +323,38 @@ export class LearningService {
    * "Remettre en apprentissage" (MEM-22), « Remettre en révision » for a
    * quote (MEM-67): back in the review, with the schedule it had.
    */
+  /**
+   * MEM-111, mode Avancé only (MEM-110; 403 otherwise, checked here, not only
+   * in the interface): the learning of a vocabulary item or a quote starts
+   * again, whatever its state. It goes back "À apprendre", last in the
+   * learning queue of its space (out of it first if it was there: the next
+   * ones move up), so it leaves the review until learned again; its cards
+   * (two for a word, one for a quote) start from scratch, due now. Its
+   * review history, its content and its audio are kept. One transaction.
+   * 404 for another user's item or a mind map.
+   */
+  async reset(userId: string, itemId: string, now = new Date()) {
+    const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { usageMode: true } });
+    if (user.usageMode !== 'Advanced') {
+      throw new ForbiddenException('Resetting the learning of an item needs the Advanced mode of use');
+    }
+    const item = await this.prisma.item.findFirst({
+      where: { id: itemId, userId, type: { in: LEARNED_PER_ITEM } },
+      select: { id: true, type: true },
+    });
+    if (!item) throw new NotFoundException(`Item ${itemId} not found`);
+    const type = item.type as QueueType;
+
+    const fresh = this.scheduler.newCard(now);
+    return this.prisma.$transaction(async (tx) => {
+      const queue = (await queueIds(tx, userId, type)).filter((id) => id !== item.id);
+      await tx.card.updateMany({ where: { itemId: item.id }, data: { ...fresh, learnedAt: null } });
+      await tx.item.update({ where: { id: item.id }, data: { learningStatus: 'ToLearn' } });
+      await renumberQueue(tx, userId, type, [...queue, item.id]);
+      return { id: item.id, learningStatus: 'ToLearn' as const, learnPosition: queue.length + 1 };
+    });
+  }
+
   async relearn(userId: string, itemId: string) {
     const item = await this.learnable(userId, itemId, ['Learned']);
     await this.prisma.item.update({ where: { id: item.id }, data: { learningStatus: 'Learning' } });

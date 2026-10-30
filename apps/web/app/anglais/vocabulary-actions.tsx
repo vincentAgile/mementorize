@@ -17,10 +17,13 @@ export function VocabularyActions({
   translator,
   topics,
   queueMenu,
+  advanced = false,
 }: {
   row: VocabularyRow;
   translator: Translator;
   topics: string[];
+  /** MEM-111: the mode of use is Avancé: « Réinitialiser l’apprentissage ». */
+  advanced?: boolean;
   /** MEM-64: where to move an item of the learning queue (built by the table). */
   queueMenu?: React.ReactNode;
 }) {
@@ -32,6 +35,7 @@ export function VocabularyActions({
       queue
       queueMenu={queueMenu}
       relearn={{ title: 'Remettre en apprentissage', label: `Remettre « ${row.english} » en apprentissage` }}
+      advanced={advanced}
       editTitle="Modifier l’élément"
       editForm={<EditForm row={row} translator={translator} topics={topics} />}
       deleteTitle="Supprimer l’élément ?"

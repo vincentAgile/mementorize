@@ -15,7 +15,7 @@ export default async function QuotesListPage({ searchParams }: { searchParams: P
   // ?etat=Waiting: opened filtered on a state (the link of "Apprendre · Réviser").
   const { etat } = await searchParams;
   const initialStatus = etat && etat in LEARNING_STATUS_LABELS ? (etat as LearningStatus) : undefined;
-  const [items, { vocabularyPageSize }] = await Promise.all([getItems('Quote'), getPreferences()]);
+  const [items, { vocabularyPageSize, usageMode }] = await Promise.all([getItems('Quote'), getPreferences()]);
 
   if (items.length === 0) {
     return (
@@ -30,6 +30,7 @@ export default async function QuotesListPage({ searchParams }: { searchParams: P
       now={new Date().toISOString()}
       pageSize={vocabularyPageSize}
       initialStatus={initialStatus}
+      advanced={usageMode === 'Advanced'} // MEM-111
     />
   );
 }

@@ -4,7 +4,7 @@ import { Fragment, type ReactNode, useRef, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { ListRow } from '../../lib/item-list';
 import type { ListType } from '../../lib/types';
-import { queueRowAction, relearnAction } from './actions';
+import { queueRowAction, relearnAction, resetLearningAction } from './actions';
 
 /**
  * The actions of a row of a list, the vocabulary (MEM-19, MEM-20, MEM-22,
@@ -21,6 +21,7 @@ export function RowActions({
   queue,
   queueMenu,
   relearn,
+  advanced = false,
   editTitle,
   editForm,
   deleteTitle,
@@ -41,6 +42,8 @@ export function RowActions({
    * révision » a quote; `label` names the item for screen readers.
    */
   relearn: { title: string; label: string };
+  /** MEM-111: the mode of use is Avancé (MEM-110): « Réinitialiser l’apprentissage », whatever the state. */
+  advanced?: boolean;
   editTitle: string;
   /**
    * The edit form, started again from the saved values each time the dialog
@@ -54,6 +57,7 @@ export function RowActions({
 }) {
   const editRef = useRef<HTMLDialogElement>(null);
   const deleteRef = useRef<HTMLDialogElement>(null);
+  const resetRef = useRef<HTMLDialogElement>(null);
   // A new key each time the edit dialog opens: the form starts again from the saved values.
   const [editKey, setEditKey] = useState(0);
 
@@ -84,6 +88,18 @@ export function RowActions({
           </IconSubmit>
         </form>
       )}
+      {advanced && (
+        // MEM-111: the learning from scratch, after a confirmation.
+        <button
+          type="button"
+          className="row-actions__icon"
+          aria-label={`Réinitialiser l’apprentissage de « ${name} »`}
+          title="Réinitialiser l’apprentissage"
+          onClick={() => resetRef.current?.showModal()}
+        >
+          <ResetIcon />
+        </button>
+      )}
       <button
         type="button"
         className="row-actions__icon"
@@ -110,6 +126,29 @@ export function RowActions({
         <h3 id={`edit-${row.id}`}>{editTitle}</h3>
         <Fragment key={editKey}>{editForm}</Fragment>
       </dialog>
+
+      {advanced && (
+        <dialog ref={resetRef} className="dialog" aria-labelledby={`reset-${row.id}`}>
+          <h3 id={`reset-${row.id}`}>Réinitialiser l’apprentissage de «&nbsp;{name}&nbsp;» ?</h3>
+          <p className="dialog__hint">
+            L’élément repasse en «&nbsp;À apprendre&nbsp;» et ses cartes repartent de zéro. L’historique de révisions
+            est conservé.
+          </p>
+          <form
+            // The row stays (unlike a deletion): the dialog closes once the list is rendered again.
+            action={async () => {
+              await resetLearningAction(row.id);
+              resetRef.current?.close();
+            }}
+            className="dialog__buttons"
+          >
+            <button type="button" className="button--secondary" onClick={() => resetRef.current?.close()}>
+              Annuler
+            </button>
+            <SubmitButton label="Réinitialiser" pendingLabel="Réinitialisation…" />
+          </form>
+        </dialog>
+      )}
 
       <dialog ref={deleteRef} className="dialog" aria-labelledby={`delete-${row.id}`}>
         <h3 id={`delete-${row.id}`}>{deleteTitle}</h3>
@@ -195,6 +234,16 @@ function RelearnIcon() {
     <svg {...ICON}>
       <path d="M4 12a8 8 0 1 0 2.4-5.7" />
       <path d="M4 4v4h4" />
+    </svg>
+  );
+}
+
+/** MEM-111: back to the start (a bar, an arrow towards it). */
+function ResetIcon() {
+  return (
+    <svg {...ICON}>
+      <path d="M6 5v14" />
+      <path d="M18 6 10 12l8 6z" />
     </svg>
   );
 }

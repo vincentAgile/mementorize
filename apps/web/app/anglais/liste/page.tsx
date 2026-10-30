@@ -15,7 +15,10 @@ export default async function EnglishListPage({ searchParams }: { searchParams: 
   // ?etat=Waiting: opened filtered on a state (the link of "Apprendre · Réviser", MEM-61).
   const { etat } = await searchParams;
   const initialStatus = etat && etat in LEARNING_STATUS_LABELS ? (etat as LearningStatus) : undefined;
-  const [all, { translator, vocabularyPageSize }] = await Promise.all([getItems('Vocabulary'), getPreferences()]);
+  const [all, { translator, vocabularyPageSize, usageMode }] = await Promise.all([
+    getItems('Vocabulary'),
+    getPreferences(),
+  ]);
   const items = all as VocabularyItem[];
 
   if (items.length === 0) {
@@ -32,6 +35,7 @@ export default async function EnglishListPage({ searchParams }: { searchParams: 
       translator={translator}
       pageSize={vocabularyPageSize}
       initialStatus={initialStatus}
+      advanced={usageMode === 'Advanced'} // MEM-111
     />
   );
 }

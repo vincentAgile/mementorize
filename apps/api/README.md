@@ -313,6 +313,12 @@ curl -X POST http://localhost:3000/learning/<itemId>/learned -H "Authorization: 
 curl -X POST http://localhost:3000/learning/<itemId>/relearn -H "Authorization: Bearer $TOKEN"
 ```
 
+**Réinitialiser l'apprentissage (MEM-111).** En mode d'utilisation Avancé seulement (`users.usageMode`, MEM-110 ; 403 sinon, vérifié par l'API), un mot ou une citation repart de zéro, quel que soit son état : « À apprendre » en dernière position de la file de son espace (il en sort d'abord s'il y était, les suivants remontent), ses cartes remises à neuf (`New`, à revoir maintenant), son historique (`review_logs`), son contenu et son audio conservés ; une seule transaction. 404 pour un élément d'un autre compte ou une carte mentale. Ce n'est pas `relearn`, qui garde la planification d'un élément « Appris ».
+
+```bash
+curl -X POST http://localhost:3000/learning/items/<itemId>/reset -H "Authorization: Bearer $TOKEN"
+```
+
 `Learned` est une valeur de l'enum `ReviewRating` réservée à l'historique : la planification (FSRS) ne reçoit que les quatre notes, type `Grade`.
 
 Pour une citation ou une branche de carte mentale, « Appris » porte sur la carte (MEM-48) : `cards.learnedAt` est renseigné, et `REVIEWED_CARD` (`src/reviews/in-review.ts`) écarte ces cartes de la révision, des compteurs et du rappel par e-mail.
