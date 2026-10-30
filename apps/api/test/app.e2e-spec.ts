@@ -483,7 +483,7 @@ describe('API (e2e)', () => {
     await http().post(`/learning/${word.id}/learned`).set(auth).expect(409);
   });
 
-  it('exports the quotes as CSV; imports none without a recall hint (MEM-72, MEM-106)', async () => {
+  it('exports the quotes as CSV, recall hint included, and imports them back, "En attente" (MEM-72, MEM-107)', async () => {
     const auth = { Authorization: `Bearer ${await register('wes')}` };
     await http()
       .post('/quotes')
@@ -502,21 +502,57 @@ describe('API (e2e)', () => {
       /^attachment; filename="mementorize-citations-\d{4}-\d{2}-\d{2}\.csv"$/,
     );
     expect(exported.text).toBe(
-      '\uFEFFTexte;Auteur;Source\r\n"Il dit : ""Viens; vite"".\nPuis partit.";Moi;Ici\r\nLa vie est un songe.;;\r\n',
+      '\uFEFFTexte;Auteur;Source;Indice de rappel\r\n"Il dit : ""Viens; vite"".\nPuis partit.";Moi;Ici;Un départ\r\nLa vie est un songe.;;;La vie et le rêve\r\n',
     );
 
-    // MEM-106: until the file has a column for the recall hint (MEM-107), no
-    // line can be imported: each one is in error, nothing is created.
+    // Round trip, in another account: the same quotes, recall hint included.
     const other = { Authorization: `Bearer ${await register('xia')}` };
     const preview = await http().post('/quotes-csv/preview').set(other).send({ content: exported.text }).expect(200);
-    expect(preview.body.summary).toEqual({ total: 2, new: 0, duplicate: 0, error: 2 });
-    expect(preview.body.rows.map((row: { error: string }) => row.error)).toEqual([
-      'Indice de rappel manquant',
-      'Indice de rappel manquant',
-    ]);
+    expect(preview.body.summary).toEqual({ total: 2, new: 2, duplicate: 0, error: 0 });
+    expect(preview.body.rows.map((row: { hint: string }) => row.hint)).toEqual(['Un départ', 'La vie et le rêve']);
     const imported = await http().post('/quotes-csv/import').set(other).send({ content: exported.text }).expect(200);
-    expect(imported.body).toEqual({ ok: true, imported: 0, duplicate: 0, error: 2 });
-    expect((await http().get('/quotes').set(other).expect(200)).body).toEqual([]);
+    expect(imported.body).toEqual({ ok: true, imported: 2, duplicate: 0, error: 0 });
+    const quotes = (await http().get('/quotes').set(other).expect(200)).body as Record<string, unknown>[];
+    expect(
+      quotes.map(({ text, author, source, hint, learningStatus }) => ({ text, author, source, hint, learningStatus })),
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          text: 'Il dit : "Viens; vite".\nPuis partit.',
+          author: 'Moi',
+          source: 'Ici',
+          hint: 'Un départ',
+          learningStatus: 'Waiting',
+        },
+        {
+          text: 'La vie est un songe.',
+          author: null,
+          source: null,
+          hint: 'La vie et le rêve',
+          learningStatus: 'Waiting',
+        },
+      ]),
+    );
+    const exportedAgain = await http().get('/quotes-csv/export').set(other).expect(200);
+    expect(exportedAgain.text.split('\r\n').slice(1).sort()).toEqual(exported.text.split('\r\n').slice(1).sort());
+
+    // Again: only duplicates, found on the text whatever the hint; an old file of three columns is shown in error.
+    const again = await http().post('/quotes-csv/import').set(other).send({ content: exported.text }).expect(200);
+    expect(again.body).toEqual({ ok: true, imported: 0, duplicate: 2, error: 0 });
+    const otherHint = await http()
+      .post('/quotes-csv/preview')
+      .set(other)
+      .send({ content: 'Texte;Auteur;Source;Indice de rappel\nla vie est un songe.;;;Un autre indice\n' })
+      .expect(200);
+    expect(otherHint.body.summary).toEqual({ total: 1, new: 0, duplicate: 1, error: 0 });
+    const old = await http()
+      .post('/quotes-csv/preview')
+      .set(other)
+      .send({ content: 'Texte;Auteur;Source\nUn texte neuf.;Moi;Ici\n' })
+      .expect(200);
+    expect(old.body.rows).toEqual([
+      expect.objectContaining({ line: 2, status: 'error', error: 'Indice de rappel manquant' }),
+    ]);
 
     // The other separator is reported.
     const comma = await http()
