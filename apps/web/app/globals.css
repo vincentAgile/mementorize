@@ -958,16 +958,16 @@ kbd {
 
 .review-card__body--assess {
   align-content: start;
-  min-height: 14.875rem; /* a result whose words take two lines, with the sounds of a word */
+  min-height: 16.25rem; /* a result whose words take two lines, with the sounds of a word */
 }
 
 .review-card__body--assess > .review-card__practice {
-  width: auto; /* the whole column: the result appears without moving the frame sideways */
+  justify-self: start; /* grows to the right with the result: its button stays where it is */
 }
 
 @media (max-width: 639px) {
   .review-card__body--assess {
-    min-height: 29rem; /* the French and the English, then the frame under them, its words on two lines */
+    min-height: 30.875rem; /* the French and the English, then the frame under them, its words on two lines */
   }
 }
 
@@ -985,17 +985,65 @@ kbd {
   }
 }
 
+/*
+ * MEM-100: « Évaluer ma prononciation » is a button in its own frame; the
+ * recording and the result come in a second frame under it, only when there
+ * is something to show. Each keeps its own width.
+ */
 .review-card__practice {
-  padding: 0.75rem 0.9rem;
-  border: 1px solid #c9dcdc;
-  border-radius: 8px;
-  background: rgba(20, 125, 128, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
+/*
+ * MEM-100: the head of the frame is one button, « Évaluer ma prononciation »
+ * and its microphone; it covers the padding of the frame, so that the whole
+ * frame is clickable while nothing is shown under it.
+ */
 .review-card__practice-head {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.practice__toggle {
+  max-width: 100%;
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #c9dcdc;
+  border-radius: 8px;
+  background: rgba(20, 125, 128, 0.04);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.practice__toggle:hover:not(:disabled) {
+  background: rgba(20, 125, 128, 0.08);
+}
+
+button.practice__toggle:hover:not(:disabled) .repeat-button:not(.is-recording) {
+  background: rgba(20, 125, 128, 0.2);
+}
+
+.practice__toggle:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: -2px;
+}
+
+.practice__toggle:disabled {
+  cursor: progress;
+}
+
+.practice__toggle:disabled .repeat-button {
+  opacity: 0.5;
+}
+
+.practice__toggle:disabled[aria-describedby] {
+  cursor: not-allowed;
 }
 
 /* MEM-100: the frame is as wide as its title and its button, wider only for the result */
@@ -1040,14 +1088,38 @@ kbd {
   margin: 0;
 }
 
-/* MEM-100: nothing below the title until there is something to show, so the frame is centred on it */
-.review-card__practice .practice > :not(:empty) {
+/* The second frame: the recording, the result, an error, the user's recording */
+.review-card__practice .practice--shown {
+  max-width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #c9dcdc;
+  border-radius: 8px;
+  background: rgba(20, 125, 128, 0.04);
+}
+
+.practice--shown > :not(:empty) ~ :not(:empty) {
   margin-top: 0.5rem;
+}
+
+.practice--shown .practice__consent {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.practice--shown p:first-child {
+  margin-top: 0;
+}
+
+.practice--shown p:last-child {
+  margin-bottom: 0;
 }
 
 .review-card__recall {
   margin: 0 0 0.5rem;
   color: #666;
+  font-size: 1.25rem; /* MEM-100: the French keeps its size once the answer is shown */
+  line-height: 1.5;
 }
 
 .review-card__note {
@@ -3285,18 +3357,8 @@ kbd {
   animation: repeat-pulse 1.2s ease-in-out infinite;
 }
 
-.repeat-button:disabled {
-  opacity: 0.5;
-  cursor: progress;
-}
-
-/* MEM-101: the assessment is not offered: disabled, with the reason under it */
-.repeat-button:disabled[aria-describedby] {
-  cursor: not-allowed;
-}
-
 .practice__message--unavailable {
-  margin: 0.5rem 0 0;
+  margin: 0; /* under the button, the gap of the frame above it */
   color: #666;
   font-size: 0.9rem;
 }
@@ -3330,7 +3392,7 @@ kbd {
 .review-card__body--with-practice.listening__body {
   align-items: start;
   align-content: start; /* on a phone, the frame stays right under « Réécouter » */
-  min-height: 12.875rem; /* the frame with a result and the sounds of a word */
+  min-height: 14.25rem; /* the button, then the frame of a result with the sounds of a word */
 }
 
 .listening__body .listening__actions {
@@ -3339,7 +3401,7 @@ kbd {
 
 @media (max-width: 639px) {
   .review-card__body--with-practice.listening__body {
-    min-height: 19.125rem; /* « Réécouter », then the frame under it, its words wrapped */
+    min-height: 20.5rem; /* « Réécouter », then the frame under it, its words wrapped */
   }
 }
 
