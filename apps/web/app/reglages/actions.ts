@@ -12,7 +12,7 @@ import {
 } from '../../lib/api';
 import { separatorProblem } from '../../lib/csv-separator';
 import { findSpace } from '../../lib/spaces';
-import type { ItemType, Preferences, SpaceOptimization, Translator } from '../../lib/types';
+import type { ItemType, Preferences, SpaceOptimization, Translator, UsageMode } from '../../lib/types';
 import type { SaveResult } from './save-result';
 
 // MEM-79: each setting is saved as soon as its change is confirmed. A Server
@@ -46,6 +46,17 @@ const TRANSLATORS: Translator[] = ['DeepL', 'Google'];
 export async function saveTranslatorAction(translator: Translator): Promise<SaveResult> {
   if (!TRANSLATORS.includes(translator)) return { invalid: 'Service de traduction invalide.' };
   return save({ translator }, 'all'); // the forms of the Anglais space use it
+}
+
+const USAGE_MODES: UsageMode[] = ['Standard', 'Advanced'];
+
+/**
+ * The mode of use (MEM-110). Every page is rendered again: the actions it
+ * adds to the lists (MEM-111) appear or go at once.
+ */
+export async function saveUsageModeAction(usageMode: UsageMode): Promise<SaveResult> {
+  if (!USAGE_MODES.includes(usageMode)) return { invalid: 'Mode d’utilisation invalide.' };
+  return save({ usageMode }, 'all');
 }
 
 /** Show the delays under the rating buttons (MEM-49). */

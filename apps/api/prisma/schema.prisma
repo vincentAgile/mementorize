@@ -57,6 +57,9 @@ model User {
   vocabularyRetention Int @default(90)
   quoteRetention      Int @default(90)
   mindMapRetention    Int @default(90)
+  /// Mode d'utilisation (MEM-110): Advanced adds the actions that change the
+  /// learning (MEM-111). Standard by default, existing accounts included.
+  usageMode UsageMode @default(Standard)
 
   @@map("users")
 }
@@ -65,6 +68,12 @@ model User {
 enum Translator {
   DeepL
   Google
+}
+
+/// The mode of use (MEM-110): Standard, or Advanced with the actions that change the learning.
+enum UsageMode {
+  Standard
+  Advanced
 }
 
 enum ItemType {

@@ -15,6 +15,8 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
  */
 /** The target retentions of a new account (MEM-75). */
 const RETENTIONS_90 = { vocabularyRetention: 90, quoteRetention: 90, mindMapRetention: 90 };
+/** The mode of use of a new account (MEM-110). */
+const STANDARD = { usageMode: 'Standard' };
 
 describe('API (e2e)', () => {
   let app: NestExpressApplication;
@@ -914,7 +916,7 @@ describe('API (e2e)', () => {
     expect(cleared.body).toMatchObject({ firstName: null, lastName: null });
   });
 
-  it('saves the home space (Anglais by default), the translation service (DeepL by default), the delays (hidden by default) and the CSV separator (semicolon by default), each on its own', async () => {
+  it('saves the home space (Anglais by default), the translation service (DeepL by default), the delays (hidden by default), the CSV separator (semicolon by default) and the mode of use (Standard by default), each on its own', async () => {
     const token = await register('erin');
     const auth = { Authorization: `Bearer ${token}` };
 
@@ -926,6 +928,7 @@ describe('API (e2e)', () => {
       csvSeparator: ';',
       vocabularyPageSize: 20,
       ...RETENTIONS_90,
+      ...STANDARD,
     });
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
@@ -937,6 +940,7 @@ describe('API (e2e)', () => {
       csvSeparator: ';',
       vocabularyPageSize: 20,
       ...RETENTIONS_90,
+      ...STANDARD,
     });
 
     // MEM-44: the translator alone, the home space untouched.
@@ -948,6 +952,7 @@ describe('API (e2e)', () => {
       csvSeparator: ';',
       vocabularyPageSize: 20,
       ...RETENTIONS_90,
+      ...STANDARD,
     });
 
     // MEM-49: the delays on the rating buttons, off by default.
@@ -959,6 +964,7 @@ describe('API (e2e)', () => {
       csvSeparator: ';',
       vocabularyPageSize: 20,
       ...RETENTIONS_90,
+      ...STANDARD,
     });
     await http().put('/preferences').set(auth).send({ showReviewDelays: 'yes' }).expect(400);
 
@@ -983,6 +989,16 @@ describe('API (e2e)', () => {
     for (const refused of [80, 92, '90', null]) {
       await http().put('/preferences').set(auth).send({ quoteRetention: refused }).expect(400);
     }
+
+    // MEM-110: the mode of use, Standard by default; Advanced, then back; nothing else.
+    const advanced = await http().put('/preferences').set(auth).send({ usageMode: 'Advanced' }).expect(200);
+    expect(advanced.body).toMatchObject({ usageMode: 'Advanced', quoteRetention: 95, csvSeparator: ',' });
+    expect((await http().get('/preferences').set(auth).expect(200)).body.usageMode).toBe('Advanced');
+    for (const refused of ['Expert', 'advanced', '', null, true]) {
+      await http().put('/preferences').set(auth).send({ usageMode: refused }).expect(400);
+    }
+    const standard = await http().put('/preferences').set(auth).send({ usageMode: 'Standard' }).expect(200);
+    expect(standard.body.usageMode).toBe('Standard');
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);
