@@ -168,11 +168,17 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
       {revealed ? (
         <RatingButtons onAnswer={answer} withLearned={withLearned} delays={delays} disabled={pending} />
       ) : (
-        <p className="review-card__reveal-row">
-          <button type="button" className="review-card__reveal" onClick={reveal}>
+        // MEM-100: « Afficher la réponse » takes exactly the room of the rating
+        // buttons: it lies over an invisible copy of them, so the question and
+        // the answer have the same height whatever the fonts of the system.
+        <div className="review-card__reveal-row">
+          <div className="review-card__reveal-room" aria-hidden="true" inert>
+            <RatingButtons onAnswer={() => undefined} withLearned={withLearned} delays={delays} />
+          </div>
+          <button type="button" className="review-card__reveal review-card__reveal--wide" onClick={reveal}>
             Afficher la réponse <kbd>Espace</kbd>
           </button>
-        </p>
+        </div>
       )}
     </article>
   );
