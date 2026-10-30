@@ -958,7 +958,7 @@ kbd {
 
 .review-card__body--assess {
   align-content: start;
-  min-height: 14.875rem; /* a result whose words take two lines, with the sounds of a word */
+  min-height: 16.25rem; /* a result whose words take two lines, with the sounds of a word */
 }
 
 .review-card__body--assess > .review-card__practice {
@@ -967,7 +967,7 @@ kbd {
 
 @media (max-width: 639px) {
   .review-card__body--assess {
-    min-height: 29.5rem; /* the French and the English, then the frame under them, its words on two lines */
+    min-height: 30.875rem; /* the French and the English, then the frame under them, its words on two lines */
   }
 }
 
@@ -985,11 +985,16 @@ kbd {
   }
 }
 
+/*
+ * MEM-100: « Évaluer ma prononciation » is a button in its own frame; the
+ * recording and the result come in a second frame under it, only when there
+ * is something to show. Each keeps its own width.
+ */
 .review-card__practice {
-  padding: 0.75rem 0.9rem;
-  border: 1px solid #c9dcdc;
-  border-radius: 8px;
-  background: rgba(20, 125, 128, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
 /*
@@ -1004,13 +1009,12 @@ kbd {
 }
 
 .practice__toggle {
-  box-sizing: content-box;
-  width: 100%;
-  margin: -0.75rem -0.9rem;
+  max-width: 100%;
+  margin: 0;
   padding: 0.75rem 0.9rem;
-  border: 0;
+  border: 1px solid #c9dcdc;
   border-radius: 8px;
-  background: none;
+  background: rgba(20, 125, 128, 0.04);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -1084,9 +1088,31 @@ button.practice__toggle:hover:not(:disabled) .repeat-button:not(.is-recording) {
   margin: 0;
 }
 
-/* MEM-100: nothing below the title until there is something to show, so the frame is centred on it */
-.review-card__practice .practice > :not(:empty) {
+/* The second frame: the recording, the result, an error, the user's recording */
+.review-card__practice .practice--shown {
+  max-width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #c9dcdc;
+  border-radius: 8px;
+  background: rgba(20, 125, 128, 0.04);
+}
+
+.practice--shown > :not(:empty) ~ :not(:empty) {
   margin-top: 0.5rem;
+}
+
+.practice--shown .practice__consent {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.practice--shown p:first-child {
+  margin-top: 0;
+}
+
+.practice--shown p:last-child {
+  margin-bottom: 0;
 }
 
 .review-card__recall {
@@ -3332,7 +3358,7 @@ button.practice__toggle:hover:not(:disabled) .repeat-button:not(.is-recording) {
 }
 
 .practice__message--unavailable {
-  margin: 0.5rem 0 0;
+  margin: 0; /* under the button, the gap of the frame above it */
   color: #666;
   font-size: 0.9rem;
 }
@@ -3366,7 +3392,7 @@ button.practice__toggle:hover:not(:disabled) .repeat-button:not(.is-recording) {
 .review-card__body--with-practice.listening__body {
   align-items: start;
   align-content: start; /* on a phone, the frame stays right under « Réécouter » */
-  min-height: 12.875rem; /* the frame with a result and the sounds of a word */
+  min-height: 14.25rem; /* the button, then the frame of a result with the sounds of a word */
 }
 
 .listening__body .listening__actions {
@@ -3375,7 +3401,7 @@ button.practice__toggle:hover:not(:disabled) .repeat-button:not(.is-recording) {
 
 @media (max-width: 639px) {
   .review-card__body--with-practice.listening__body {
-    min-height: 19.125rem; /* « Réécouter », then the frame under it, its words wrapped */
+    min-height: 20.5rem; /* « Réécouter », then the frame under it, its words wrapped */
   }
 }
 

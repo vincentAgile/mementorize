@@ -357,12 +357,14 @@ function MicrophoneIcon() {
   );
 }
 
-/** Under the item: the explanation, the recording in progress, then the result. */
+/** Under the button, in a frame of its own (MEM-100): the explanation, the recording in progress, then the result. */
 export function PracticePanel({ practice }: { practice: PronunciationPractice }) {
   const { state } = practice;
   const [open, setOpen] = useState<number | null>(null); // the word whose sounds are shown
+  // MEM-100: a second frame, under the button, only when there is something in it.
+  const shown = state.name !== 'idle' || practice.denied || practice.playback !== null;
   return (
-    <div className="practice">
+    <div className={shown ? 'practice practice--shown' : 'practice'}>
       {state.name === 'consent' && (
         <div className="practice__consent" role="dialog" aria-labelledby="practice-consent">
           <p id="practice-consent">
