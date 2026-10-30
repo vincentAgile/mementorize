@@ -958,7 +958,7 @@ kbd {
 
 .review-card__body--assess {
   align-content: start;
-  min-height: 16.25rem; /* a result whose words take two lines, with the sounds of a word */
+  min-height: 16.5rem; /* a result whose words take two lines, with the sounds of a word */
 }
 
 .review-card__body--assess > .review-card__practice {
@@ -1078,6 +1078,29 @@ button.practice__toggle:hover:not(:disabled) .repeat-button:not(.is-recording) {
   margin: 1.5rem 0 0; /* as the rating buttons */
 }
 
+/* In a card, the row is the room of the rating buttons (an invisible copy), the button over it */
+div.review-card__reveal-row {
+  display: flow-root; /* keeps the margin of the copy inside: the button below starts under it */
+  position: relative;
+  margin: 0;
+}
+
+.review-card__reveal-room {
+  visibility: hidden;
+}
+
+.review-card__reveal--wide {
+  position: absolute;
+  inset: 0;
+  top: 1.5rem; /* the margin of the rating buttons */
+  justify-content: center;
+  font-size: 1.05rem;
+}
+
+.review-card--wide .review-card__reveal--wide {
+  max-width: 528px; /* as the rating buttons */
+}
+
 .review-card__practice-title {
   margin: 0;
   font-size: 0.95rem;
@@ -1090,11 +1113,20 @@ button.practice__toggle:hover:not(:disabled) .repeat-button:not(.is-recording) {
 
 /* The second frame: the recording, the result, an error, the user's recording */
 .review-card__practice .practice--shown {
+  box-sizing: border-box;
+  width: 20rem; /* MEM-100: one size for the recording, the result and its sounds */
   max-width: 100%;
+  min-height: 12rem; /* a result whose words take two lines, with the sounds of a word */
   padding: 0.75rem 0.9rem;
   border: 1px solid #c9dcdc;
   border-radius: 8px;
   background: rgba(20, 125, 128, 0.04);
+}
+
+@media (max-width: 639px) {
+  .review-card__practice .practice--shown {
+    min-height: 13.5rem; /* narrower: the appreciation goes under the score */
+  }
 }
 
 .practice--shown > :not(:empty) ~ :not(:empty) {
@@ -3392,7 +3424,7 @@ button.practice__toggle:hover:not(:disabled) .repeat-button:not(.is-recording) {
 .review-card__body--with-practice.listening__body {
   align-items: start;
   align-content: start; /* on a phone, the frame stays right under « Réécouter » */
-  min-height: 14.25rem; /* the button, then the frame of a result with the sounds of a word */
+  min-height: 16.5rem; /* the button, then the frame of a result (fixed height) */
 }
 
 .listening__body .listening__actions {
@@ -3401,7 +3433,7 @@ button.practice__toggle:hover:not(:disabled) .repeat-button:not(.is-recording) {
 
 @media (max-width: 639px) {
   .review-card__body--with-practice.listening__body {
-    min-height: 20.5rem; /* « Réécouter », then the frame under it, its words wrapped */
+    min-height: 22.75rem; /* « Réécouter », then the frame under it, its words wrapped */
   }
 }
 
