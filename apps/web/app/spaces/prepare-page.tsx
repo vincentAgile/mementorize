@@ -34,8 +34,8 @@ export async function PreparePage({ space, liste }: { space: Space & { type: Lis
       cancelHref={space.href}
       // MEM-95: back from the selection page, the composition in the address.
       initialList={listOf(liste, candidates)}
-      // MEM-95: the Anglais space adds the items from a selection page.
-      pickHref={space.type === 'Vocabulary' ? `${space.prepareHref}/ajouter` : undefined}
+      // MEM-95: both spaces add the items from a selection page (« + Ajouter »).
+      pickHref={`${space.prepareHref}/ajouter`}
       // A new composition in the address (back from the selection page): a new list.
       key={liste ?? ''}
     />

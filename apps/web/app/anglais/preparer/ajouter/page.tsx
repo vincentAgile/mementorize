@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { getItems, getPreferences } from '../../../../lib/api';
 import { candidatesOf, listOf, MAX_SESSION_SIZE, withList } from '../../../../lib/session-preparation';
 import { toRow, type VocabularyItem } from '../../../../lib/vocabulary-table';
-import { PickTable } from '../../pick-table';
+import { VocabularyPickTable } from '../../pick-table';
 
 export const metadata: Metadata = { title: 'Ajouter à la session · Anglais' };
 
@@ -40,5 +40,7 @@ export default async function PickPage({ searchParams }: { searchParams: Promise
       </section>
     );
   }
-  return <PickTable rows={rows} list={list} room={room} prepareHref={PREPARE} pageSize={vocabularyPageSize} />;
+  return (
+    <VocabularyPickTable rows={rows} list={list} room={room} prepareHref={PREPARE} pageSize={vocabularyPageSize} />
+  );
 }
