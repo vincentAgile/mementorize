@@ -62,8 +62,10 @@ export function QuoteFields({ values, errors, idPrefix, autoFocus = false, autho
             *
           </span>
         </span>
-        <input
+        {/* Several lines, as the text. */}
+        <textarea
           name="hint"
+          rows={2}
           autoComplete="off"
           defaultValue={values.hint}
           maxLength={QUOTE_MAX.hint}

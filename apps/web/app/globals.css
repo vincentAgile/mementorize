@@ -713,6 +713,7 @@ kbd {
   margin: 0;
   font-size: 1.25rem;
   line-height: 1.5;
+  white-space: pre-line; /* a quote or its recall hint on several lines keeps them */
 }
 
 /* MEM-37: a line of English and its loudspeaker button, on its right */
@@ -2449,6 +2450,7 @@ div.review-card__reveal-row {
 .import-preview__hint {
   color: #555;
   font-style: italic;
+  white-space: pre-line; /* a hint on several lines keeps them */
 }
 
 /* An example line of a file, in the help of the import */
