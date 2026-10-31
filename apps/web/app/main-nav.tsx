@@ -11,11 +11,13 @@ interface NavLink {
   /** In the bar at the bottom of a phone's screen (MEM-30). */
   shortLabel: string;
   icon: React.ReactNode;
-  /** Number of due cards of this section. */
-  count: number;
+  /** Number of due cards of this section; none for « Ressources ». */
+  count?: number;
   active: boolean;
   /** A subject space: when active, its entry joins the band of its sub-menu (MEM-29). */
   isSpace: boolean;
+  /** Only in the bar at the bottom of a phone: « Ressources », an icon of the header on a computer. */
+  phoneOnly?: boolean;
 }
 
 function navLinks(due: DueSummary, pathname: string, type: string | null): NavLink[] {
@@ -38,6 +40,15 @@ function navLinks(due: DueSummary, pathname: string, type: string | null): NavLi
       count: due.total,
       active: pathname === '/review' && !current,
       isSpace: false,
+    },
+    {
+      href: '/ressources',
+      label: 'Ressources',
+      shortLabel: 'Ressources',
+      icon: <BooksIcon />,
+      active: pathname === '/ressources',
+      isSpace: false,
+      phoneOnly: true,
     },
   ];
 }
@@ -74,7 +85,8 @@ function DueBadge({ count }: { count: number }) {
  * the band of the sub-menu below (MEM-29).
  * On a phone (< 640 px), the same menu becomes a bar fixed at the bottom of
  * the screen, each entry with an icon, a short label and its counter
- * (MEM-30, globals.css).
+ * (MEM-30, globals.css), plus « Ressources », which is an icon of the header
+ * on a computer.
  * A Client Component: only the browser knows the current URL, to highlight
  * the section we are in.
  */
@@ -88,7 +100,13 @@ export function MainNav({ due }: { due: DueSummary }) {
         <Link
           key={link.href}
           href={link.href}
-          className={[link.active && 'is-active', link.isSpace && 'page__nav-space'].filter(Boolean).join(' ')}
+          className={[
+            link.active && 'is-active',
+            link.isSpace && 'page__nav-space',
+            link.phoneOnly && 'page__nav-phone',
+          ]
+            .filter(Boolean)
+            .join(' ')}
           aria-current={link.active ? 'page' : undefined}
         >
           <span className="page__nav-icon">{link.icon}</span>
@@ -103,7 +121,7 @@ export function MainNav({ due }: { due: DueSummary }) {
             </span>
           )}
           {/* After the label: screen readers say « Anglais, 2 cartes à réviser ». */}
-          <DueBadge count={link.count} />
+          {link.count !== undefined && <DueBadge count={link.count} />}
         </Link>
       ))}
     </nav>
@@ -122,6 +140,18 @@ const ICON = {
   strokeLinejoin: 'round',
   'aria-hidden': true,
 } as const;
+
+/** Books on a shelf: « Ressources », as the icon of the header on a computer. */
+function BooksIcon() {
+  return (
+    <svg {...ICON}>
+      <rect x="3.5" y="4" width="4" height="16" rx="0.8" />
+      <rect x="8.5" y="6" width="4" height="14" rx="0.8" />
+      <path d="m14.2 7.4 3.8-1 3.6 13.1-3.8 1Z" />
+      <path d="M3.5 8h4M8.5 9.5h4" />
+    </svg>
+  );
+}
 
 /** A speech bubble: the language. */
 function EnglishIcon() {

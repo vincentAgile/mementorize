@@ -96,6 +96,13 @@ body {
   }
 }
 
+/* Very narrow screens: the five labels of the bar at the bottom keep a margin */
+@media (max-width: 359px) {
+  body .page__nav a {
+    font-size: 0.66rem; /* « body »: wins over the bar's own size, set further down */
+  }
+}
+
 /* The thin vertical line between the logo and the menu: only on a single line */
 .app-header__divider {
   display: none;
@@ -414,6 +421,11 @@ body {
   white-space: nowrap;
 }
 
+/* « Ressources »: an entry of the bar at the bottom on a phone only; an icon of the header on a computer */
+.page__nav a.page__nav-phone {
+  display: none;
+}
+
 /* Underline the label only, not the counter next to it */
 .page__nav a:hover .page__nav-label {
   text-decoration: underline;
@@ -534,7 +546,7 @@ body {
     bottom: 0;
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 0;
     margin: 0;
     padding-bottom: env(safe-area-inset-bottom);
@@ -598,6 +610,14 @@ body {
 
   .page__nav-short {
     display: inline;
+  }
+
+  .page__nav a.page__nav-phone {
+    display: inline-flex;
+  }
+
+  .header-actions__icon--computer {
+    display: none;
   }
 
   .page__nav-label--long {
@@ -4126,4 +4146,45 @@ button.practice__word {
 
 .quote-reveals__missing {
   color: #666;
+}
+
+/* The « Ressources » page: one link per line, its title then its site */
+.resources {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resources__link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.resources__link:hover {
+  border-color: #147d80;
+  background: rgba(20, 125, 128, 0.05);
+}
+
+.resources__link:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
+}
+
+.resources__title {
+  color: #147d80;
+  font-weight: 600;
+}
+
+.resources__site {
+  color: #666;
+  font-size: 0.85rem;
 }
