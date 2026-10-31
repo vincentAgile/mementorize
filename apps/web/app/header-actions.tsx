@@ -8,8 +8,8 @@ import { AccountMenu } from './account-menu';
 
 /**
  * The icons at the top right of the header (MEM-9): Ressources (books on a
- * shelf, the only way to reach them), Settings, the only way to reach them,
- * and the account's avatar. A Client Component, to highlight the books on
+ * shelf; on a phone, an entry of the bar at the bottom instead), Settings,
+ * the only way to reach them, and the account's avatar. A Client Component, to highlight the books on
  * their page and the gear in the Settings: on a computer, the icon plays the
  * part of the active entry of the menu and joins the band under it (MEM-78).
  */
@@ -22,7 +22,8 @@ export function HeaderActions({ profile }: { profile: Profile }) {
     <div className="header-actions">
       <Link
         href="/ressources"
-        className={`header-actions__icon${onResources ? ' is-active' : ''}`}
+        // On a phone, « Ressources » is in the bar at the bottom instead (main-nav.tsx).
+        className={`header-actions__icon header-actions__icon--computer${onResources ? ' is-active' : ''}`}
         aria-label="Ressources"
         title="Ressources"
         aria-current={onResources ? 'page' : undefined}

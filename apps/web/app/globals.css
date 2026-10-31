@@ -89,11 +89,17 @@ body {
   display: none;
 }
 
-/* Very narrow screens: the monogram alone (MEM-34), so that the name of the
-   page keeps its room next to the three icons (Ressources, Réglages, avatar) */
-@media (max-width: 389px) {
+/* Very narrow screens: the monogram alone (MEM-34) */
+@media (max-width: 359px) {
   .page__brand .logo__rest {
     display: none;
+  }
+}
+
+/* Very narrow screens: the five labels of the bar at the bottom keep a margin */
+@media (max-width: 359px) {
+  body .page__nav a {
+    font-size: 0.66rem; /* « body »: wins over the bar's own size, set further down */
   }
 }
 
@@ -415,6 +421,11 @@ body {
   white-space: nowrap;
 }
 
+/* « Ressources »: an entry of the bar at the bottom on a phone only; an icon of the header on a computer */
+.page__nav a.page__nav-phone {
+  display: none;
+}
+
 /* Underline the label only, not the counter next to it */
 .page__nav a:hover .page__nav-label {
   text-decoration: underline;
@@ -535,7 +546,7 @@ body {
     bottom: 0;
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 0;
     margin: 0;
     padding-bottom: env(safe-area-inset-bottom);
@@ -599,6 +610,14 @@ body {
 
   .page__nav-short {
     display: inline;
+  }
+
+  .page__nav a.page__nav-phone {
+    display: inline-flex;
+  }
+
+  .header-actions__icon--computer {
+    display: none;
   }
 
   .page__nav-label--long {
