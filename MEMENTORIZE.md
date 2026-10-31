@@ -4,17 +4,17 @@
 > Il résume l'essentiel et renvoie vers les README pour le détail : **il ne les duplique pas**.
 > À mettre à jour à la fin de chaque epic (voir « Entretien du document »).
 >
-> Dernière mise à jour : 2026-10-29 · Dépôt au commit `a62593c` (fusion de la PR #126, v0.18)
+> Dernière mise à jour : 2026-10-31 · Dépôt au commit `2411587` (fusion de la PR #142, après v0.20)
 
 ## 1. Le produit
 
 Application de mémorisation à long terme, fondée sur la courbe de l'oubli et l'algorithme FSRS. Trois espaces par sujet :
 
-| Espace          | Contenu                                             | Cartes de révision                       |
-| --------------- | --------------------------------------------------- | ---------------------------------------- |
-| Anglais         | éléments de vocabulaire (mot, expression ou phrase) | une carte français → anglais est révisée |
-| Citations       | citations avec auteur et source                     | une carte « retrouver la suite »         |
-| Cartes mentales | arbre d'idées éditable (@xyflow/react)              | une carte par branche (branche masquée)  |
+| Espace          | Contenu                                             | Cartes de révision                                  |
+| --------------- | --------------------------------------------------- | --------------------------------------------------- |
+| Anglais         | éléments de vocabulaire (mot, expression ou phrase) | une carte français → anglais est révisée            |
+| Citations       | citations avec indice de rappel, auteur et source   | une carte : l'indice au recto, la citation au verso |
+| Cartes mentales | arbre d'idées éditable (@xyflow/react)              | une carte par branche (branche masquée)             |
 
 Deux rôles pour moi : **développeur** (projet de veille technique, phases 0 à 11) puis **product owner** (versions v0.x pilotées dans Jira). Utilisateur principal aujourd'hui : moi seul.
 
@@ -46,22 +46,26 @@ Production : https://mementorize.delaneuville.fr
 
 ### Décisions structurantes (et pourquoi)
 
-| Décision                                                                                                                    | Raison                                                                                                  |
-| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Table `items` polymorphe, contenu en `jsonb` validé par DTO                                                                 | un seul modèle pour tous les types de fiches ; la base ne vérifie pas la forme, l'API oui               |
-| Carte mentale = `nodes` avec `parentId` (pas d'arêtes stockées)                                                             | un seul parent par nœud garanti par la forme des données ; l'arbre ne peut pas devenir un graphe        |
-| Format stocké indépendant de React Flow                                                                                     | `flow.ts` convertit dans les deux sens                                                                  |
-| Une carte FSRS par branche de carte mentale (`BranchRecall`)                                                                | révision fine ; les cartes suivent le contenu (`cardSlots`)                                             |
-| Vocabulaire : deux cartes en base, une seule révisée (français → anglais)                                                   | `REVIEWED_CARD` ; un futur réglage pourra réactiver l'autre sens                                        |
-| États du vocabulaire : `Waiting` → `ToLearn` (file ordonnée) → `Learning` → `Learned`                                       | processus d'apprentissage distinct du processus de révision                                             |
-| « Appris » n'est pas une note FSRS (`Learned` réservé à l'historique)                                                       | exclu des données d'optimisation FSRS                                                                   |
-| Nouveaux réglages FSRS appliqués à la prochaine révision, sans recalcul des dates programmées                               | évite un afflux soudain de cartes                                                                       |
-| **Migrations rétrocompatibles** : on ajoute dans une version, on retire dans la suivante                                    | pendant le déploiement, l'ancien code tourne quelques secondes sur le nouveau schéma                    |
-| Les images ne contiennent aucun secret ; tout passe par variables d'environnement                                           | même build en local et en production                                                                    |
-| Prononciation évaluée via **Azure Pronunciation Assessment**, derrière une couche voix                                      | décision prise dans le backlog (MEM-89, MEM-90) ; essai MEM-93                                          |
-| Apprentissage du vocabulaire en trois étapes sur la série : écoute (sans texte), anglais → français (sans note), évaluation | entendre avant de lire, reconnaître avant de produire ; seule l'évaluation change les états (v0.18)     |
-| Évaluation de l'apprentissage : réponses envoyées élément par élément, dès qu'il est réussi                                 | interrompre une série garde les acquis ; un élément « à revoir » reste dans son état antérieur          |
-| Cadre « Évaluer ma prononciation » partagé par la révision et l'apprentissage                                               | mêmes composants ; désactivé avec « Service d'évaluation indisponible » quand Azure n'est pas configuré |
+| Décision                                                                                                                                | Raison                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Table `items` polymorphe, contenu en `jsonb` validé par DTO                                                                             | un seul modèle pour tous les types de fiches ; la base ne vérifie pas la forme, l'API oui                        |
+| Carte mentale = `nodes` avec `parentId` (pas d'arêtes stockées)                                                                         | un seul parent par nœud garanti par la forme des données ; l'arbre ne peut pas devenir un graphe                 |
+| Format stocké indépendant de React Flow                                                                                                 | `flow.ts` convertit dans les deux sens                                                                           |
+| Une carte FSRS par branche de carte mentale (`BranchRecall`)                                                                            | révision fine ; les cartes suivent le contenu (`cardSlots`)                                                      |
+| Vocabulaire : deux cartes en base, une seule révisée (français → anglais)                                                               | `REVIEWED_CARD` ; un futur réglage pourra réactiver l'autre sens                                                 |
+| États du vocabulaire : `Waiting` → `ToLearn` (file ordonnée) → `Learning` → `Learned`                                                   | processus d'apprentissage distinct du processus de révision                                                      |
+| « Appris » n'est pas une note FSRS (`Learned` réservé à l'historique)                                                                   | exclu des données d'optimisation FSRS                                                                            |
+| Nouveaux réglages FSRS appliqués à la prochaine révision, sans recalcul des dates programmées                                           | évite un afflux soudain de cartes                                                                                |
+| **Migrations rétrocompatibles** : on ajoute dans une version, on retire dans la suivante                                                | pendant le déploiement, l'ancien code tourne quelques secondes sur le nouveau schéma                             |
+| Les images ne contiennent aucun secret ; tout passe par variables d'environnement                                                       | même build en local et en production                                                                             |
+| Prononciation évaluée via **Azure Pronunciation Assessment**, derrière une couche voix                                                  | décision prise dans le backlog (MEM-89, MEM-90) ; essai MEM-93                                                   |
+| Apprentissage du vocabulaire en trois étapes sur la série : écoute (sans texte), anglais → français (sans note), évaluation             | entendre avant de lire, reconnaître avant de produire ; seule l'évaluation change les états (v0.18)              |
+| Évaluation de l'apprentissage : réponses envoyées élément par élément, dès qu'il est réussi                                             | interrompre une série garde les acquis ; un élément « à revoir » reste dans son état antérieur                   |
+| Cadre « Évaluer ma prononciation » partagé par la révision et l'apprentissage                                                           | mêmes composants ; désactivé avec « Service d'évaluation indisponible » quand Azure n'est pas configuré          |
+| Citations : « Indice de rappel » obligatoire ; les citations antérieures ont reçu « Indice de rappel » par migration                    | la carte part d'un indice plutôt que du début du texte ; l'indice provisoire se remplace depuis la liste (v0.19) |
+| Recto d'une carte de citation : l'indice seul, l'auteur et le début de la citation sur demande                                          | on peut s'aider sans voir la réponse ; la réponse cachée n'est pas dans la page (v0.19)                          |
+| Réglage « Mode d'utilisation » Standard / Avancé (Standard par défaut)                                                                  | réserver les actions qui défont le travail à qui les demande ; base des futures options avancées (v0.20)         |
+| Réinitialiser l'apprentissage : mode Avancé seulement, vérifié par l'API (403) ; dernier de la file, cartes neuves, historique conservé | une erreur d'apprentissage se rattrape sans perdre les données de révision (v0.20)                               |
 
 ## 4. Vocabulaire du projet
 
@@ -120,9 +124,11 @@ Mises à jour de `MEMENTORIZE.md` : Claude peut fusionner la PR (CI verte) et re
 
 ## 7. État du backlog (Jira, projet MEM)
 
-Epics terminées : v0.1 (MEM-1) à v0.18 (MEM-100) : espaces par sujet, profil et réglages, apprentissage du vocabulaire, ergonomie Anglais, identité visuelle, prononciation, saisie bilingue, révision simplifiée, thématiques et import/export CSV, pagination et actions groupées, file d'apprentissage, espace Citations, réglages FSRS, réglages en onglets, console d'administration et sessions, entraînement à la prononciation (v0.16), espace Cartes mentales aux onglets Réviser, Liste et Ajouter (v0.17), nouvelle procédure d'apprentissage du vocabulaire en trois étapes : écoute et prononciation, anglais → français, évaluation (v0.18, MEM-100 ; PR #122 à #126).
+Epics terminées : v0.1 (MEM-1) à v0.18 (MEM-100) : espaces par sujet, profil et réglages, apprentissage du vocabulaire, ergonomie Anglais, identité visuelle, prononciation, saisie bilingue, révision simplifiée, thématiques et import/export CSV, pagination et actions groupées, file d'apprentissage, espace Citations, réglages FSRS, réglages en onglets, console d'administration et sessions, entraînement à la prononciation (v0.16), espace Cartes mentales aux onglets Réviser, Liste et Ajouter (v0.17), nouvelle procédure d'apprentissage du vocabulaire en trois étapes : écoute et prononciation, anglais → français, évaluation (v0.18, MEM-100 ; PR #122 à #136), indice de rappel des citations, dans le CSV et en révision (v0.19, MEM-105 ; PR #137 à #139), mode d'utilisation Standard / Avancé et réinitialisation de l'apprentissage depuis les listes (v0.20, MEM-109 ; PR #140 et #141).
 
-Toutes les epics sont closes (MEM-89, MEM-96 et MEM-100 clôturées le 2026-10-29) et aucune story n'est ouverte : le prochain travail est à définir.
+Hors epic, depuis : « + Ajouter » ouvre une page de sélection dans la préparation d'une session de citations, comme en Anglais (PR #142) ; « Indice de rappel » multiligne (PR #143).
+
+Toutes les epics sont closes (MEM-105 et MEM-109 clôturées le 2026-10-31) et aucune story n'est ouverte : le prochain travail est à définir.
 
 ### Idées et suite possible
 
