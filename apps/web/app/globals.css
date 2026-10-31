@@ -4127,3 +4127,44 @@ button.practice__word {
 .quote-reveals__missing {
   color: #666;
 }
+
+/* The « Ressources » page: one link per line, its title then its site */
+.resources {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resources__link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.resources__link:hover {
+  border-color: #147d80;
+  background: rgba(20, 125, 128, 0.05);
+}
+
+.resources__link:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
+}
+
+.resources__title {
+  color: #147d80;
+  font-weight: 600;
+}
+
+.resources__site {
+  color: #666;
+  font-size: 0.85rem;
+}
