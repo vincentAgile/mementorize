@@ -4,7 +4,7 @@ import { AppHeader } from '../app-header';
 
 export const metadata: Metadata = { title: 'Ressources' };
 
-/** The « Ressources » page, opened from the account menu: links on memory and learning, each in a new tab. */
+/** The « Ressources » page, opened from its icon in the header, next to the gear: links on memory and learning, each in a new tab. */
 export default function ResourcesPage() {
   return (
     <>

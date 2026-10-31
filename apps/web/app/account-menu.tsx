@@ -8,7 +8,7 @@ import { logoutAction } from './(auth)/actions';
 
 /**
  * The account menu (MEM-10): the avatar of the header opens a popup with the
- * account (initials, name, e-mail), "Profil", "Ressources" and "Déconnexion". It follows
+ * account (initials, name, e-mail), "Profil" and "Déconnexion". It follows
  * the "menu button" pattern of the WAI-ARIA guide: arrows to move between
  * the entries, Escape to close, and the focus goes back to the avatar.
  */
@@ -135,15 +135,6 @@ export function AccountMenu({ profile }: { profile: Profile }) {
             onClick={() => close(false)}
           >
             Profil
-          </Link>
-          <Link
-            href="/ressources"
-            role="menuitem"
-            tabIndex={-1}
-            className="account-menu__item"
-            onClick={() => close(false)}
-          >
-            Ressources
           </Link>
           <hr className="account-menu__separator" role="separator" />
           <form action={logoutAction}>

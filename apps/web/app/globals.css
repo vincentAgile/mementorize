@@ -89,8 +89,9 @@ body {
   display: none;
 }
 
-/* Very narrow screens: the monogram alone (MEM-34) */
-@media (max-width: 359px) {
+/* Very narrow screens: the monogram alone (MEM-34), so that the name of the
+   page keeps its room next to the three icons (Ressources, Réglages, avatar) */
+@media (max-width: 389px) {
   .page__brand .logo__rest {
     display: none;
   }
