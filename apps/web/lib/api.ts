@@ -318,8 +318,8 @@ export function getLearningSession(ids?: string[]): Promise<LearningSession> {
   return authedFetch<LearningSession>(query ? `/learning/session?${query}` : '/learning/session');
 }
 
-/** The end of a learning session: the next review of the space and its progress, day by day. */
-export function getLearningProgress(type: ListType): Promise<LearningProgress> {
+/** The end of a learning or review session: the next review of the space and its progress, day by day. */
+export function getLearningProgress(type: ItemType): Promise<LearningProgress> {
   return authedFetch<LearningProgress>(`/learning/progress?type=${type}`);
 }
 

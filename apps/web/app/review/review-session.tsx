@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { formatDelay, NBSP } from '../../lib/format';
-import type { ReviewRating } from '../../lib/types';
+import type { ItemType, ReviewRating } from '../../lib/types';
 import { learnedAction, reviewAction } from './actions';
 import type { Answer } from './rating-buttons';
 import { type CardFace, ReviewCard } from './review-card';
@@ -30,7 +30,7 @@ interface ReviewSessionProps {
   total: number;
   /** The server's clock, so that the server and the browser show the same delays at first. */
   now: string;
-  space?: { label: string; href: string };
+  space?: { type: ItemType; label: string; href: string };
   /** The delays under the rating buttons: a setting, off by default (MEM-49). */
   showDelays: boolean;
 }
@@ -74,10 +74,13 @@ export function ReviewSession({ cards, total, now, space, showDelays }: ReviewSe
 
   // End of the pile: the page is rendered again, which brings the counters
   // of the menu up to date and then shows what's left: the next cards when
-  // more than 100 were due, "Rien à réviser", or the subject's space.
+  // more than 100 were due; in a subject, « Révision terminée » with its
+  // next review and its progress (?fin=1); otherwise "Rien à réviser".
   useEffect(() => {
-    if (!current) router.refresh();
-  }, [current, router]);
+    if (current) return;
+    if (space && notLoaded <= 0) router.replace(`/review?type=${space.type}&fin=1`);
+    else router.refresh();
+  }, [current, router, space, notLoaded]);
 
   if (!current) {
     return <p className="review-progress">Session terminée…</p>;

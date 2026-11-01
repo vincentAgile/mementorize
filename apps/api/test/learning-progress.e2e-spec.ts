@@ -104,10 +104,28 @@ describe('Learning: history of the states and progress (e2e)', () => {
     expect(quotes.nextReview.count).toBe(1);
   });
 
+  it('a mind map: its next review, no progress (always in learning)', async () => {
+    const auth = await register('progress-map');
+    await http()
+      .post('/mind-maps')
+      .set(auth)
+      .send({
+        nodes: [
+          { id: 'r', parentId: null, label: 'Mémoire', position: { x: 0, y: 0 } },
+          { id: 'a', parentId: 'r', label: 'Répétition', position: { x: 100, y: 0 } },
+          { id: 'b', parentId: 'r', label: 'Oubli', position: { x: 100, y: 50 } },
+        ],
+      })
+      .expect(201);
+    const { body } = await http().get('/learning/progress?type=MindMap').set(auth).expect(200);
+    expect(body.days).toEqual([]);
+    expect(body.nextReview.count).toBeGreaterThanOrEqual(1);
+  });
+
   it('answers 400 without a valid type, 401 without a session', async () => {
     const auth = await register('progress-400');
     await http().get('/learning/progress').set(auth).expect(400);
-    await http().get('/learning/progress?type=MindMap').set(auth).expect(400);
+    await http().get('/learning/progress?type=Other').set(auth).expect(400);
     await http().get('/learning/progress?type=Vocabulary').expect(401);
   });
 });
