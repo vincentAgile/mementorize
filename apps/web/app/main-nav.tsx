@@ -33,15 +33,6 @@ function navLinks(due: DueSummary, pathname: string, type: string | null): NavLi
       isSpace: true,
     })),
     {
-      href: '/review',
-      label: 'Tout réviser',
-      shortLabel: 'Tout réviser',
-      icon: <ReviewAllIcon />,
-      count: due.total,
-      active: pathname === '/review' && !current,
-      isSpace: false,
-    },
-    {
       href: '/ressources',
       label: 'Ressources',
       shortLabel: 'Ressources',
@@ -79,7 +70,7 @@ function DueBadge({ count }: { count: number }) {
 }
 
 /**
- * The menu (MEM-5): the three subject spaces and "Tout réviser", each with
+ * The menu (MEM-5): the three subject spaces, each with
  * its number of due cards. Settings moved to an icon of the header (MEM-9).
  * The entry of the active space looks like the tab of a binder: it joins
  * the band of the sub-menu below (MEM-29).
@@ -183,16 +174,6 @@ function QuoteIcon() {
     <svg {...ICON}>
       <path d="M10 7.5H6.5A1.5 1.5 0 0 0 5 9v3h5V9.5M10 12c0 2.5-1.2 4-3.5 4.8" />
       <path d="M19 7.5h-3.5A1.5 1.5 0 0 0 14 9v3h5V9.5M19 12c0 2.5-1.2 4-3.5 4.8" />
-    </svg>
-  );
-}
-
-/** A stack of cards. */
-function ReviewAllIcon() {
-  return (
-    <svg {...ICON}>
-      <rect x="4" y="8" width="13" height="12" rx="1.8" />
-      <path d="M7.5 5h11A1.5 1.5 0 0 1 20 6.5v10" />
     </svg>
   );
 }

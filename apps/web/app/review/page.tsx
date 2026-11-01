@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { getDueReviews, getLearningProgress, getPreferences, pronunciationAssessmentEnabled } from '../../lib/api';
-import { formatDelay } from '../../lib/format';
 import { subtreeIds } from '../../lib/mind-map';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { findSpace } from '../../lib/spaces';
@@ -83,17 +83,18 @@ function facesOf(
       };
 }
 
-// "À réviser aujourd'hui": a session over the cards due now (MEM-47), one at
-// a time, its pile kept in the browser (review-session.tsx). With ?type=…,
-// only the cards of one subject space (MEM-4).
-// MEM-28: « Réviser · Anglais · Mementorize », or « Tout réviser · Mementorize ».
+// The review of a subject space, ?type=… (MEM-4): a session over its cards
+// due now (MEM-47), one at a time, its pile kept in the browser
+// (review-session.tsx). « Tout réviser », all the spaces at once, is gone:
+// without a space, the home space.
+// MEM-28: « Réviser · Anglais · Mementorize ».
 export async function generateMetadata({
   searchParams,
 }: {
   searchParams: Promise<{ type?: string }>;
 }): Promise<Metadata> {
   const space = findSpace((await searchParams).type);
-  return { title: space ? `Réviser · ${space.label}` : 'Tout réviser' };
+  return { title: space ? `Réviser · ${space.label}` : 'Réviser' };
 }
 
 /** The most cards loaded at once (the API's limit); the rest at the end of the session. */
@@ -109,8 +110,9 @@ const BACK: Record<ItemType, string> = {
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string; fin?: string }> }) {
   const params = await searchParams;
   const space = findSpace(params.type);
+  if (!space) redirect('/'); // « Tout réviser » no more: the home space
   const [due, preferences, canAssess] = await Promise.all([
-    getDueReviews(SESSION_LIMIT, space?.type),
+    getDueReviews(SESSION_LIMIT, space.type),
     getPreferences(),
     pronunciationAssessmentEnabled(),
   ]);
@@ -119,7 +121,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   // Nothing (left) to review in a subject: when its next review is, and its
   // progress, as at the end of a learning session. « Révision terminée »
   // when the session just ended (?fin=1, review-session.tsx).
-  if (space && due.items.length === 0) {
+  if (due.items.length === 0) {
     const progress = await getLearningProgress(space.type).catch(() => null);
     return (
       <>
@@ -144,36 +146,23 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     <>
       <AppHeader />
       <main className="page page--reading">
-        <h1 className="visually-hidden page__sr-title">{space ? `Réviser · ${space.label}` : 'Tout réviser'}</h1>
-
-        {due.items.length === 0 ? (
-          <section className="review-empty">
-            <h2>Rien à réviser pour le moment{'\u202f'}!</h2>
-            <p>
-              {due.nextDueAt
-                ? `Prochaine révision dans ${formatDelay(now, new Date(due.nextDueAt))}.`
-                : "Les fiches reviennent ici quand c'est le bon moment pour les revoir."}{' '}
-              <Link href="/">Voir mes fiches</Link>
-            </p>
-          </section>
-        ) : (
-          <ReviewSession
-            // A new session each time the page is rendered (the end of the
-            // previous one refreshes it): its pile starts from the props.
-            key={randomUUID()}
-            cards={due.items.map((next): SessionCard => ({
-              cardId: next.card.id,
-              ...facesOf(next, canAssess),
-              // Learned per item, except a mind map: per branch (MEM-48, MEM-67).
-              learned: next.item.type === 'MindMap' ? { cardId: next.card.id } : { itemId: next.item.id },
-              nextDue: next.nextDue,
-            }))}
-            total={due.total}
-            showDelays={preferences.showReviewDelays}
-            now={now.toISOString()}
-            space={space && { type: space.type, label: space.label, href: space.href }}
-          />
-        )}
+        <h1 className="visually-hidden page__sr-title">{`Réviser · ${space.label}`}</h1>
+        <ReviewSession
+          // A new session each time the page is rendered (the end of the
+          // previous one refreshes it): its pile starts from the props.
+          key={randomUUID()}
+          cards={due.items.map((next): SessionCard => ({
+            cardId: next.card.id,
+            ...facesOf(next, canAssess),
+            // Learned per item, except a mind map: per branch (MEM-48, MEM-67).
+            learned: next.item.type === 'MindMap' ? { cardId: next.card.id } : { itemId: next.item.id },
+            nextDue: next.nextDue,
+          }))}
+          total={due.total}
+          showDelays={preferences.showReviewDelays}
+          now={now.toISOString()}
+          space={{ type: space.type, label: space.label, href: space.href }}
+        />
       </main>
     </>
   );

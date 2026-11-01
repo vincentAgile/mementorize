@@ -30,7 +30,8 @@ interface ReviewSessionProps {
   total: number;
   /** The server's clock, so that the server and the browser show the same delays at first. */
   now: string;
-  space?: { type: ItemType; label: string; href: string };
+  /** The subject space reviewed (MEM-4): the only kind of review since « Tout réviser » is gone. */
+  space: { type: ItemType; label: string; href: string };
   /** The delays under the rating buttons: a setting, off by default (MEM-49). */
   showDelays: boolean;
 }
@@ -74,13 +75,14 @@ export function ReviewSession({ cards, total, now, space, showDelays }: ReviewSe
 
   // End of the pile: the page is rendered again, which brings the counters
   // of the menu up to date and then shows what's left: the next cards when
-  // more than 100 were due; in a subject, « Révision terminée » with its
-  // next review and its progress (?fin=1); otherwise "Rien à réviser".
+  // more than 100 were due; otherwise « Révision terminée », with the next
+  // review of the space and its progress (?fin=1).
+  const spaceType = space.type;
   useEffect(() => {
     if (current) return;
-    if (space && notLoaded <= 0) router.replace(`/review?type=${space.type}&fin=1`);
+    if (notLoaded <= 0) router.replace(`/review?type=${spaceType}&fin=1`);
     else router.refresh();
-  }, [current, router, space, notLoaded]);
+  }, [current, router, spaceType, notLoaded]);
 
   if (!current) {
     return <p className="review-progress">Session terminée…</p>;
@@ -90,15 +92,11 @@ export function ReviewSession({ cards, total, now, space, showDelays }: ReviewSe
   return (
     <>
       <p className="review-progress">
-        {space && <strong>{space.label} · </strong>}
+        <strong>{space.label} · </strong>
         {remaining}
         {NBSP}carte{remaining > 1 ? 's' : ''} à réviser
-        {space && (
-          <>
-            {' · '}
-            <Link href={space.href}>Arrêter</Link>
-          </>
-        )}
+        {' · '}
+        <Link href={space.href}>Arrêter</Link>
       </p>
       <ReviewCard
         key={turn}

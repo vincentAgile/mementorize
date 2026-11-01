@@ -6,7 +6,6 @@ import { activeSpace } from '../lib/spaces';
 
 /** The pages outside the spaces, by address. */
 const PAGE_NAMES: Record<string, string> = {
-  '/review': 'Tout réviser',
   '/profil': 'Profil',
   '/ressources': 'Ressources',
 };
@@ -14,7 +13,7 @@ const PAGE_NAMES: Record<string, string> = {
 /**
  * On a phone (MEM-34), next to the logo: the name of the active space
  * (Anglais, Cartes mentales, Citations), or of the page outside the spaces
- * (Tout réviser, Réglages, Profil, Ressources). Plain text, the page's h1 on a phone:
+ * (Réglages, Profil, Ressources). Plain text, the page's h1 on a phone:
  * it takes over from the hidden h1 of MEM-28 (`.page__sr-title`), which a
  * phone doesn't show. Hidden on a computer, where the menu says where we are.
  * The mind map editor has its own visible h1 (the title of the map): there

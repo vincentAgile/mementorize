@@ -96,7 +96,7 @@ body {
   }
 }
 
-/* Very narrow screens: the five labels of the bar at the bottom keep a margin */
+/* Very narrow screens: the labels of the bar at the bottom keep a margin */
 @media (max-width: 359px) {
   body .page__nav a {
     font-size: 0.66rem; /* « body »: wins over the bar's own size, set further down */
@@ -449,7 +449,7 @@ body {
   text-decoration: none;
 }
 
-/* Outside the spaces ("Tout réviser"), the entry is only underlined: nothing joins band 2 */
+/* Outside the spaces, the entry is only underlined: nothing joins band 2 */
 .page__nav a.is-active:not(.page__nav-space) .page__nav-label {
   text-decoration: underline;
   text-decoration-thickness: 2px;
@@ -546,7 +546,7 @@ body {
     bottom: 0;
     z-index: 20;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 0;
     margin: 0;
     padding-bottom: env(safe-area-inset-bottom);
