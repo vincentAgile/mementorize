@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { stopPronouncing } from '../../lib/speech';
 import type { LearningItem, LearningSession } from '../../lib/types';
@@ -87,17 +86,14 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
           {failed > 0 && ` ${failed} n’a pas pu être enregistré (déjà appris ou supprimé entre-temps).`}
         </p>
         <LearningProgress type="Vocabulary" />
-        <p className="learning-done__links">
-          <Link href="/anglais" className="space__review">
-            Retour à l’anglais
-          </Link>
-          {remaining > 0 && (
-            // MEM-94: the next session is prepared too.
+        {remaining > 0 && (
+          <p className="learning-done__links">
+            {/* MEM-94: the next session is prepared too. */}
             <a href="/anglais/preparer" className="learning-done__next">
               Apprendre les suivants ({remaining})
             </a>
-          )}
-        </p>
+          </p>
+        )}
       </section>
     );
   }

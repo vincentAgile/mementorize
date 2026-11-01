@@ -1705,7 +1705,12 @@ div.review-card__reveal-row {
 }
 
 .learning-done {
-  margin-top: 2rem;
+  margin-top: 0;
+}
+
+/* Right under the header: the column's own padding is enough */
+.learning-done > h2:first-child {
+  margin-top: 0;
 }
 
 /* The end of a learning session: the next review, then the progress of the space */
@@ -1878,33 +1883,6 @@ div.review-card__reveal-row {
   pointer-events: none;
   transform: translateX(-50%);
   white-space: nowrap;
-}
-
-.progress-chart__data {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.progress-chart__data summary {
-  color: #147d80;
-  cursor: pointer;
-}
-
-.progress-chart__data table {
-  margin-top: 0.4rem;
-  border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
-}
-
-.progress-chart__data th,
-.progress-chart__data td {
-  padding: 0.2rem 0.75rem 0.2rem 0;
-  text-align: left;
-  font-weight: 400;
-}
-
-.progress-chart__data thead th {
-  font-weight: 600;
 }
 
 .learning-done__links {

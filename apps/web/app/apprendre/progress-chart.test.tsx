@@ -26,16 +26,4 @@ describe('ProgressChart', () => {
     expect(legend).toContain('Appris · 2');
     expect(legend).toContain('En cours d’apprentissage · 5');
   });
-
-  it('gives the whole series as a table, today first', () => {
-    act(() => createRoot(container).render(<ProgressChart days={days} noun="éléments" />));
-    const rows = [...container.querySelectorAll('tbody tr')].map((row) =>
-      [...row.children].map((cell) => cell.textContent),
-    );
-    expect(rows).toEqual([
-      ['dimanche 1er novembre', '2', '5'],
-      ['samedi 31 octobre', '1', '4'],
-      ['vendredi 30 octobre', '0', '3'],
-    ]);
-  });
 });

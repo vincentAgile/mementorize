@@ -12,7 +12,7 @@ const PAD = { top: 10, right: 12, bottom: 26, left: 34 };
  * the items « Appris » and, stacked on them, those « En cours
  * d'apprentissage ». A stacked area chart drawn in SVG at the width of its
  * column, with a crosshair and a tooltip on hover; the values of today in
- * the legend, and the whole series in a table, for who can't see the colors.
+ * the legend, so that the colours are never alone.
  */
 export function ProgressChart({ days, noun }: { days: ProgressDay[]; noun: string }) {
   const wrapper = useRef<HTMLDivElement>(null);
@@ -155,27 +155,6 @@ export function ProgressChart({ days, noun }: { days: ProgressDay[]; noun: strin
           </div>
         )}
       </div>
-      <details className="progress-chart__data">
-        <summary>Voir les données</summary>
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Jour</th>
-              <th scope="col">Appris</th>
-              <th scope="col">En cours</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...days].reverse().map((day) => (
-              <tr key={day.day}>
-                <th scope="row">{longDay(day.day)}</th>
-                <td>{day.learned}</td>
-                <td>{day.learning}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </details>
     </figure>
   );
 }
