@@ -102,7 +102,7 @@ const startsWith = (pathname: string, prefix: string) => pathname === prefix || 
  * and of the learning process): its own pages, the review of this subject
  * only (MEM-4), the mind map editor, the learning process of the vocabulary
  * (MEM-21) or of the quotes (/apprendre?type=Quote, MEM-68). None for the
- * pages outside the spaces (Tout réviser, Réglages, Profil).
+ * pages outside the spaces (Réglages, Profil, Ressources).
  */
 export function activeSpace(pathname: string, type: string | null): Space | undefined {
   return SPACES.find(
