@@ -1,7 +1,7 @@
 'use server';
 
-import { ApiError, learnItem, markItemLearned } from '../../lib/api';
-import type { ReviewRating } from '../../lib/types';
+import { ApiError, getLearningProgress, learnItem, markItemLearned } from '../../lib/api';
+import type { LearningProgress, ListType, ReviewRating } from '../../lib/types';
 
 const RATINGS: readonly ReviewRating[] = ['Again', 'Hard', 'Good', 'Easy'];
 
@@ -48,4 +48,21 @@ export async function learnedAction(itemId: string): Promise<boolean> {
     throw error;
   }
   return true;
+}
+
+/**
+ * The end of a learning session: the next review of the space and its
+ * progress, read once the answers of the session have reached the API.
+ * Null when it couldn't be read: the end of the session shows without it.
+ */
+export async function progressAction(type: ListType): Promise<LearningProgress | null> {
+  if (type !== 'Vocabulary' && type !== 'Quote') {
+    throw new Error('Invalid type');
+  }
+  try {
+    return await getLearningProgress(type);
+  } catch (error) {
+    if (error instanceof ApiError) return null;
+    throw error;
+  }
 }

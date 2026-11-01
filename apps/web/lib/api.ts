@@ -16,6 +16,7 @@ import type {
   QuoteLearningSession,
   ItemType,
   DeletableType,
+  LearningProgress,
   ListType,
   MindMap,
   MindMapNode,
@@ -315,6 +316,11 @@ const chosen = (ids?: string[]) => (ids && ids.length > 0 ? `ids=${ids.map(encod
 export function getLearningSession(ids?: string[]): Promise<LearningSession> {
   const query = chosen(ids);
   return authedFetch<LearningSession>(query ? `/learning/session?${query}` : '/learning/session');
+}
+
+/** The end of a learning session: the next review of the space and its progress, day by day. */
+export function getLearningProgress(type: ListType): Promise<LearningProgress> {
+  return authedFetch<LearningProgress>(`/learning/progress?type=${type}`);
 }
 
 /** Up to five quotes to learn, the first ones of their learning queue (MEM-68); or the chosen ones (MEM-94). */

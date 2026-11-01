@@ -1708,13 +1708,203 @@ div.review-card__reveal-row {
   margin-top: 2rem;
 }
 
-.learning-done__known {
-  color: #2e7d32;
-  font-weight: 600;
+/* The end of a learning session: the next review, then the progress of the space */
+.learning-progress {
+  margin-top: 1.25rem;
 }
 
-.learning-done__list {
-  padding-left: 1.2rem;
+.learning-progress__next {
+  margin: 0;
+}
+
+.learning-progress__date,
+.learning-progress__loading {
+  color: #666;
+}
+
+@media (prefers-color-scheme: dark) {
+  .learning-progress__date,
+  .learning-progress__loading {
+    color: #aaa;
+  }
+}
+
+.learning-progress__title {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+/* The chart: « Appris » (aqua) and, stacked on it, « En cours d'apprentissage » (orange).
+   The pair is checked for colour-blind readers, in light and in dark. */
+.progress-chart {
+  --series-learned: #1baf7a;
+  --series-learning: #eb6834;
+  --chart-grid: #e6e6e3;
+  --chart-axis: #b9b8b3;
+  --chart-text: #666;
+  --chart-tooltip: #fff;
+  margin: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .progress-chart {
+    --series-learned: #199e70;
+    --series-learning: #d95926;
+    --chart-grid: #2c2c2a;
+    --chart-axis: #55544f;
+    --chart-text: #aaa;
+    --chart-tooltip: #222;
+  }
+}
+
+.progress-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* The colour of a series beside its name: the text keeps its own colour */
+.progress-chart__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.progress-chart__key::before {
+  content: '';
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 3px;
+  background: var(--key-color);
+}
+
+.progress-chart__key--learned {
+  --key-color: var(--series-learned);
+}
+
+.progress-chart__key--learning {
+  --key-color: var(--series-learning);
+}
+
+.progress-chart__plot {
+  position: relative;
+  width: 100%;
+}
+
+.progress-chart__plot svg {
+  display: block;
+  overflow: visible;
+}
+
+.progress-chart__grid {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+
+.progress-chart__baseline {
+  stroke: var(--chart-axis);
+  stroke-width: 1;
+}
+
+.progress-chart__tick {
+  fill: var(--chart-text);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-chart__area--learned {
+  fill: var(--series-learned);
+  fill-opacity: 0.22;
+}
+
+.progress-chart__area--learning {
+  fill: var(--series-learning);
+  fill-opacity: 0.22;
+}
+
+.progress-chart__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.progress-chart__line--learned {
+  stroke: var(--series-learned);
+}
+
+.progress-chart__line--learning {
+  stroke: var(--series-learning);
+}
+
+.progress-chart__cursor line {
+  stroke: var(--chart-axis);
+  stroke-width: 1;
+}
+
+.progress-chart__cursor circle {
+  stroke: var(--chart-tooltip);
+  stroke-width: 2;
+}
+
+.progress-chart__dot--learned {
+  fill: var(--series-learned);
+}
+
+.progress-chart__dot--learning {
+  fill: var(--series-learning);
+}
+
+.progress-chart__hit {
+  fill: transparent;
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.progress-chart__tooltip {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--chart-grid);
+  border-radius: 6px;
+  background: var(--chart-tooltip);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  font-size: 0.8rem;
+  pointer-events: none;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.progress-chart__data {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.progress-chart__data summary {
+  color: #147d80;
+  cursor: pointer;
+}
+
+.progress-chart__data table {
+  margin-top: 0.4rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-chart__data th,
+.progress-chart__data td {
+  padding: 0.2rem 0.75rem 0.2rem 0;
+  text-align: left;
+  font-weight: 400;
+}
+
+.progress-chart__data thead th {
+  font-weight: 600;
 }
 
 .learning-done__links {
