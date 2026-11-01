@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import { useCallback, useState } from 'react';
-import { firstWords, formatDelay } from '../../lib/format';
+import { formatDelay } from '../../lib/format';
 import type { QuoteLearningItem, QuoteLearningSession } from '../../lib/types';
 import { quoteFaces } from '../review/quote-faces';
 import type { Answer } from '../review/rating-buttons';
 import { ReviewCard } from '../review/review-card';
+import { LearningProgress } from './learning-progress';
 import { sendAnswers } from './send-answers';
 
 const RATINGS = ['Again', 'Hard', 'Good'] as const;
@@ -135,15 +136,7 @@ function Summary({
         {failed > 0 &&
           ` ${count(failed)} n’${failed > 1 ? 'ont' : 'a'} pas pu être enregistrée${failed > 1 ? 's' : ''} (déjà apprise${failed > 1 ? 's' : ''} ou supprimée${failed > 1 ? 's' : ''} entre-temps).`}
       </p>
-      <ul className="learning-done__list">
-        {[...learning, ...learned].map((done) => (
-          <li key={done.id}>
-            {firstWords(done.text, 8)}
-            {done.author && <> — {done.author}</>}
-            {learned.includes(done) && <span className="learning-done__known"> · Appris</span>}
-          </li>
-        ))}
-      </ul>
+      <LearningProgress type="Quote" />
       <p className="learning-done__links">
         <Link href="/citations" className="space__review">
           Apprendre · Réviser

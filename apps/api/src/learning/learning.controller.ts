@@ -20,6 +20,7 @@ import { MoveInQueueDto } from './dto/move-in-queue.dto.js';
 import { QueueItemsDto } from './dto/queue-items.dto.js';
 import type { QueueType } from './learning-queue.js';
 import { LearningService, MAX_SESSION_SIZE } from './learning.service.js';
+import { LearningProgressService } from './progress.service.js';
 
 /** MEM-94: the ids of a prepared session, separated by commas; 400 if they are not ids, or too many. */
 function parseIds(value: string): string[] {
@@ -33,7 +34,10 @@ function parseIds(value: string): string[] {
 @Controller('learning')
 @UseGuards(JwtAuthGuard)
 export class LearningController {
-  constructor(private readonly learning: LearningService) {}
+  constructor(
+    private readonly learning: LearningService,
+    private readonly progressService: LearningProgressService,
+  ) {}
 
   /**
    * GET /learning/session — up to five vocabulary items to learn, the first
@@ -52,6 +56,20 @@ export class LearningController {
     return type === 'Quote'
       ? this.learning.quoteSession(user.id, new Date(), chosen)
       : this.learning.session(user.id, new Date(), chosen);
+  }
+
+  /**
+   * GET /learning/progress?type=Vocabulary|Quote — the end of a learning
+   * session: the next day with cards to review in the space and how many,
+   * and how many items were « En cours d'apprentissage » and « Appris » at
+   * the end of each day, since the first one learned.
+   */
+  @Get('progress')
+  progress(
+    @CurrentUser() user: AuthUser,
+    @Query('type', new ParseEnumPipe({ Vocabulary: 'Vocabulary', Quote: 'Quote' })) type: QueueType,
+  ) {
+    return this.progressService.progress(user.id, type);
   }
 
   // The queue routes take { type }: "Vocabulary" (by default) or "Quote" (MEM-67).

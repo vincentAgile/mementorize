@@ -6,6 +6,7 @@ import { stopPronouncing } from '../../lib/speech';
 import type { LearningItem, LearningSession } from '../../lib/types';
 import type { Answer } from '../review/rating-buttons';
 import { LearningEvaluation } from './learning-evaluation';
+import { LearningProgress } from './learning-progress';
 import { ListeningStep } from './listening-step';
 import { RecognitionStep } from './recognition-step';
 import { sendAnswers } from './send-answers';
@@ -85,19 +86,7 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
             `${known.length}\u00a0élément${known.length > 1 ? 's' : ''} déjà connu${known.length > 1 ? 's' : ''} : ${known.length > 1 ? 'ils passent' : 'il passe'} directement à « Appris », sans révision.`}
           {failed > 0 && ` ${failed} n’a pas pu être enregistré (déjà appris ou supprimé entre-temps).`}
         </p>
-        <ul className="learning-done__list">
-          {learned.map((done) => (
-            <li key={done.id}>
-              <strong lang="en">{done.word}</strong> → {done.translation}
-            </li>
-          ))}
-          {known.map((done) => (
-            <li key={done.id}>
-              <strong lang="en">{done.word}</strong> → {done.translation}{' '}
-              <span className="learning-done__known">· Appris</span>
-            </li>
-          ))}
-        </ul>
+        <LearningProgress type="Vocabulary" />
         <p className="learning-done__links">
           <Link href="/anglais" className="space__review">
             Retour à l’anglais

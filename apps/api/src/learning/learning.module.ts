@@ -3,10 +3,11 @@ import { AuthModule } from '../auth/auth.module.js';
 import { SchedulingModule } from '../scheduling/scheduling.module.js';
 import { LearningController } from './learning.controller.js';
 import { LearningService } from './learning.service.js';
+import { LearningProgressService } from './progress.service.js';
 
 @Module({
   imports: [AuthModule, SchedulingModule],
   controllers: [LearningController],
-  providers: [LearningService],
+  providers: [LearningService, LearningProgressService],
 })
 export class LearningModule {}

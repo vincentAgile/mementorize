@@ -146,6 +146,19 @@ export interface QuoteLearningItem {
   nextDueAfterAgain: Record<ReviewRating, string>;
 }
 
+/** One day of the progress of a space: how many items were in learning and learned at its end. */
+export interface ProgressDay {
+  day: string; // « 2026-11-01 », in Paris
+  learning: number;
+  learned: number;
+}
+
+/** The end of a learning session: the next review of the space, and its progress day by day. */
+export interface LearningProgress {
+  nextReview: { day: string; count: number } | null;
+  days: ProgressDay[];
+}
+
 export interface QuoteLearningSession {
   total: number; // all the quotes still to learn
   items: QuoteLearningItem[]; // up to five, the first ones of their learning queue
