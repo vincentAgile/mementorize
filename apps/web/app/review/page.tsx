@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { getDueReviews, getPreferences, pronunciationAssessmentEnabled } from '../../lib/api';
+import { getDueReviews, getLearningProgress, getPreferences, pronunciationAssessmentEnabled } from '../../lib/api';
 import { formatDelay } from '../../lib/format';
 import { subtreeIds } from '../../lib/mind-map';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { findSpace } from '../../lib/spaces';
-import type { DueItem } from '../../lib/types';
+import type { DueItem, ItemType } from '../../lib/types';
+import { ProgressSummary } from '../apprendre/learning-progress';
 import { AppHeader } from '../app-header';
 import { MindMapViewer } from '../mind-maps/mind-map-viewer';
 import { quoteFaces } from './quote-faces';
@@ -99,8 +99,16 @@ export async function generateMetadata({
 /** The most cards loaded at once (the API's limit); the rest at the end of the session. */
 const SESSION_LIMIT = 100;
 
-export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string }> }) {
-  const space = findSpace((await searchParams).type);
+/** The way back to a space, at the end of its review. */
+const BACK: Record<ItemType, string> = {
+  Vocabulary: 'Retour à l’anglais',
+  Quote: 'Retour aux citations',
+  MindMap: 'Retour aux cartes mentales',
+};
+
+export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string; fin?: string }> }) {
+  const params = await searchParams;
+  const space = findSpace(params.type);
   const [due, preferences, canAssess] = await Promise.all([
     getDueReviews(SESSION_LIMIT, space?.type),
     getPreferences(),
@@ -108,10 +116,28 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   ]);
   const now = new Date();
 
-  // End of a subject's session: back to its space, which says when the
-  // next review of that subject is due.
+  // Nothing (left) to review in a subject: when its next review is, and its
+  // progress, as at the end of a learning session. « Révision terminée »
+  // when the session just ended (?fin=1, review-session.tsx).
   if (space && due.items.length === 0) {
-    redirect(space.href);
+    const progress = await getLearningProgress(space.type).catch(() => null);
+    return (
+      <>
+        <AppHeader />
+        <main className="page page--reading">
+          <h1 className="visually-hidden page__sr-title">{`Réviser · ${space.label}`}</h1>
+          <section className="learning-done">
+            <h2>{params.fin ? 'Révision terminée' : `Rien à réviser pour le moment${'\u202f'}!`}</h2>
+            {progress && <ProgressSummary progress={progress} type={space.type} />}
+            <p className="learning-done__links">
+              <Link href={space.href} className="space__review">
+                {BACK[space.type]}
+              </Link>
+            </p>
+          </section>
+        </main>
+      </>
+    );
   }
 
   return (
@@ -145,7 +171,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
             total={due.total}
             showDelays={preferences.showReviewDelays}
             now={now.toISOString()}
-            space={space && { label: space.label, href: space.href }}
+            space={space && { type: space.type, label: space.label, href: space.href }}
           />
         )}
       </main>

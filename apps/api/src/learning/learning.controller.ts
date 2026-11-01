@@ -11,6 +11,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import type { ItemType } from '@prisma/client';
 import { isUUID } from 'class-validator';
 import type { AuthUser } from '../auth/auth-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
@@ -59,15 +60,16 @@ export class LearningController {
   }
 
   /**
-   * GET /learning/progress?type=Vocabulary|Quote — the end of a learning
-   * session: the next day with cards to review in the space and how many,
-   * and how many items were « En cours d'apprentissage » and « Appris » at
-   * the end of each day, since the first one learned.
+   * GET /learning/progress?type=Vocabulary|Quote|MindMap — the end of a
+   * learning or review session: the next day with cards to review in the
+   * space and how many, and how many items were « En cours d'apprentissage »
+   * and « Appris » at the end of each day, since the first one learned
+   * (none for the mind maps).
    */
   @Get('progress')
   progress(
     @CurrentUser() user: AuthUser,
-    @Query('type', new ParseEnumPipe({ Vocabulary: 'Vocabulary', Quote: 'Quote' })) type: QueueType,
+    @Query('type', new ParseEnumPipe({ Vocabulary: 'Vocabulary', Quote: 'Quote', MindMap: 'MindMap' })) type: ItemType,
   ) {
     return this.progressService.progress(user.id, type);
   }

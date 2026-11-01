@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { longDay, relativeDay } from '../../lib/progress';
-import type { LearningProgress as Progress, ListType } from '../../lib/types';
+import type { ItemType, LearningProgress as Progress, ListType } from '../../lib/types';
 import { progressAction } from './actions';
 import { ProgressChart } from './progress-chart';
 
@@ -33,8 +33,19 @@ export function LearningProgress({ type }: { type: ListType }) {
     );
   }
   if (progress === null) return null;
+  return <ProgressSummary progress={progress} type={type} />;
+}
 
-  const { nextReview, days } = progress;
+/** How a space counts its items, in the chart. */
+const NOUNS: Record<ItemType, string> = { Vocabulary: 'éléments', Quote: 'citations', MindMap: 'cartes mentales' };
+
+/**
+ * The next review of a space and its progress: at the end of a learning
+ * session (read above) and of a review (read by the page, review/page.tsx).
+ * No chart for the mind maps, always in learning: their days are empty.
+ */
+export function ProgressSummary({ progress: { nextReview, days }, type }: { progress: Progress; type: ItemType }) {
+  if (!nextReview && days.length === 0) return null; // a space with nothing learned: its title says it all
   const now = new Date();
   return (
     <section className="learning-progress" aria-label="Progression">
@@ -55,7 +66,7 @@ export function LearningProgress({ type }: { type: ListType }) {
       {days.length > 0 && (
         <>
           <h3 className="learning-progress__title">Progression</h3>
-          <ProgressChart days={days} noun={type === 'Quote' ? 'citations' : 'éléments'} />
+          <ProgressChart days={days} noun={NOUNS[type]} />
         </>
       )}
     </section>
