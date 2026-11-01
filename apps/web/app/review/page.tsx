@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getDueReviews, getLearningProgress, getPreferences, pronunciationAssessmentEnabled } from '../../lib/api';
 import { subtreeIds } from '../../lib/mind-map';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { findSpace } from '../../lib/spaces';
-import type { DueItem, ItemType } from '../../lib/types';
+import type { DueItem } from '../../lib/types';
 import { ProgressSummary } from '../apprendre/learning-progress';
 import { AppHeader } from '../app-header';
 import { MindMapViewer } from '../mind-maps/mind-map-viewer';
@@ -100,13 +99,6 @@ export async function generateMetadata({
 /** The most cards loaded at once (the API's limit); the rest at the end of the session. */
 const SESSION_LIMIT = 100;
 
-/** The way back to a space, at the end of its review. */
-const BACK: Record<ItemType, string> = {
-  Vocabulary: 'Retour à l’anglais',
-  Quote: 'Retour aux citations',
-  MindMap: 'Retour aux cartes mentales',
-};
-
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<{ type?: string; fin?: string }> }) {
   const params = await searchParams;
   const space = findSpace(params.type);
@@ -131,11 +123,6 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           <section className="learning-done">
             <h2>{params.fin ? 'Révision terminée' : `Rien à réviser pour le moment${'\u202f'}!`}</h2>
             {progress && <ProgressSummary progress={progress} type={space.type} />}
-            <p className="learning-done__links">
-              <Link href={space.href} className="space__review">
-                {BACK[space.type]}
-              </Link>
-            </p>
           </section>
         </main>
       </>

@@ -137,17 +137,14 @@ function Summary({
           ` ${count(failed)} n’${failed > 1 ? 'ont' : 'a'} pas pu être enregistrée${failed > 1 ? 's' : ''} (déjà apprise${failed > 1 ? 's' : ''} ou supprimée${failed > 1 ? 's' : ''} entre-temps).`}
       </p>
       <LearningProgress type="Quote" />
-      <p className="learning-done__links">
-        <Link href="/citations" className="space__review">
-          Apprendre · Réviser
-        </Link>
-        {remaining > 0 && (
-          // MEM-94: the next session is prepared too.
+      {remaining > 0 && (
+        <p className="learning-done__links">
+          {/* MEM-94: the next session is prepared too. */}
           <a href="/citations/preparer" className="learning-done__next">
             Apprendre les suivantes ({remaining})
           </a>
-        )}
-      </p>
+        </p>
+      )}
     </section>
   );
 }
