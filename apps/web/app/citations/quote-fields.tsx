@@ -105,6 +105,7 @@ export function QuoteFields({ values, errors, idPrefix, autoFocus = false, autho
         </span>
         <input
           name="source"
+          autoComplete="off"
           placeholder="Œuvre, discours, film…"
           defaultValue={values.source}
           maxLength={QUOTE_MAX.source}

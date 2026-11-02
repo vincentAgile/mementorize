@@ -83,6 +83,8 @@ interface VocabularyFieldsProps {
   translator: Translator;
   /** The topics already in use, suggested by the topic field (MEM-51). */
   topics: string[];
+  /** Next to the topic, on its right: the choice of the learning queue of the "Ajouter" tab. */
+  aside?: React.ReactNode;
 }
 
 /**
@@ -98,11 +100,12 @@ export function VocabularyFields({
   autoFocus = false,
   translator,
   topics,
+  aside,
 }: VocabularyFieldsProps) {
   const topicError = errors?.topic;
   const topicErrorId = `${idPrefix}-topic-error`;
   return (
-    <div className="vocab-fields">
+    <div className={aside ? 'vocab-fields vocab-fields--with-aside' : 'vocab-fields'}>
       {BLOCKS.map((block) => (
         <fieldset key={block.title} className="vocab-fields__block">
           <legend>{block.title}</legend>
@@ -170,6 +173,7 @@ export function VocabularyFields({
           </span>
         )}
       </label>
+      {aside}
     </div>
   );
 }
@@ -204,6 +208,8 @@ function TranslatedInput({ translator, lang, defaultValue, ...props }: InputProp
       <input
         ref={input}
         lang={lang}
+        // No suggestions of the browser from what was typed before: each item is new.
+        autoComplete="off"
         defaultValue={defaultValue}
         onInput={(e) => setText(e.currentTarget.value)}
         {...props}

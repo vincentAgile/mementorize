@@ -3,7 +3,9 @@
 import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import { firstWords, NBSP } from '../../../lib/format';
+import { QUOTE_NOUN } from '../../../lib/nouns';
 import { ordinal } from '../../lists/ordinal';
+import { QueueChoice } from '../../lists/queue-choice';
 import { addQuoteAction, type QuoteAddState } from '../actions';
 import { QuoteFields, type QuoteValues } from '../quote-fields';
 
@@ -56,11 +58,8 @@ export function AddQuoteForm({ authors }: { authors: string[] }) {
 
       <QuoteFields values={values} errors={state.fieldErrors} idPrefix="add" autoFocus authors={authors} />
       <div className="add-form__actions">
-        {/* The key puts the box back as chosen after the form is reset. */}
-        <label key={String(queue)} className="add-form__queue">
-          <input type="checkbox" name="queue" defaultChecked={queue} />
-          Ajouter à la file d’apprentissage (en dernière position)
-        </label>
+        {/* MEM-62: in the learning queue (by default) or « En attente ». */}
+        <QueueChoice key={String(queue)} queue={queue} noun={QUOTE_NOUN} idPrefix="add" />
         <AddButton />
       </div>
     </form>
