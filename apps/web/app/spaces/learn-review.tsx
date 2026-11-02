@@ -10,8 +10,8 @@ const plural = (count: number, one: string, many: string) => `${count}${NBSP}${c
 /**
  * Tab "Apprendre · Réviser" of a space with a learning process: the
  * Anglais space (MEM-25) and the Citations space (MEM-66), the default tab
- * of both. Two cards, one per process; each shows its action, or says why
- * there is nothing to do. The end of a learning or review session comes
+ * of both. Two cards, one per process, the review first; each shows its
+ * action, or says why there is nothing to do. The end of a learning or review session comes
  * back here.
  * MEM-97: the tab « Réviser » of the Cartes mentales space, without
  * learning process: the review card only.
@@ -35,6 +35,20 @@ export async function LearnReview({ space }: { space: Space }) {
 
   return (
     <div className={space.learnHref ? 'learn-review' : 'learn-review learn-review--single'}>
+      <section className="learn-review__card" aria-labelledby="review-title">
+        <h3 id="review-title">Réviser</h3>
+        {due.total > 0 ? (
+          <>
+            <p>{plural(due.total, 'carte à réviser', 'cartes à réviser')} aujourd’hui.</p>
+            <Link href={reviewHref(space)} className="space__review">
+              Réviser <span className="space__review-count">{due.total}</span>
+            </Link>
+          </>
+        ) : (
+          <NothingDue due={due} now={new Date()} className="learn-review__none" />
+        )}
+      </section>
+
       {space.learnHref && (
         <section className="learn-review__card" aria-labelledby="learn-title">
           <h3 id="learn-title">Apprendre</h3>
@@ -59,20 +73,6 @@ export async function LearnReview({ space }: { space: Space }) {
           )}
         </section>
       )}
-
-      <section className="learn-review__card" aria-labelledby="review-title">
-        <h3 id="review-title">Réviser</h3>
-        {due.total > 0 ? (
-          <>
-            <p>{plural(due.total, 'carte à réviser', 'cartes à réviser')} aujourd’hui.</p>
-            <Link href={reviewHref(space)} className="space__review">
-              Réviser <span className="space__review-count">{due.total}</span>
-            </Link>
-          </>
-        ) : (
-          <NothingDue due={due} now={new Date()} className="learn-review__none" />
-        )}
-      </section>
     </div>
   );
 }
