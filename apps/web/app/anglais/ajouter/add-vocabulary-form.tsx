@@ -3,7 +3,9 @@
 import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import type { Translator } from '../../../lib/types';
+import { ITEM_NOUN } from '../../../lib/nouns';
 import { ordinal } from '../../lists/ordinal';
+import { QueueChoice } from '../../lists/queue-choice';
 import { addVocabularyAction, type VocabularyAddState } from '../actions';
 import { VocabularyFields, type VocabularyValues } from '../vocabulary-fields';
 
@@ -16,7 +18,8 @@ const EMPTY: VocabularyValues = { word: '', example: '', translation: '', french
  * recalls the item just added, and errors show next to their field
  * (aria-invalid, aria-describedby). The topic stays after an item is
  * added, for the next items of the same subject (MEM-51), and so does the
- * choice of the learning queue (MEM-62), checked when the tab opens.
+ * choice of the learning queue (MEM-62), two radio buttons next to the
+ * topic, « à apprendre » when the tab opens.
  */
 export function AddVocabularyForm({ translator, topics }: { translator: Translator; topics: string[] }) {
   const [state, action] = useActionState<VocabularyAddState, FormData>(addVocabularyAction, {});
@@ -60,13 +63,10 @@ export function AddVocabularyForm({ translator, topics }: { translator: Translat
         autoFocus
         translator={translator}
         topics={topics}
+        // MEM-62: in the learning queue (by default) or « En attente ».
+        aside={<QueueChoice key={String(queue)} queue={queue} noun={ITEM_NOUN} idPrefix="add" />}
       />
       <div className="add-form__actions">
-        {/* MEM-62: the key puts the box back as chosen after the form is reset. */}
-        <label key={String(queue)} className="add-form__queue">
-          <input type="checkbox" name="queue" defaultChecked={queue} />
-          Ajouter à la file d’apprentissage (en dernière position)
-        </label>
         <AddButton />
       </div>
     </form>
