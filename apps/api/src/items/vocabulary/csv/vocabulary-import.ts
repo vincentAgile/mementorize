@@ -49,14 +49,25 @@ export const duplicateKey = (text: string) => text.trim().toLocaleLowerCase('fr'
 
 const columnsOk = (record: CsvRecord) => record.fields.length >= 2 && record.fields.length <= 5;
 
+/** Which expressions make a duplicate: both for the vocabulary of a user, the English only in a predefined list (MEM-117). */
+export interface AnalyzeOptions {
+  duplicates?: Language[];
+}
+
 /**
  * Reads a file to import (MEM-53) and tells, line by line, what would
  * happen: imported, left out as a duplicate, or in error. Nothing is saved.
  * The first line is the header line, whatever its titles: always skipped.
  * When the lines only make sense with the other separator, the whole file
- * is reported instead (readImportFile).
+ * is reported instead (readImportFile). Also the import of the words of a
+ * predefined list, in the console (MEM-117), where only the English counts.
  */
-export function analyzeImport(text: string, separator: string, existing: ExistingPair[]): ImportAnalysis {
+export function analyzeImport(
+  text: string,
+  separator: string,
+  existing: ExistingPair[],
+  { duplicates = ['en', 'fr'] }: AnalyzeOptions = {},
+): ImportAnalysis {
   const file = readImportFile(text, separator, columnsOk);
   if (!file.ok) return file;
   const { records } = file;
@@ -84,8 +95,8 @@ export function analyzeImport(text: string, separator: string, existing: Existin
     const error = errorOf(record, values);
     if (error) return { ...values, status: 'error', error };
 
-    const sameEnglish = english.get(duplicateKey(values.english));
-    const sameFrench = french.get(duplicateKey(values.french));
+    const sameEnglish = duplicates.includes('en') ? english.get(duplicateKey(values.english)) : undefined;
+    const sameFrench = duplicates.includes('fr') ? french.get(duplicateKey(values.french)) : undefined;
     if (sameEnglish || sameFrench) {
       const languages: Language[] = [...(sameEnglish ? ['en' as const] : []), ...(sameFrench ? ['fr' as const] : [])];
       // The existing item first, then the earlier line.

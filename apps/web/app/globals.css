@@ -3732,6 +3732,112 @@ div.review-card__reveal-row {
   color: #555;
 }
 
+/* MEM-117: the header of a list, its tools, the form of a word and its words */
+.catalog-list__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+}
+
+.catalog-list__meta {
+  margin: 0.25rem 0;
+}
+
+.catalog-list__publish {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  max-width: 22rem;
+}
+
+.catalog-list__publish .form-error {
+  margin: 0;
+  text-align: right;
+}
+
+.catalog-list .button--primary,
+.catalog-list .button--secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: transparent;
+  color: #147d80;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.catalog-list .button--primary {
+  background: #147d80;
+  color: #fff;
+  font-weight: 600;
+}
+
+.catalog-list .button--primary:disabled,
+.catalog-list .button--secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.catalog-list .catalog__actions > button {
+  min-height: 0;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.catalog-list .catalog__actions > .catalog__delete {
+  border-color: #c1543a;
+  color: #c1543a;
+}
+
+.catalog-list__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.25rem 0 0;
+}
+
+.catalog-import {
+  flex: 1 1 100%;
+  min-width: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid #d6e3e3;
+  border-radius: 8px;
+}
+
+.catalog-import__bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.catalog-import h2,
+.catalog-list__add h2,
+.catalog-list__words h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+}
+
+.catalog-list__add,
+.catalog-list__words {
+  margin-top: 1.75rem;
+}
+
+.catalog-list__add .add-form {
+  max-width: 52rem;
+}
+
+.dialog .entry-form .vocab-fields {
+  margin-bottom: 0.5rem;
+}
+
 .admin-settings {
   max-width: 40rem;
 }

@@ -5,6 +5,7 @@ import { type ReactNode, useEffect, useId, useRef, useState, useTransition } fro
 import { MAX_FILE_BYTES, separatorName, theSeparator, toSeparator } from '../../lib/csv-separator';
 import { NBSP } from '../../lib/format';
 import { agree, countOf, ITEM_NOUN, type Noun, QUOTE_NOUN } from '../../lib/nouns';
+import { FILTERS, STATUS_LABELS, type StatusFilter } from '../../lib/import-status';
 import type { ImportAnalysis, ImportRow, ListType, QuoteImportRow } from '../../lib/types';
 import {
   type ImportActionResult,
@@ -15,15 +16,6 @@ import {
 } from './actions';
 
 type AnyRow = ImportRow | QuoteImportRow;
-type StatusFilter = 'all' | AnyRow['status'];
-
-const STATUS_LABELS: Record<AnyRow['status'], string> = { new: 'À importer', duplicate: 'Doublon', error: 'Erreur' };
-const FILTERS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'Toutes les lignes' },
-  { value: 'new', label: 'À importer' },
-  { value: 'duplicate', label: 'Doublons' },
-  { value: 'error', label: 'Erreurs' },
-];
 
 const plural = (count: number, one: string, many = `${one}s`) => `${count}${NBSP}${count > 1 ? many : one}`;
 

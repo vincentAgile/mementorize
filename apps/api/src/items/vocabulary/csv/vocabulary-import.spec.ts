@@ -104,4 +104,20 @@ describe('analyzeImport (MEM-53)', () => {
     expect(analyze(HEAD + 'a;b\n'.repeat(2001))).toEqual({ ok: false, problem: 'tooManyLines' });
     expect(analyze(HEAD + 'a;b\n'.repeat(2000))).toMatchObject({ ok: true });
   });
+
+  it('a predefined list (MEM-117): only the same English is a duplicate, in the list or higher in the file', () => {
+    const result = analyzeImport(
+      HEAD + 'obstacle;snag\naccroc;a hitch\nun accroc;A HITCH \nautre;other',
+      ';',
+      [{ english: 'Snag', french: 'accroc' }],
+      { duplicates: ['en'] },
+    );
+    expect(result.ok && result.rows.map((row) => [row.status, row.status === 'duplicate' && row.of])).toEqual([
+      ['duplicate', { existing: 'Snag → accroc' }],
+      ['new', false], // the same French as « Snag »: not a duplicate in a list
+      ['duplicate', { line: 3 }],
+      ['new', false],
+    ]);
+    expect(result.ok && result.rows[0].status === 'duplicate' && result.rows[0].languages).toEqual(['en']);
+  });
 });

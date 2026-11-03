@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { ApiError, importCsv, previewImport, savePreferences } from '../../lib/api';
-import { MAX_FILE_BYTES, separatorProblem } from '../../lib/csv-separator';
+import { separatorProblem } from '../../lib/csv-separator';
+import { readCsvFile } from '../../lib/csv-file';
 import type { ImportAnalysis, ImportResult, ListType } from '../../lib/types';
 
 const LIST_TYPES: readonly ListType[] = ['Vocabulary', 'Quote'];
@@ -14,35 +15,17 @@ export type PreviewResult = { analysis: ImportAnalysis } | { error: string };
 
 /**
  * MEM-53: reads the chosen file and asks the API what importing it would do.
- * The file is decoded here: UTF-8, with or without BOM; anything else (a
- * file saved as "CSV (Windows)" in Latin-1, a spreadsheet…) is unreadable.
+ * The file is decoded here (readCsvFile).
  */
 export async function previewImportAction(type: ListType, formData: FormData): Promise<PreviewResult> {
   if (!LIST_TYPES.includes(type)) throw new Error('Invalid type');
-  const content = await readFile(formData);
+  const content = await readCsvFile(formData);
   if (typeof content !== 'string') return content;
   try {
     return { analysis: await previewImport(type, content) };
   } catch (error) {
     if (error instanceof ApiError) return { error: 'Impossible d’analyser ce fichier pour le moment. Réessaie.' };
     throw error; // e.g. the redirect of an expired session
-  }
-}
-
-/** The text of the file sent, or why it can't be read. */
-async function readFile(formData: FormData): Promise<string | { error: string }> {
-  const file = formData.get('file');
-  if (!(file instanceof File) || file.size === 0) return { error: 'Choisis un fichier CSV.' };
-  if (file.size > MAX_FILE_BYTES) {
-    return { error: 'Ce fichier dépasse 1\u00a0Mo : découpe-le en plusieurs fichiers.' };
-  }
-  try {
-    return new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
-  } catch {
-    return {
-      error:
-        'Fichier illisible : il doit être un fichier CSV encodé en UTF-8. Dans Excel, choisis « CSV UTF-8 » à l’enregistrement.',
-    };
   }
 }
 
@@ -55,7 +38,7 @@ export type ImportActionResult = { result: ImportResult } | { error: string };
  */
 export async function importAction(type: ListType, formData: FormData): Promise<ImportActionResult> {
   if (!LIST_TYPES.includes(type)) throw new Error('Invalid type');
-  const content = await readFile(formData);
+  const content = await readCsvFile(formData);
   if (typeof content !== 'string') return content;
   let result: ImportResult;
   try {
