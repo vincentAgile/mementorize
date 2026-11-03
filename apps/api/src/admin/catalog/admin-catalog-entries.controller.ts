@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { ImportFileDto } from '../../items/csv/import-file.dto.js';
+import { DeleteItemsDto } from '../../items/delete-items.dto.js';
 import { AdminJwtGuard } from '../admin-jwt.guard.js';
 import { AdminCatalogEntriesService, type CatalogEntry } from './admin-catalog-entries.service.js';
 import { CreateCatalogEntryDto, UpdateCatalogEntryDto } from './catalog-entry.dto.js';
@@ -48,6 +49,13 @@ export class AdminCatalogEntriesController {
     @Body() dto: UpdateCatalogEntryDto,
   ): Promise<CatalogEntry> {
     return this.entries.update(listId, id, dto);
+  }
+
+  /** POST …/entries/delete { ids } — the words selected, all at once; 409 when a published list would be emptied. */
+  @Post('entries/delete')
+  @HttpCode(HttpStatus.OK)
+  removeMany(@Param('listId', ParseUUIDPipe) listId: string, @Body() dto: DeleteItemsDto) {
+    return this.entries.removeMany(listId, dto.ids);
   }
 
   /** DELETE …/entries/:id — 409 for the last word of a published list. */

@@ -359,6 +359,17 @@ export async function deleteCatalogEntry(listId: string, id: string): Promise<Ca
   return catalogChange(await adminSend('DELETE', `${listPath(listId)}/entries/${encodeURIComponent(id)}`));
 }
 
+/** The words selected, all at once (null: the API couldn't be reached). */
+export async function deleteCatalogEntries(
+  listId: string,
+  ids: string[],
+): Promise<{ ok: true; deleted: number } | { ok: false; status: number | null; message?: string }> {
+  const res = await adminSend('POST', `${listPath(listId)}/entries/delete`, { ids });
+  if (res?.ok) return { ok: true, ...((await res.json()) as { deleted: number }) };
+  const change = await catalogChange(res);
+  return change.ok ? { ok: false, status: null } : change;
+}
+
 /** The analysis of a file to import into a list: its lines, and the room left in the list (500 words at most). */
 export type CatalogImportAnalysis = ImportAnalysis<ImportRow> & { room: number };
 
