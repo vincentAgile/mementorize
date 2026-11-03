@@ -5,6 +5,7 @@ import {
   type CatalogImportAnalysis,
   type CatalogImportResult,
   createCatalogEntry,
+  deleteCatalogEntries,
   deleteCatalogEntry,
   importCatalogCsv,
   previewCatalogImport,
@@ -88,6 +89,23 @@ export async function deleteEntryAction(listId: string, id: string): Promise<Del
   }
   refresh(listId);
   return {};
+}
+
+export type DeleteEntriesResult = { deleted: number } | { error: string };
+
+/** The words selected in the table, all at once; the vocabularies of the users don't change. */
+export async function deleteEntriesAction(listId: string, ids: string[]): Promise<DeleteEntriesResult> {
+  check(listId);
+  if (!Array.isArray(ids) || ids.length === 0 || ids.some((id) => typeof id !== 'string')) {
+    throw new Error('Invalid words');
+  }
+  const result = await deleteCatalogEntries(listId, ids);
+  if (!result.ok) {
+    const known = result.message ? ENTRY_MESSAGES[result.message] : undefined;
+    return { error: known?.message ?? failure(result.status, 'Impossible de supprimer les mots sélectionnés.') };
+  }
+  refresh(listId);
+  return { deleted: result.deleted };
 }
 
 export interface PublishState {

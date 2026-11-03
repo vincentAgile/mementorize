@@ -13,6 +13,7 @@ export const MAX_ENTRIES = 500;
 export const DUPLICATE_ENTRY = 'Ce mot est déjà dans la liste';
 export const LIST_FULL = `Une liste compte ${MAX_ENTRIES} mots au plus`;
 export const LAST_PUBLISHED = 'Le dernier mot d’une liste publiée ne peut pas être supprimé';
+export const EMPTIED_PUBLISHED = 'Une liste publiée ne peut pas être vidée';
 
 /** A word of a list, as the console shows it. */
 export type CatalogEntry = Omit<PredefinedEntry, 'listId'>;
@@ -117,6 +118,27 @@ export class AdminCatalogEntriesService {
       }
       await tx.predefinedEntry.delete({ where: { id } });
       return { id };
+    });
+  }
+
+  /**
+   * Several words at once (the selection of the console): those of this
+   * list among the ids, in a single transaction; the ids of words gone
+   * already are ignored. A published list keeps a word at least.
+   */
+  removeMany(listId: string, ids: string[]): Promise<{ deleted: number }> {
+    return this.prisma.$transaction(async (tx) => {
+      const list = await this.lock(tx, listId);
+      const where = { listId, id: { in: ids } };
+      if (list.published) {
+        const [chosen, total] = await Promise.all([
+          tx.predefinedEntry.count({ where }),
+          tx.predefinedEntry.count({ where: { listId } }),
+        ]);
+        if (chosen > 0 && chosen === total) throw new ConflictException(EMPTIED_PUBLISHED);
+      }
+      const { count } = await tx.predefinedEntry.deleteMany({ where });
+      return { deleted: count };
     });
   }
 

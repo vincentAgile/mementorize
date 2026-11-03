@@ -168,6 +168,48 @@ describe('Console: the words of a predefined list (MEM-117, e2e)', () => {
     expect(last.body.message).toBe('Le dernier mot d’une liste publiée ne peut pas être supprimé');
   });
 
+  it('deletes the words selected at once, of this list only; a published list is never emptied', async () => {
+    const listId = await newList('Sélection');
+    const path = `/admin/catalog/lists/${listId}/entries`;
+    const ids: string[] = [];
+    for (const [english, french] of [
+      ['one', 'un'],
+      ['two', 'deux'],
+      ['three', 'trois'],
+      ['four', 'quatre'],
+    ]) {
+      ids.push((await http().post(path).set(admin).send({ french, english }).expect(201)).body.id);
+    }
+    const otherId = await newList('Autre sélection');
+    const foreign = (
+      await http().post(`/admin/catalog/lists/${otherId}/entries`).set(admin).send({ french: 'x', english: 'x' })
+    ).body.id as string;
+
+    const res = await http()
+      .post(`${path}/delete`)
+      .set(admin)
+      .send({ ids: [ids[0], ids[2], foreign, randomUUID()] })
+      .expect(200);
+    expect(res.body).toEqual({ deleted: 2 });
+    expect((await words(listId)).map((word) => word.english)).toEqual(['two', 'four']);
+    expect(await words(otherId)).toHaveLength(1); // not through another list
+    await http().post(`${path}/delete`).set(admin).send({ ids: [] }).expect(400);
+
+    await http().patch(`/admin/catalog/lists/${listId}`).set(admin).send({ published: true }).expect(200);
+    const emptied = await http()
+      .post(`${path}/delete`)
+      .set(admin)
+      .send({ ids: [ids[1], ids[3]] })
+      .expect(409);
+    expect(emptied.body.message).toBe('Une liste publiée ne peut pas être vidée');
+    expect(await words(listId)).toHaveLength(2);
+    await http()
+      .post(`${path}/delete`)
+      .set(admin)
+      .send({ ids: [ids[1]] })
+      .expect(200);
+  });
+
   it('keeps 500 words at most', async () => {
     const listId = await newList('Pleine');
     await prisma.predefinedEntry.createMany({
@@ -298,6 +340,11 @@ describe('Console: the words of a predefined list (MEM-117, e2e)', () => {
     await http().get(`${path}/entries`).expect(401);
     await http().get(`${path}/entries`).set(auth).expect(401);
     await http().post(`${path}/entries`).set(auth).send({ french: 'intrus', english: 'intruder' }).expect(401);
+    await http()
+      .post(`${path}/entries/delete`)
+      .set(auth)
+      .send({ ids: ['x'] })
+      .expect(401);
     await http()
       .post(`${path}/preview`)
       .set(auth)

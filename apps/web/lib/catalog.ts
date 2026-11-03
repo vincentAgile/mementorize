@@ -85,6 +85,9 @@ export const ENTRY_MESSAGES: Record<string, { field?: EntryField; message: strin
   [`Une liste compte ${MAX_ENTRIES} mots au plus`]: {
     message: `La liste compte déjà ${MAX_ENTRIES}\u00a0mots, le maximum : supprimez-en pour en ajouter d’autres.`,
   },
+  'Une liste publiée ne peut pas être vidée': {
+    message: 'Une liste publiée garde au moins un mot : dépubliez-la d’abord pour supprimer tous ses mots.',
+  },
   'Le dernier mot d’une liste publiée ne peut pas être supprimé': {
     message: 'C’est le dernier mot de cette liste publiée : dépubliez-la d’abord pour le supprimer.',
   },

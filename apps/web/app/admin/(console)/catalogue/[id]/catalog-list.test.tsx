@@ -6,9 +6,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CatalogEntry, CatalogImportAnalysis } from '../../../../../lib/admin-api';
 import { entryErrors } from '../../../../../lib/catalog';
 
+const deleteEntriesAction = vi.fn();
 vi.mock('./actions', () => ({
   saveEntryAction: vi.fn(),
   deleteEntryAction: vi.fn(),
+  deleteEntriesAction,
   publishAction: vi.fn(),
   previewCatalogImportAction: vi.fn(),
   importCatalogAction: vi.fn(),
@@ -47,7 +49,13 @@ describe('EntriesTable (MEM-117)', () => {
 
   it('the words in the order of the list: French, English, topic, and their actions', () => {
     const headers = [...html.matchAll(/<th scope="col"[^>]*>(.*?)<\/th>/g)].map((match) => text(match[1]).trim());
-    expect(headers).toEqual(['Expression française', 'Expression anglaise', 'Thématique', 'Actions']);
+    expect(headers).toEqual([
+      'Sélectionner tous les mots',
+      'Expression française',
+      'Expression anglaise',
+      'Thématique',
+      'Actions',
+    ]);
     const rows = [...html.matchAll(/<tr>(.*?)<\/tr>/g)].slice(1).map((match) => match[1]);
     expect(rows).toHaveLength(2);
     expect(rows[0]).toContain('<td lang="fr">un billet</td><td lang="en">a ticket</td>');
@@ -66,6 +74,70 @@ describe('EntriesTable (MEM-117)', () => {
     const empty = renderToStaticMarkup(<EntriesTable listId="l1" entries={[]} topics={[]} />);
     expect(text(empty)).toContain('Aucun mot pour le moment');
     expect(empty).not.toContain('<table');
+  });
+});
+
+describe('EntriesTable: the selection and the deletion of several words at once', () => {
+  const entries = [
+    entry({ id: 'e1', english: 'a ticket' }),
+    entry({ id: 'e2', english: 'a platform' }),
+    entry({ id: 'e3', english: 'a delay' }),
+  ];
+  let root: Root | null = null;
+  let container: HTMLDivElement;
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = null;
+    container.remove();
+    deleteEntriesAction.mockReset();
+  });
+  const mount = () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    act(() => root!.render(<EntriesTable listId="l1" entries={entries} topics={[]} />));
+  };
+  const boxes = () => [...container.querySelectorAll<HTMLInputElement>('tbody input[type=checkbox]')];
+  const header = () => container.querySelector<HTMLInputElement>('thead input[type=checkbox]')!;
+  const bar = () => container.querySelector('.selection-bar');
+
+  it('no bar until a word is checked; then how many; the header box checks them all, or none', () => {
+    mount();
+    expect(bar()).toBeNull();
+    act(() => boxes()[1].click());
+    expect(text(bar()!.querySelector('strong')!.textContent!)).toBe('1 mot sélectionné');
+    expect(header().indeterminate).toBe(true);
+    act(() => header().click());
+    expect(boxes().every((box) => box.checked)).toBe(true);
+    expect(text(bar()!.querySelector('strong')!.textContent!)).toBe('3 mots sélectionnés');
+    act(() => header().click());
+    expect(bar()).toBeNull();
+  });
+
+  it('« Supprimer », confirmed: the words checked, in the order of the list, then the message', async () => {
+    deleteEntriesAction.mockResolvedValue({ deleted: 2 });
+    mount();
+    act(() => boxes()[2].click());
+    act(() => boxes()[0].click());
+    const dialog = bar()!.querySelector('dialog')!;
+    expect(text(dialog.querySelector('h2')!.textContent!)).toBe('Supprimer les 2 mots sélectionnés ?');
+    expect(dialog.textContent).toContain('Les vocabulaires des utilisateurs ne changent pas');
+    dialog.close = () => {};
+    await act(async () => dialog.querySelector<HTMLButtonElement>('.danger-button')!.click());
+    expect(deleteEntriesAction).toHaveBeenCalledWith('l1', ['e1', 'e3']);
+    expect(text(container.querySelector('[role=status]')!.textContent!)).toBe('2 mots supprimés.');
+    expect(bar()).toBeNull();
+  });
+
+  it('refused (a published list emptied): the message, the selection kept', async () => {
+    deleteEntriesAction.mockResolvedValue({ error: 'Une liste publiée garde au moins un mot.' });
+    mount();
+    act(() => header().click());
+    const dialog = bar()!.querySelector('dialog')!;
+    dialog.close = () => {};
+    await act(async () => dialog.querySelector<HTMLButtonElement>('.danger-button')!.click());
+    expect(container.querySelector('[role=alert]')!.textContent).toBe('Une liste publiée garde au moins un mot.');
+    expect(bar()).not.toBeNull();
   });
 });
 
