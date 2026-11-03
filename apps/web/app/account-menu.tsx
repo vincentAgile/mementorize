@@ -8,7 +8,8 @@ import { logoutAction } from './(auth)/actions';
 
 /**
  * The account menu (MEM-10): the avatar of the header opens a popup with the
- * account (initials, name, e-mail), "Profil" and "Déconnexion". It follows
+ * account (initials, name, e-mail), "Profil", "Mes statistiques" (MEM-113)
+ * and "Déconnexion". It follows
  * the "menu button" pattern of the WAI-ARIA guide: arrows to move between
  * the entries, Escape to close, and the focus goes back to the avatar.
  */
@@ -136,6 +137,16 @@ export function AccountMenu({ profile }: { profile: Profile }) {
           >
             Profil
           </Link>
+          <Link
+            href="/statistiques"
+            role="menuitem"
+            tabIndex={-1}
+            className="account-menu__item"
+            onClick={() => close(false)}
+          >
+            <ChartIcon />
+            Mes statistiques
+          </Link>
           <hr className="account-menu__separator" role="separator" />
           <form action={logoutAction}>
             <button type="submit" role="menuitem" tabIndex={-1} className="account-menu__item">
@@ -146,6 +157,27 @@ export function AccountMenu({ profile }: { profile: Profile }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** MEM-113: three bars rising on a baseline, « Mes statistiques ». */
+function ChartIcon() {
+  return (
+    <svg
+      className="account-menu__icon"
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 20h16" />
+      <path d="M7 16v-4M12 16V8M17 16V5" />
+    </svg>
   );
 }
 
