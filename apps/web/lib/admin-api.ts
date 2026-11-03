@@ -1,6 +1,7 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { getAdminToken } from './admin-session';
+import type { ImportAnalysis, ImportRow } from './types';
 
 // MEM-82: the calls of the administration console to the API, with the
 // administration token (never the user's).
@@ -304,10 +305,96 @@ export async function createCatalogList(input: CatalogListInput): Promise<Catalo
   return catalogChange(await adminSend('POST', '/admin/catalog/lists', input));
 }
 
-export async function updateCatalogList(id: string, input: CatalogListInput): Promise<CatalogChange> {
+export async function updateCatalogList(id: string, input: Partial<CatalogListInput>): Promise<CatalogChange> {
   return catalogChange(await adminSend('PATCH', `/admin/catalog/lists/${encodeURIComponent(id)}`, input));
 }
 
 export async function deleteCatalogList(id: string): Promise<CatalogChange> {
   return catalogChange(await adminSend('DELETE', `/admin/catalog/lists/${encodeURIComponent(id)}`));
+}
+
+// --- MEM-117: the words of a predefined list ----------------------------------
+
+/** A word of a list, in the order of the list. */
+export interface CatalogEntry {
+  id: string;
+  position: number;
+  french: string;
+  english: string;
+  topic: string | null;
+  frenchExample: string | null;
+  englishExample: string | null;
+}
+
+/** What the console sends for a word; an empty optional text removes it. */
+export interface CatalogEntryInput {
+  french: string;
+  english: string;
+  topic: string;
+  frenchExample: string;
+  englishExample: string;
+}
+
+const listPath = (listId: string) => `/admin/catalog/lists/${encodeURIComponent(listId)}`;
+
+/** The words of a list; null when the list doesn't exist (any more). */
+export async function getCatalogEntries(listId: string): Promise<CatalogEntry[] | null> {
+  try {
+    return await adminFetch<CatalogEntry[]>(`${listPath(listId)}/entries`);
+  } catch (error) {
+    if (error instanceof Error && /API error (400|404)/.test(error.message)) return null;
+    throw error;
+  }
+}
+
+export async function createCatalogEntry(listId: string, input: CatalogEntryInput): Promise<CatalogChange> {
+  return catalogChange(await adminSend('POST', `${listPath(listId)}/entries`, input));
+}
+
+export async function updateCatalogEntry(listId: string, id: string, input: CatalogEntryInput): Promise<CatalogChange> {
+  return catalogChange(await adminSend('PATCH', `${listPath(listId)}/entries/${encodeURIComponent(id)}`, input));
+}
+
+export async function deleteCatalogEntry(listId: string, id: string): Promise<CatalogChange> {
+  return catalogChange(await adminSend('DELETE', `${listPath(listId)}/entries/${encodeURIComponent(id)}`));
+}
+
+/** The analysis of a file to import into a list: its lines, and the room left in the list (500 words at most). */
+export type CatalogImportAnalysis = ImportAnalysis<ImportRow> & { room: number };
+
+/** The answer to an import: done, why the file can't be read, or too many words for the room left. */
+export type CatalogImportResult =
+  | { ok: true; imported: number; duplicate: number; error: number }
+  | Extract<ImportAnalysis<ImportRow>, { ok: false }>
+  | { ok: false; problem: 'tooManyWords'; room: number; new: number };
+
+/** What importing this file would do (MEM-117); nothing is saved. null: the API couldn't answer. */
+export async function previewCatalogImport(listId: string, content: string): Promise<CatalogImportAnalysis | null> {
+  const res = await adminSend('POST', `${listPath(listId)}/preview`, { content });
+  return res?.ok ? ((await res.json()) as CatalogImportAnalysis) : null;
+}
+
+/** Imports the lines "to import" of the file, all or none. null: the API couldn't answer. */
+export async function importCatalogCsv(listId: string, content: string): Promise<CatalogImportResult | null> {
+  const res = await adminSend('POST', `${listPath(listId)}/import`, { content });
+  return res?.ok ? ((await res.json()) as CatalogImportResult) : null;
+}
+
+/** The list as a CSV file, from the API: its body and its name, to pass on to the browser. */
+export async function exportCatalogCsv(
+  listId: string,
+): Promise<{ ok: true; body: ReadableStream<Uint8Array>; disposition: string } | { ok: false; status: number }> {
+  const token = await getAdminToken();
+  if (!token) return { ok: false, status: 401 };
+  const res = await fetch(`${API_URL}${listPath(listId)}/export`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+    signal: AbortSignal.timeout(API_TIMEOUT_MS),
+  });
+  if (!res.ok || !res.body) return { ok: false, status: res.status };
+  return {
+    ok: true,
+    body: res.body,
+    disposition: res.headers.get('content-disposition') ?? 'attachment; filename="mementorize-liste.csv"',
+  };
 }

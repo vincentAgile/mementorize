@@ -46,3 +46,49 @@ export const API_MESSAGES: Record<string, { field: CatalogField; message: string
     message: 'Une liste vide ne peut pas être publiée : ajoutez-lui des mots d’abord.',
   },
 };
+
+// --- MEM-117: the words of a list ---------------------------------------------
+
+/** At most this many words in a list (the API says so too). */
+export const MAX_ENTRIES = 500;
+
+/**
+ * The fields of a word, named as in the form of the vocabulary of the users
+ * (VocabularyFields): `word` is the English, `translation` the French.
+ */
+export type EntryField = 'word' | 'example' | 'translation' | 'frenchExample' | 'topic';
+
+/** Same limits as the API (CreateCatalogEntryDto), as for a vocabulary item. */
+const ENTRY_MAX: Record<EntryField, number> = {
+  word: 200,
+  translation: 200,
+  example: 500,
+  frenchExample: 500,
+  topic: 50,
+};
+
+/** The errors of the form of a word, under their field, before anything is sent: as the « Ajouter » tab. */
+export function entryErrors(values: Record<EntryField, string>): Partial<Record<EntryField, string>> {
+  const errors: Partial<Record<EntryField, string>> = {};
+  if (!values.word) errors.word = 'Saisissez le mot, l’expression ou la phrase en anglais.';
+  if (!values.translation) errors.translation = 'Saisissez la traduction en français.';
+  for (const field of Object.keys(ENTRY_MAX) as EntryField[]) {
+    if (!errors[field] && values[field].length > ENTRY_MAX[field])
+      errors[field] = `${ENTRY_MAX[field]}\u00a0caractères au plus.`;
+  }
+  return errors;
+}
+
+/** The answers of the API about a word (MEM-117, admin-catalog-entries.service.ts). */
+export const ENTRY_MESSAGES: Record<string, { field?: EntryField; message: string }> = {
+  'Ce mot est déjà dans la liste': { field: 'word', message: 'Cette expression anglaise est déjà dans la liste.' },
+  [`Une liste compte ${MAX_ENTRIES} mots au plus`]: {
+    message: `La liste compte déjà ${MAX_ENTRIES}\u00a0mots, le maximum : supprimez-en pour en ajouter d’autres.`,
+  },
+  'Le dernier mot d’une liste publiée ne peut pas être supprimé': {
+    message: 'C’est le dernier mot de cette liste publiée : dépubliez-la d’abord pour le supprimer.',
+  },
+};
+
+/** « 1 mot », « 1 250 mots ». */
+export const wordCount = (count: number) => `${count.toLocaleString('fr-FR')}\u00a0mot${count > 1 ? 's' : ''}`;
