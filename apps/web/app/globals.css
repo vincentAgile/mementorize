@@ -3590,9 +3590,146 @@ div.review-card__reveal-row {
   color: white;
 }
 
-.admin-nav a[aria-current='page'] {
+.admin-nav a[aria-current='page'],
+.admin-nav a[aria-current='true'] {
   color: white;
   border-bottom-color: #7cc7c7;
+}
+
+/* --- MEM-116: the catalogue of the console, its predefined lists --- */
+
+.catalog__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.catalog__bar h1 {
+  margin: 0;
+}
+
+.catalog__bar > button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: #147d80;
+  color: white;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* No sort here: the headers carry their own padding (the lists put it on their sort buttons) */
+.catalog__table th,
+.catalog__table td {
+  padding: 0.55rem 0.6rem;
+  vertical-align: middle;
+}
+
+.catalog__table th[scope='row'] {
+  font-weight: 600;
+  text-align: left;
+  white-space: normal;
+}
+
+.catalog__table th[scope='row'] a {
+  color: #147d80;
+}
+
+.catalog__table .catalog__number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.catalog__state {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border: 1px dashed #aaa;
+  border-radius: 99px;
+  color: #555;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.catalog__state.is-published {
+  border: 1px solid #2e7d32;
+  color: #2e7d32;
+}
+
+.catalog__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.catalog__actions > button {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: none;
+  color: #147d80;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.catalog__actions > .catalog__delete {
+  border-color: #c1543a;
+  color: #c1543a;
+}
+
+.dialog h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.catalog-form select,
+.catalog-form textarea {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.catalog-form textarea {
+  resize: vertical;
+}
+
+.catalog-form [aria-invalid='true'] {
+  border-color: #c1543a;
+}
+
+.dialog__form .catalog-form__published {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.catalog-form__published input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #147d80;
+}
+
+.catalog-list__back {
+  margin: 0 0 0.5rem;
+}
+
+.catalog-list__back a {
+  color: #147d80;
+}
+
+.catalog-list h1 {
+  margin: 0 0 0.25rem;
+}
+
+.catalog-list__meta,
+.catalog-list__description {
+  color: #555;
 }
 
 .admin-settings {
