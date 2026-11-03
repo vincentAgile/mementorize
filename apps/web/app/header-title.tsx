@@ -2,6 +2,7 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 import { inSettings } from '../lib/settings';
+import { inStatistics } from '../lib/statistics';
 import { activeSpace } from '../lib/spaces';
 
 /** The pages outside the spaces, by address. */
@@ -23,7 +24,9 @@ export function HeaderTitle() {
   const pathname = usePathname();
   const type = useSearchParams().get('type');
   // MEM-78: « Réglages » on each of their tabs.
-  const name = activeSpace(pathname, type)?.label ?? (inSettings(pathname) ? 'Réglages' : PAGE_NAMES[pathname]);
+  const name =
+    activeSpace(pathname, type)?.label ??
+    (inSettings(pathname) ? 'Réglages' : inStatistics(pathname) ? 'Mes statistiques' : PAGE_NAMES[pathname]);
   if (!name) return null;
 
   const Tag = pathname.startsWith('/mind-maps/') ? 'p' : 'h1';

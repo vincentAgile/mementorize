@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { inSettings, SETTINGS_TABS } from '../lib/settings';
+import { inStatistics, STATISTICS_TABS } from '../lib/statistics';
 import { activeSpace, highlightedTab } from '../lib/spaces';
 
 /**
  * The second band of the header (MEM-29): the sub-menu of the active space,
  * as tabs (in the Anglais space: Apprendre · Réviser, Liste, Ajouter, MEM-24),
- * or of the Settings (Général, Révision, Rappels, Saisie et fichiers, MEM-78).
+ * or of the Settings (Général, Révision, Rappels, Saisie et fichiers, MEM-78),
+ * or of « Mes statistiques » (Anglais, Citations, MEM-113).
  * The tabs are links, each one a page with its own URL: bookmarks and the
  * browser's Back button work. The band is there on every page, empty when
  * the space has no sub-menu or outside the spaces, so that the page keeps
@@ -22,8 +24,9 @@ export function SubNav() {
   const space = activeSpace(pathname, type);
   // MEM-78: the Settings have their tabs too, under the gear.
   const settings = inSettings(pathname);
-  const tabs = settings ? SETTINGS_TABS : space?.tabs;
-  const label = settings ? 'Réglages' : `Espace ${space?.label}`;
+  const statistics = inStatistics(pathname); // MEM-113
+  const tabs = settings ? SETTINGS_TABS : statistics ? STATISTICS_TABS : space?.tabs;
+  const label = settings ? 'Réglages' : statistics ? 'Mes statistiques' : `Espace ${space?.label}`;
   // A learning or review session belongs to the first tab ("Apprendre · Réviser");
   // the mind map editor to « Liste » (MEM-97).
   const highlighted = space && highlightedTab(space, pathname, type);
