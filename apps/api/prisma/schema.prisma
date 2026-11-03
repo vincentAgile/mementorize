@@ -369,3 +369,50 @@ model PronunciationUsage {
   @@id([userId, day])
   @@map("pronunciation_usage")
 }
+
+/// MEM-116: the level of a predefined list, on the scale of the CEFR.
+enum LanguageLevel {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+}
+
+/// MEM-116: a predefined list of vocabulary, made in the console (« Catalogue »)
+/// to be offered to the users. Its title is unique whatever its case (checked
+/// by the API: AdminCatalogService). Only a published list is offered; a list
+/// without any word can't be published. What a user adds from it are copies:
+/// deleting the list doesn't touch them.
+model PredefinedList {
+  id          String            @id @default(uuid())
+  title       String
+  description String?
+  level       LanguageLevel
+  published   Boolean           @default(false)
+  entries     PredefinedEntry[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("predefined_lists")
+}
+
+/// MEM-116: a word of a predefined list (managed by the next story), the
+/// same shape as the content of a vocabulary item. Gone with its list.
+model PredefinedEntry {
+  id             String         @id @default(uuid())
+  listId         String
+  list           PredefinedList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  position       Int
+  french         String
+  english        String
+  topic          String?
+  frenchExample  String?
+  englishExample String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([listId, position])
+  @@map("predefined_entries")
+}

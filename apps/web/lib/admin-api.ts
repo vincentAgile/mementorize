@@ -181,18 +181,28 @@ export function getAdminUsers(): Promise<AdminUserList> {
 
 /** A change of the console, with the session; null: the API couldn't be reached. */
 async function adminPost(path: string, body: unknown, client: string | null): Promise<Response | null> {
+  return adminSend('POST', path, body, client);
+}
+
+/** The same, with any method (MEM-116: PATCH, DELETE). */
+async function adminSend(
+  method: 'POST' | 'PATCH' | 'DELETE',
+  path: string,
+  body?: unknown,
+  client: string | null = null,
+): Promise<Response | null> {
   const token = await getAdminToken();
   if (!token) redirect('/admin/connexion');
   let res: Response;
   try {
     res = await fetch(`${API_URL}${path}`, {
-      method: 'POST',
+      method,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
         ...(client && { 'X-Admin-Client-IP': client }),
       },
-      body: JSON.stringify(body),
+      body: body === undefined ? undefined : JSON.stringify(body),
       cache: 'no-store',
       signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
@@ -239,4 +249,65 @@ export async function enableTwoFactor(
   const res = await adminPost('/admin/auth/2fa/enable', { password }, client);
   if (res?.ok) return { ok: true, ...((await res.json()) as { challenge: string; expiresAt: string }) };
   return twoFactorError(res, 'Mot de passe incorrect.');
+}
+
+// --- MEM-116: the predefined lists of the catalogue ---------------------------
+
+export type LanguageLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+
+/** A predefined list of vocabulary, with its number of words. */
+export interface CatalogList {
+  id: string;
+  title: string;
+  description: string | null;
+  level: LanguageLevel;
+  published: boolean;
+  entries: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** What the console sends for a list. */
+export interface CatalogListInput {
+  title: string;
+  description: string | null;
+  level: LanguageLevel;
+  published: boolean;
+}
+
+/** Every list, by level then by title. */
+export function getCatalogLists(): Promise<CatalogList[]> {
+  return adminFetch<CatalogList[]>('/admin/catalog/lists');
+}
+
+/** One list; null when it doesn't exist (any more). */
+export async function getCatalogList(id: string): Promise<CatalogList | null> {
+  try {
+    return await adminFetch<CatalogList>(`/admin/catalog/lists/${encodeURIComponent(id)}`);
+  } catch (error) {
+    if (error instanceof Error && /API error (400|404)/.test(error.message)) return null;
+    throw error;
+  }
+}
+
+/** The answer of the API to a change of a list: done, or why not (its status and message). */
+export type CatalogChange = { ok: true } | { ok: false; status: number | null; message?: string };
+
+async function catalogChange(res: Response | null): Promise<CatalogChange> {
+  if (!res) return { ok: false, status: null };
+  if (res.ok) return { ok: true };
+  const { message } = (await res.json().catch(() => ({}))) as { message?: unknown };
+  return { ok: false, status: res.status, message: typeof message === 'string' ? message : undefined };
+}
+
+export async function createCatalogList(input: CatalogListInput): Promise<CatalogChange> {
+  return catalogChange(await adminSend('POST', '/admin/catalog/lists', input));
+}
+
+export async function updateCatalogList(id: string, input: CatalogListInput): Promise<CatalogChange> {
+  return catalogChange(await adminSend('PATCH', `/admin/catalog/lists/${encodeURIComponent(id)}`, input));
+}
+
+export async function deleteCatalogList(id: string): Promise<CatalogChange> {
+  return catalogChange(await adminSend('DELETE', `/admin/catalog/lists/${encodeURIComponent(id)}`));
 }
