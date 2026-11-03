@@ -54,7 +54,7 @@ export async function LearnReview({ space }: { space: Space }) {
           <h3 id="learn-title">Apprendre</h3>
           {toLearn > 0 ? (
             <>
-              <p>{countOf(toLearn, noun)} à apprendre, par sessions de cinq.</p>
+              <p>{countOf(toLearn, noun)} à apprendre.</p>
               {/* MEM-94: the session is prepared first. */}
               <Link href={space.prepareHref ?? space.href} className="space__review space__review--learn">
                 Apprendre <span className="space__review-count">{toLearn}</span>
