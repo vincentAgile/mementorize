@@ -271,3 +271,30 @@ export type ImportAnalysis<Row = ImportRow | QuoteImportRow> =
 /** Answer of POST /vocabulary-csv/import (MEM-54) and /quotes-csv/import (MEM-72). */
 export type ImportResult =
   { ok: true; imported: number; duplicate: number; error: number } | Extract<ImportAnalysis, { ok: false }>;
+
+// --- MEM-118: the predefined lists of the Anglais space -------------------------
+
+export type LanguageLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+
+/** A published list, with its number of words and those the user has already. */
+export interface CatalogListSummary {
+  id: string;
+  title: string;
+  description: string | null;
+  level: LanguageLevel;
+  entries: number;
+  owned: number;
+}
+
+/** A word of a list, « already in my list » (the same English, MEM-50) or not. */
+export interface CatalogWord {
+  id: string;
+  french: string;
+  english: string;
+  topic: string | null;
+  frenchExample: string | null;
+  englishExample: string | null;
+  owned: boolean;
+}
+
+export type CatalogListDetail = Omit<CatalogListSummary, 'entries' | 'owned'> & { entries: CatalogWord[] };

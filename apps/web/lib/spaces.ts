@@ -45,6 +45,7 @@ export const SPACES: Space[] = [
       { href: '/anglais', label: 'Apprendre · Réviser' },
       { href: '/anglais/liste', label: 'Liste' },
       { href: '/anglais/ajouter', label: 'Ajouter' },
+      { href: '/anglais/listes-predefinies', label: 'Listes prédéfinies' }, // MEM-118
       { href: '/anglais/import-export', label: 'Import / export' }, // MEM-52
     ],
     learnHref: '/apprendre',
@@ -129,12 +130,13 @@ export function inSession(space: Space, pathname: string, type: string | null): 
 /**
  * The tab shown as the one of the page, when it is not a tab itself: the
  * first one (« Apprendre · Réviser », « Réviser ») during a session or its
- * preparation; « Liste » in the mind map editor (MEM-97).
+ * preparation; « Liste » in the mind map editor (MEM-97); a tab in the pages
+ * under it (« Listes prédéfinies » in the content of a list, MEM-118).
  */
 export function highlightedTab(space: Space, pathname: string, type: string | null): string | undefined {
   if (inSession(space, pathname, type)) return space.tabs?.[0]?.href;
   if (space.type === 'MindMap' && startsWith(pathname, '/mind-maps')) return '/cartes-mentales/liste';
-  return undefined;
+  return space.tabs?.find((tab) => tab.href !== space.href && pathname.startsWith(`${tab.href}/`))?.href;
 }
 
 /** Address of the review of one subject (MEM-4). */
