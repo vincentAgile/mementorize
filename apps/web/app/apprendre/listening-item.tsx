@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { pronounce, stopPronouncing } from '../../lib/speech';
+import { pronounce } from '../../lib/speech';
 import type { LearningItem } from '../../lib/types';
 import { SpeakButton } from '../speech/speak-button';
 import { PronunciationFrame } from './pronunciation-practice';
@@ -25,11 +25,12 @@ interface ListeningItemProps {
  * the recording of the previous one is forgotten.
  */
 export function ListeningItem({ item, audioUrl, canAssess }: ListeningItemProps) {
-  // Read as it appears. Browsers may refuse a sound the user did not start
-  // (no click yet on the page): then nothing is said, and « Réécouter » is there.
+  // Read as it appears, after the previous item if it is still being read
+  // (going on doesn't cut it). Browsers may refuse a sound the user did not
+  // start (no click yet on the page): then nothing is said, and
+  // « Réécouter » is there. Leaving the session stops it (learning-session.tsx).
   useEffect(() => {
-    pronounce(item.word, audioUrl);
-    return stopPronouncing;
+    pronounce(item.word, audioUrl, { after: true });
   }, [item.word, audioUrl]);
 
   return (

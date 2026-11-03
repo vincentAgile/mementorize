@@ -1,7 +1,7 @@
 'use client';
 
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState, useTransition } from 'react';
-import { pronounce, stopPronouncing } from '../../lib/speech';
+import { pronounce } from '../../lib/speech';
 import { PronunciationFrame, PronunciationFramePlaceholder } from '../apprendre/pronunciation-practice';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
 import { QuoteReveals, type Reveal } from './quote-reveals';
@@ -51,21 +51,19 @@ export function ReviewCard({ front, back, repeatFront = false, delays, withLearn
     (choice: Answer) => {
       if (answered.current || (choice === 'Learned' && !withLearned)) return;
       answered.current = true;
-      stopPronouncing();
+      // The English still being read goes on to its end: rating before it is over doesn't cut it.
       startTransition(() => onAnswer(choice));
     },
     [withLearned, onAnswer],
   );
 
-  // A new card mounts a new component: the reading of the previous one stops (MEM-37).
-  useEffect(() => stopPronouncing, []);
-
   // MEM-38: when the answer is English (French → English), it is read as it
-  // appears. Called in the click or key handler: browsers only allow speech
+  // appears, after the English of the previous card if it is still being
+  // read. Called in the click or key handler: browsers only allow speech
   // started by the user. Without speech synthesis, nothing is said.
   const reveal = useCallback(() => {
     setRevealed(true);
-    if (back.speak) pronounce(back.main, back.audioUrl);
+    if (back.speak) pronounce(back.main, back.audioUrl, { after: true });
   }, [back.speak, back.main, back.audioUrl]);
 
   // The English of the answer is loaded in advance: read at once on reveal (MEM-38, MEM-39).
