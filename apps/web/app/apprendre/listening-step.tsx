@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { stopPronouncing } from '../../lib/speech';
 import type { LearningItem } from '../../lib/types';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { usePronunciationAudio } from '../speech/speak-button';
@@ -35,8 +34,8 @@ export function ListeningStep({ items, canAssess, onDone }: ListeningStepProps) 
   usePronunciationAudio(audioUrl);
   usePronunciationAudio(next && pronunciationUrl(next.id, next.word));
 
+  // The English being read goes on to its end (the next one waits for it).
   function goOn() {
-    stopPronouncing();
     if (last) onDone();
     else setIndex(index + 1);
   }
