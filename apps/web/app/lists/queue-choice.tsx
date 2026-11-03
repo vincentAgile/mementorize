@@ -7,8 +7,19 @@ import type { Noun } from '../../lib/nouns';
  * Give it a key that follows `queue`: the choice comes back as it was
  * after the form is reset.
  */
-export function QueueChoice({ queue, noun, idPrefix }: { queue: boolean; noun: Noun; idPrefix: string }) {
-  const item = noun.feminine ? `la ${noun.one}` : `l’${noun.one}`;
+export function QueueChoice({
+  queue,
+  noun,
+  idPrefix,
+  many = false,
+}: {
+  queue: boolean;
+  noun: Noun;
+  idPrefix: string;
+  /** Several items at once (the predefined lists, MEM-118): « Mettre les éléments en attente ». */
+  many?: boolean;
+}) {
+  const item = many ? `les ${noun.many}` : noun.feminine ? `la ${noun.one}` : `l’${noun.one}`;
   return (
     <fieldset className="queue-choice" aria-labelledby={`${idPrefix}-queue-legend`}>
       <legend id={`${idPrefix}-queue-legend`} className="visually-hidden">

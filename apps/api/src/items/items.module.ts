@@ -10,6 +10,8 @@ import { QuotesCsvService } from './quotes/csv/quotes-csv.service.js';
 import { QuotesController } from './quotes/quotes.controller.js';
 import { VocabularyCsvController } from './vocabulary/csv/vocabulary-csv.controller.js';
 import { VocabularyCsvService } from './vocabulary/csv/vocabulary-csv.service.js';
+import { CatalogController } from './vocabulary/catalog/catalog.controller.js';
+import { CatalogService } from './vocabulary/catalog/catalog.service.js';
 import { VocabularyController } from './vocabulary/vocabulary.controller.js';
 
 @Module({
@@ -21,7 +23,8 @@ import { VocabularyController } from './vocabulary/vocabulary.controller.js';
     VocabularyController,
     VocabularyCsvController,
     MindMapsController,
+    CatalogController,
   ],
-  providers: [ItemsService, QuotesCsvService, VocabularyCsvService],
+  providers: [ItemsService, QuotesCsvService, VocabularyCsvService, CatalogService],
 })
 export class ItemsModule {}

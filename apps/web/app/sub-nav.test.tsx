@@ -71,6 +71,20 @@ describe('SubNav and HeaderTitle: the tabs of « Mes statistiques » (MEM-113)',
     expect(render('/anglais/liste').label).toBe('Espace Anglais');
   });
 
+  it('MEM-118: « Listes prédéfinies » between « Ajouter » and « Import / export », highlighted in a list', () => {
+    const { tabs } = render('/anglais/listes-predefinies');
+    expect(tabs.map((tab) => tab[0])).toEqual([
+      'Apprendre · Réviser',
+      'Liste',
+      'Ajouter',
+      'Listes prédéfinies',
+      'Import / export',
+    ]);
+    expect(tabs[3]).toEqual(['Listes prédéfinies', '/anglais/listes-predefinies', 'page']);
+    const inList = render('/anglais/listes-predefinies/0b6a2c5e').tabs;
+    expect(inList.map((tab) => tab[2])).toEqual([null, null, null, 'true', null]);
+  });
+
   it('on a phone, « Mes statistiques » next to the logo, as « Réglages »', () => {
     pathname = '/statistiques/citations';
     mount(<HeaderTitle />);

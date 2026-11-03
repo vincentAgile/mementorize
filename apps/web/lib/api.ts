@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { getSessionToken } from './session';
 import type { ApiSession } from './session-cookie';
 import type {
+  CatalogListDetail,
+  CatalogListSummary,
   AuthUser,
   CreateQuoteInput,
   CreateVocabularyInput,
@@ -560,4 +562,34 @@ export async function assessPronunciation(
   } catch {
     return { status: 503, body: null };
   }
+}
+
+// --- MEM-118: the predefined lists of the Anglais space -------------------------
+
+/** The published lists, by level then by title. */
+export function getCatalogLists(): Promise<CatalogListSummary[]> {
+  return authedFetch<CatalogListSummary[]>('/catalog/lists');
+}
+
+/** A published list and its words; null when it doesn't exist or isn't published (any more). */
+export async function getCatalogList(id: string): Promise<CatalogListDetail | null> {
+  try {
+    return await authedFetch<CatalogListDetail>(`/catalog/lists/${encodeURIComponent(id)}`);
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.status === 400)) return null;
+    throw error;
+  }
+}
+
+/** Adds words of a list to the vocabulary, all or none: those added, and those already there. */
+export function addFromCatalogList(
+  id: string,
+  entryIds: string[],
+  queue: boolean,
+): Promise<{ added: number; skipped: number }> {
+  return authedFetch<{ added: number; skipped: number }>(`/catalog/lists/${encodeURIComponent(id)}/add`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entryIds, queue }),
+  });
 }

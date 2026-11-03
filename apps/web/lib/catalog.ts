@@ -1,4 +1,4 @@
-import type { LanguageLevel } from './admin-api';
+import type { LanguageLevel } from './types';
 
 /** MEM-116: the levels of a predefined list, on the scale of the CEFR, with their name. */
 export const LEVELS: { value: LanguageLevel; label: string }[] = [

@@ -3138,7 +3138,8 @@ div.review-card__reveal-row {
   border: 0;
 }
 
-.add-form .queue-choice label {
+.add-form .queue-choice label,
+.catalog-content .queue-choice label {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -4660,4 +4661,405 @@ button.practice__word {
 .resources__site {
   color: #666;
   font-size: 0.85rem;
+}
+
+/* MEM-118: the predefined lists of the Anglais space */
+.catalog-lists__intro {
+  margin: 0 0 1rem;
+  color: #555;
+}
+
+.level-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.level-filter__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0 0.85rem;
+  border: 1px solid #b9cfd0;
+  border-radius: 99px;
+  color: #0f6366;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.level-filter__chip:hover {
+  border-color: #147d80;
+  background: #f0f7f7;
+}
+
+.level-filter__chip.is-active {
+  border-color: #147d80;
+  background: #147d80;
+  color: #fff;
+}
+
+.level-filter__chip.is-disabled {
+  border-style: dashed;
+  color: #8a9697;
+  background: none;
+  cursor: default;
+}
+
+.level-filter__count {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
+.catalog-lists__empty {
+  color: #555;
+}
+
+.catalog-lists__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1rem;
+}
+
+.catalog-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem 1.1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.catalog-card__title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.catalog-card__description,
+.catalog-card__count {
+  margin: 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.catalog-card__owned {
+  color: #2e7d32;
+}
+
+.catalog-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.catalog-card__actions button,
+.catalog-content__bar button {
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border: none;
+  border-radius: 4px;
+  background: #147d80;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.catalog-card__actions button:disabled,
+.catalog-content__bar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.catalog-card .button-link {
+  min-height: 2.5rem;
+}
+
+.button-link--secondary {
+  border: 1px solid #147d80;
+  background: transparent;
+  color: #147d80;
+}
+
+.button-link--secondary:hover {
+  background: #f0f7f7;
+}
+
+.catalog-card__all,
+.catalog-content__none {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.catalog-added {
+  margin: 0;
+}
+
+.catalog-added__links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.catalog-added__links a {
+  color: #147d80;
+}
+
+/* The level, its label written out; a hue per family (A, B, C), never alone */
+.level-badge {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 99px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.level-badge--a {
+  background: #e3f2e5;
+  color: #1f6a2b;
+}
+
+.level-badge--b {
+  background: #e1eefa;
+  color: #1d5a91;
+}
+
+.level-badge--c {
+  background: #efe6f7;
+  color: #63388f;
+}
+
+.catalog-detail__back {
+  margin: 0 0 0.75rem;
+}
+
+.catalog-detail__back a {
+  color: #147d80;
+}
+
+.catalog-detail__title {
+  margin: 0.4rem 0 0.25rem;
+  font-size: 1.4rem;
+}
+
+.catalog-detail__description {
+  margin: 0;
+  color: #555;
+}
+
+.catalog-content {
+  margin-top: 1.25rem;
+}
+
+.catalog-content__table {
+  width: 100%;
+  margin-top: 0.75rem;
+  border-collapse: collapse;
+}
+
+.catalog-content__table th,
+.catalog-content__table td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid #e3e3e3;
+  text-align: left;
+  vertical-align: top;
+}
+
+.catalog-content__table th {
+  font-size: 0.9rem;
+}
+
+.catalog-content__check {
+  width: 2.5rem;
+}
+
+.catalog-content__check input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0.15rem 0 0;
+  accent-color: #147d80;
+}
+
+.catalog-content__english label {
+  cursor: pointer;
+}
+
+.catalog-content__topic {
+  color: #666;
+}
+
+.catalog-content__table tr.is-owned td {
+  color: #8a8a8a;
+}
+
+.catalog-content__table tr.is-owned label {
+  cursor: default;
+}
+
+.catalog-content__owned {
+  display: block;
+  color: #2e7d32;
+  font-size: 0.8rem;
+}
+
+/* The button and the choice stay at the bottom of the screen while the words scroll */
+.catalog-content__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid #e3e3e3;
+  background: Canvas;
+}
+
+.catalog-content__actions .queue-choice {
+  margin: 0;
+}
+
+@media (max-width: 639px) {
+  /* The button only stays, above the bar of the spaces; the choice comes after the words */
+  .catalog-content__actions {
+    display: contents;
+  }
+
+  .catalog-content__bar {
+    position: sticky;
+    bottom: calc(3.75rem + env(safe-area-inset-bottom));
+    z-index: 5;
+    margin-top: 0.5rem;
+    padding: 0.6rem 0;
+    background: Canvas;
+  }
+
+  .catalog-content__bar button {
+    width: 100%;
+  }
+
+  .catalog-content .queue-choice,
+  .catalog-content__none {
+    margin-top: 0.5rem;
+  }
+
+  /* The table becomes a list of rows: the box, the word, its translation under it */
+  .catalog-content__table thead tr {
+    display: flex;
+    align-items: center;
+  }
+
+  .catalog-content__table thead th:not(.catalog-content__check) {
+    display: none;
+  }
+
+  .catalog-content__table thead th.catalog-content__check::after {
+    content: 'Tout cocher';
+    margin-left: 0.5rem;
+    font-weight: 400;
+  }
+
+  .catalog-content__table thead th.catalog-content__check {
+    display: flex;
+    align-items: center;
+    width: auto;
+  }
+
+  .catalog-content__table tbody tr {
+    display: grid;
+    grid-template-columns: 2.25rem 1fr;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e3e3e3;
+  }
+
+  .catalog-content__table td {
+    padding: 0 0.6rem 0 0;
+    border: none;
+  }
+
+  .catalog-content__table td.catalog-content__check {
+    grid-row: span 3;
+    width: auto;
+  }
+
+  .catalog-content__french,
+  .catalog-content__topic {
+    grid-column: 2;
+    font-size: 0.9rem;
+  }
+
+  .catalog-content__french {
+    color: #444;
+  }
+
+  .catalog-content__topic:empty {
+    display: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .catalog-lists__intro,
+  .catalog-lists__empty,
+  .catalog-card__description,
+  .catalog-card__count,
+  .catalog-detail__description {
+    color: #bbb;
+  }
+
+  .catalog-card,
+  .catalog-content__table th,
+  .catalog-content__table td,
+  .catalog-content__actions {
+    border-color: #444;
+  }
+
+  .level-filter__chip {
+    border-color: #3c5a5b;
+    color: #7fd3d6;
+  }
+
+  .level-filter__chip:hover,
+  .button-link--secondary:hover {
+    background: rgba(127, 211, 214, 0.1);
+  }
+
+  .button-link--secondary,
+  .catalog-detail__back a,
+  .catalog-added__links a {
+    border-color: #7fd3d6;
+    color: #7fd3d6;
+  }
+
+  .catalog-card__owned,
+  .catalog-content__owned {
+    color: #81c784;
+  }
+
+  .level-badge--a {
+    background: rgba(129, 199, 132, 0.18);
+    color: #a5d6a7;
+  }
+
+  .level-badge--b {
+    background: rgba(100, 160, 230, 0.18);
+    color: #9ec8f0;
+  }
+
+  .level-badge--c {
+    background: rgba(180, 140, 220, 0.18);
+    color: #cfb3ec;
+  }
+
+  .catalog-content__table tr.is-owned td {
+    color: #888;
+  }
 }

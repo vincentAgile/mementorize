@@ -1,7 +1,7 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { getAdminToken } from './admin-session';
-import type { ImportAnalysis, ImportRow } from './types';
+import type { ImportAnalysis, ImportRow, LanguageLevel } from './types';
 
 // MEM-82: the calls of the administration console to the API, with the
 // administration token (never the user's).
@@ -254,7 +254,7 @@ export async function enableTwoFactor(
 
 // --- MEM-116: the predefined lists of the catalogue ---------------------------
 
-export type LanguageLevel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2';
+export type { LanguageLevel };
 
 /** A predefined list of vocabulary, with its number of words. */
 export interface CatalogList {
