@@ -1713,6 +1713,36 @@ div.review-card__reveal-row {
   margin-top: 0;
 }
 
+/* MEM-114: « Mes statistiques », a tab per space */
+.statistics__message {
+  margin: 0;
+  color: #555;
+}
+
+@media (prefers-color-scheme: dark) {
+  .statistics__message {
+    color: #bbb;
+  }
+}
+
+.statistics__message a {
+  color: #147d80;
+}
+
+/* Its title is the first thing of the tab, right under the header */
+/* « .statistics »: wins over the margin of the end of a session, defined further down */
+.statistics .learning-progress--page {
+  margin-top: 0;
+}
+
+.learning-progress--page .learning-progress__title {
+  margin: 0 0 0.75rem;
+}
+
+.learning-progress--page .learning-progress__next {
+  margin-bottom: 1.25rem;
+}
+
 /* The end of a learning session: the next review, then the progress of the space */
 .learning-progress {
   margin-top: 1.25rem;
