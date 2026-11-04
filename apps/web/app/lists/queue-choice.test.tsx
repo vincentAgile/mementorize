@@ -12,8 +12,8 @@ const radios = (html: string) =>
 describe('QueueChoice (MEM-62)', () => {
   it('two radio buttons, « à apprendre » checked by default, sent as queue=on / queue=off', () => {
     const html = renderToStaticMarkup(<QueueChoice queue noun={ITEM_NOUN} idPrefix="t" />);
-    expect(html).toContain('Ajouter à la liste des éléments à apprendre');
-    expect(html).toContain('Mettre l’élément en attente');
+    expect(html).toContain('Ajouter à la liste des cartes à apprendre');
+    expect(html).toContain('Mettre la carte en attente');
     expect(html.match(/name="queue"/g)).toHaveLength(2);
     expect(radios(html)).toEqual([
       { value: 'on', checked: true },

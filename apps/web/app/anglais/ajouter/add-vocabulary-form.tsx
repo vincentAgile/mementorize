@@ -42,9 +42,9 @@ export function AddVocabularyForm({ translator, topics }: { translator: Translat
     <form ref={form} action={action} className="add-form" noValidate>
       {state.added && (
         <p className="notice" role="status">
-          <em lang="en">{state.added.word}</em> ajouté,{' '}
+          <em lang="en">{state.added.word}</em> ajoutée,{' '}
           {state.added.position !== null ? (
-            <>{ordinal(state.added.position)} dans la file d’apprentissage.</>
+            <>{ordinal(state.added.position, ITEM_NOUN.feminine)} dans la file d’apprentissage.</>
           ) : (
             'en attente.'
           )}

@@ -50,7 +50,7 @@ async function VocabularySession({ now, ids }: { now: string; ids?: string[] }) 
   if (session.items.length === 0) {
     return (
       <NothingToLearn>
-        Les éléments ajoutés dans l’espace Anglais arrivent ici avant d’entrer en révision.{' '}
+        Les cartes ajoutées dans l’espace Anglais arrivent ici avant d’entrer en révision.{' '}
         <Link href="/anglais">Retour à l’anglais</Link>
       </NothingToLearn>
     );

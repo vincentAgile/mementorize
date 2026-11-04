@@ -162,26 +162,26 @@ describe('The content of a list (MEM-118)', () => {
     const rows = container.querySelectorAll('tbody tr');
     expect(rows[1].className).toBe('is-owned');
     expect(rows[1].textContent).toContain('Déjà dans ma liste');
-    expect(text(button().textContent!)).toBe('Ajouter 2 éléments');
+    expect(text(button().textContent!)).toBe('Ajouter 2 cartes');
     // The choice of the queue, « à apprendre » by default.
     const radios = [...container.querySelectorAll<HTMLInputElement>('input[name=queue]')];
     expect(radios.map((radio) => [radio.value, radio.checked])).toEqual([
       ['on', true],
       ['off', false],
     ]);
-    expect(radios[1].parentElement!.textContent).toBe('Mettre les éléments en attente');
+    expect(radios[1].parentElement!.textContent).toBe('Mettre les cartes en attente');
   });
 
   it('the boxes count; « Tout décocher » then nothing to add', () => {
     mount();
     act(() => boxes()[0].click());
-    expect(text(button().textContent!)).toBe('Ajouter 1 élément');
+    expect(text(button().textContent!)).toBe('Ajouter 1 carte');
     const all = container.querySelector<HTMLInputElement>('thead input')!;
     expect(all.indeterminate).toBe(true);
     act(() => all.click()); // checks them all
-    expect(text(button().textContent!)).toBe('Ajouter 2 éléments');
+    expect(text(button().textContent!)).toBe('Ajouter 2 cartes');
     act(() => all.click());
-    expect(text(button().textContent!)).toBe('Ajouter 0 élément');
+    expect(text(button().textContent!)).toBe('Ajouter 0 carte');
     expect(button().disabled).toBe(true);
   });
 
@@ -193,15 +193,15 @@ describe('The content of a list (MEM-118)', () => {
     expect(addFromListAction).toHaveBeenCalledWith('l1', ['e1', 'e3'], false);
     const message = container.querySelector('[role=status]')!;
     expect(message.textContent!.replace(/\s+/g, ' ')).toBe(
-      '1 élément ajouté, en attente, 1 déjà présent ignoré. Voir dans ma listeApprendre',
+      '1 carte ajoutée, en attente, 1 déjà présente ignorée. Voir dans ma listeApprendre',
     );
     expect(message.querySelector('a')!.getAttribute('href')).toBe('/anglais/liste?etat=Waiting');
   });
 
   it('a failure: the message, nothing added', async () => {
-    addFromListAction.mockResolvedValue({ error: 'L’ajout a échoué : aucun élément n’a été ajouté. Réessaie.' });
+    addFromListAction.mockResolvedValue({ error: 'L’ajout a échoué : aucune carte n’a été ajoutée. Réessaie.' });
     mount();
     await act(async () => button().click());
-    expect(container.querySelector('[role=alert]')!.textContent).toContain('aucun élément n’a été ajouté');
+    expect(container.querySelector('[role=alert]')!.textContent).toContain('aucune carte n’a été ajoutée');
   });
 });

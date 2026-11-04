@@ -55,9 +55,9 @@ function render(status: ListRow['status'], advanced?: boolean) {
         queue
         relearn={{ title: 'Remettre en apprentissage', label: 'Remettre « snag » en apprentissage' }}
         advanced={advanced}
-        editTitle="Modifier l’élément"
+        editTitle="Modifier la carte"
         editForm={<p>formulaire</p>}
-        deleteTitle="Supprimer l’élément ?"
+        deleteTitle="Supprimer la carte ?"
         deletePreview={<p>snag</p>}
         deleteHint="Il disparaît."
         deleteAction={async () => {}}
@@ -94,7 +94,7 @@ describe('RowActions: « Réinitialiser l’apprentissage » (MEM-111)', () => {
     const text = dialog.textContent!.replace(/\u00a0/g, ' '); // the non-breaking spaces of the French quotes
     expect(text).toContain('Réinitialiser l’apprentissage de « snag » ?');
     expect(text).toContain(
-      'L’élément repasse en « À apprendre » et ses cartes repartent de zéro. L’historique de révisions est conservé.',
+      '« snag » repasse en « À apprendre » et repart de zéro. L’historique de révisions est conservé.',
     );
     const buttons = [...dialog.querySelectorAll('button')].map((button) => [button.type, button.textContent]);
     expect(buttons).toEqual([

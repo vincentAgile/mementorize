@@ -34,7 +34,7 @@ export async function addFromListAction(
         error:
           error.status === 404
             ? 'Cette liste n’est plus proposée : recharge la page.'
-            : 'L’ajout a échoué : aucun élément n’a été ajouté. Réessaie.',
+            : 'L’ajout a échoué : aucune carte n’a été ajoutée. Réessaie.',
       };
     }
     throw error; // e.g. the redirect of an expired session

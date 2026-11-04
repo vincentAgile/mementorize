@@ -58,7 +58,7 @@ export function ListeningStep({ items, canAssess, onDone }: ListeningStepProps) 
     <section aria-label="Écoute et prononciation">
       <p className="review-progress">
         <strong>Étape 1 · Écoute et prononciation</strong> ·{' '}
-        <span aria-label={`Élément ${index + 1} sur ${items.length}`}>
+        <span aria-label={`Carte ${index + 1} sur ${items.length}`}>
           {index + 1} / {items.length}
         </span>{' '}
         · <Link href="/anglais">Arrêter</Link>
@@ -73,7 +73,7 @@ export function ListeningStep({ items, canAssess, onDone }: ListeningStepProps) 
 
       <p className="listening__next">
         <button type="button" className="review-card__reveal" onClick={goOn}>
-          {last ? 'Passer à l’étape 2' : 'Élément suivant'} <kbd>Espace</kbd>
+          {last ? 'Passer à l’étape 2' : 'Carte suivante'} <kbd>Espace</kbd>
         </button>
       </p>
     </section>

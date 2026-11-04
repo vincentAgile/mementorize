@@ -100,7 +100,7 @@ export function LearningEvaluation({
     <section className="learning-evaluation" aria-label="Évaluation de l’apprentissage">
       <p className="review-progress">
         <strong>Étape 3 · Évaluation de l’apprentissage</strong> ·{' '}
-        <span aria-label={`Élément ${position + 1} sur ${items.length}`}>
+        <span aria-label={`Carte ${position + 1} sur ${items.length}`}>
           {position + 1} / {items.length}
         </span>{' '}
         · <Link href="/anglais">Arrêter</Link>

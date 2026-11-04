@@ -28,11 +28,11 @@ export default async function PickPage({ searchParams }: { searchParams: Promise
   if (room <= 0 || rows.length === 0) {
     return (
       <section className="learn-review__empty">
-        <h2 className="prepare__title">Ajouter des éléments à la session</h2>
+        <h2 className="prepare__title">Ajouter des cartes à la session</h2>
         <p>
           {room <= 0
-            ? `${MAX_SESSION_SIZE} éléments au plus par session : retirez-en un pour en ajouter un autre.`
-            : 'Tous les éléments à apprendre ou en attente sont déjà dans la session.'}
+            ? `${MAX_SESSION_SIZE} cartes au plus par session : retirez-en une pour en ajouter une autre.`
+            : 'Toutes les cartes à apprendre ou en attente sont déjà dans la session.'}
         </p>
         <Link href={withList(PREPARE, list)} className="prepare__cancel">
           Retour à la préparation

@@ -399,7 +399,7 @@ export function ItemTable<Row extends ListRow>({
   );
 }
 
-/** « 40 éléments ajoutés à la file, 3 ignorés » (MEM-63, MEM-64), « 2 citations placées en tête de file ». */
+/** « 40 cartes ajoutées à la file, 3 ignorées » (MEM-63, MEM-64), « 2 citations placées en tête de file ». */
 function queueNotice(
   op: 'add' | 'remove' | 'top',
   { changed, ignored }: { changed: number; ignored: number },

@@ -22,7 +22,7 @@ export interface Space {
   learnHref?: string;
   /** MEM-94: the page where a learning session is prepared, before it starts. */
   prepareHref?: string;
-  /** How its items are named in the messages (v0.12): « élément », « citation ». */
+  /** How its items are named in the messages (v0.12): « carte », « citation ». */
   noun: Noun;
 }
 
@@ -38,8 +38,7 @@ export const SPACES: Space[] = [
     label: 'Anglais',
     shortLabel: 'Anglais',
     href: '/anglais',
-    emptyText:
-      'Aucun élément de vocabulaire pour le moment : commence par ajouter un mot, une expression ou une phrase.',
+    emptyText: 'Aucune carte pour le moment : commence par ajouter un mot, une expression ou une phrase.',
     reviewLabel: "Réviser l'anglais",
     tabs: [
       { href: '/anglais', label: 'Apprendre · Réviser' },

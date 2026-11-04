@@ -16,7 +16,7 @@ export function QueueChoice({
   queue: boolean;
   noun: Noun;
   idPrefix: string;
-  /** Several items at once (the predefined lists, MEM-118): « Mettre les éléments en attente ». */
+  /** Several items at once (the predefined lists, MEM-118): « Mettre les cartes en attente ». */
   many?: boolean;
 }) {
   const item = many ? `les ${noun.many}` : noun.feminine ? `la ${noun.one}` : `l’${noun.one}`;

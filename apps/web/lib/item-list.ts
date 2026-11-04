@@ -120,7 +120,7 @@ export function filterRows<Row extends ListRow>(
   );
 }
 
-/** Some filter is on: the count says "12 éléments sur 85", and "Effacer les filtres" is offered. */
+/** Some filter is on: the count says "12 cartes sur 85", and "Effacer les filtres" is offered. */
 export const isFiltered = (filter: Filter) =>
   filter.search !== '' || filter.status !== 'all' || filter.topic !== ALL_TOPICS;
 

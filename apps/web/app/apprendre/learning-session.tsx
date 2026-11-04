@@ -77,13 +77,14 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
       <section className="learning-done">
         <h2>Session terminée</h2>
         <p>
-          {learned.length + known.length === 0 && 'Aucun élément n’a pu être enregistré.'}
+          {learned.length + known.length === 0 && 'Aucune carte n’a pu être enregistrée.'}
           {learned.length > 0 &&
-            `${learned.length}\u00a0élément${learned.length > 1 ? 's' : ''} passe${learned.length > 1 ? 'nt' : ''} en apprentissage : ${learned.length > 1 ? 'ils entrent' : 'il entre'} en révision.`}
+            `${learned.length}\u00a0carte${learned.length > 1 ? 's' : ''} passe${learned.length > 1 ? 'nt' : ''} en apprentissage : ${learned.length > 1 ? 'elles entrent' : 'elle entre'} en révision.`}
           {learned.length > 0 && known.length > 0 && ' '}
           {known.length > 0 &&
-            `${known.length}\u00a0élément${known.length > 1 ? 's' : ''} déjà connu${known.length > 1 ? 's' : ''} : ${known.length > 1 ? 'ils passent' : 'il passe'} directement à « Appris », sans révision.`}
-          {failed > 0 && ` ${failed} n’a pas pu être enregistré (déjà appris ou supprimé entre-temps).`}
+            `${known.length}\u00a0carte${known.length > 1 ? 's' : ''} déjà connue${known.length > 1 ? 's' : ''} : ${known.length > 1 ? 'elles passent' : 'elle passe'} directement à « Appris », sans révision.`}
+          {failed > 0 &&
+            ` ${failed} n’${failed > 1 ? 'ont' : 'a'} pas pu être enregistrée${failed > 1 ? 's' : ''} (déjà apprise${failed > 1 ? 's' : ''} ou supprimée${failed > 1 ? 's' : ''} entre-temps).`}
         </p>
         <LearningProgress type="Vocabulary" />
         {remaining > 0 && (

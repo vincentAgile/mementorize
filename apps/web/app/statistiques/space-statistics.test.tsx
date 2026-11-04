@@ -41,7 +41,7 @@ describe('Mes statistiques: a tab per space (MEM-114)', () => {
     getLearningProgress.mockResolvedValue({ nextReview: null, days: [] });
     const html = await render('Quote');
     expect(text(html)).toContain(
-      'Rien à afficher pour le moment : les statistiques apparaissent dès qu’un premier élément est appris.',
+      'Rien à afficher pour le moment : les statistiques apparaissent dès qu’une première carte est apprise.',
     );
     expect(html).toContain('<a href="/citations">Apprendre · Réviser</a>');
     expect(html).not.toContain('learning-progress');

@@ -11,7 +11,7 @@ import { AddedMessage } from '../added-message';
  * MEM-118: the words of a list, each with its box, all checked at first,
  * but those already in the vocabulary (the same English, MEM-50): greyed,
  * unchecked, off, « Déjà dans ma liste ». A box in the header checks or
- * unchecks them all. « Ajouter N éléments » follows the boxes, and the
+ * unchecks them all. « Ajouter N cartes » follows the boxes, and the
  * choice of the learning queue, as the « Ajouter » tab (MEM-62). On a
  * phone, the table is a list of rows, and the button stays at the bottom of
  * the screen. Once added, the page is read again: the words added are now
