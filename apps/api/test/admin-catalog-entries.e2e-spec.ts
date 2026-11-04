@@ -320,7 +320,7 @@ describe('Console: the words of a predefined list (MEM-117, e2e)', () => {
     expect(res.headers['content-type']).toMatch(/^text\/csv/);
     const date = new Date().toISOString().slice(0, 10);
     expect(res.headers['content-disposition']).toBe(
-      `attachment; filename="mementorize-liste-ete-a-l-hotel-${unique}-${date}.csv"`,
+      `attachment; filename="mementorize-liste-a2-ete-a-l-hotel-${unique}-${date}.csv"`,
     );
     const csv = res.body as string;
     expect(csv).toBe(`﻿${HEADER}une chambre;a room;Hôtel;;"A room, ""quiet""; please."\r\nla clé;the key;;;\r\n`);

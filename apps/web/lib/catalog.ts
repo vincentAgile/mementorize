@@ -40,7 +40,10 @@ export function catalogErrors(values: CatalogValues): Partial<Record<CatalogFiel
 
 /** The answers of the API that belong to a field (MEM-116, admin-catalog.service.ts). */
 export const API_MESSAGES: Record<string, { field: CatalogField; message: string }> = {
-  'Une liste porte déjà ce titre': { field: 'title', message: 'Une liste porte déjà ce titre.' },
+  'Une liste de ce niveau porte déjà ce titre': {
+    field: 'title',
+    message: 'Une liste de ce niveau porte déjà ce titre : changez le titre ou le niveau.',
+  },
   'Une liste vide ne peut pas être publiée': {
     field: 'published',
     message: 'Une liste vide ne peut pas être publiée : ajoutez-lui des mots d’abord.',

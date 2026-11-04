@@ -25,7 +25,7 @@ describe('catalogue (MEM-116)', () => {
   });
 
   it('puts the refusals of the API under their field', () => {
-    expect(API_MESSAGES['Une liste porte déjà ce titre'].field).toBe('title');
+    expect(API_MESSAGES['Une liste de ce niveau porte déjà ce titre'].field).toBe('title');
     expect(API_MESSAGES['Une liste vide ne peut pas être publiée'].field).toBe('published');
   });
 });

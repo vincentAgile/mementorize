@@ -15,7 +15,7 @@ export interface CatalogList {
   updatedAt: Date;
 }
 
-export const DUPLICATE_TITLE = 'Une liste porte déjà ce titre';
+export const DUPLICATE_TITLE = 'Une liste de ce niveau porte déjà ce titre';
 export const EMPTY_LIST = 'Une liste vide ne peut pas être publiée';
 
 const withCount = { _count: { select: { entries: true } } } as const;
@@ -29,7 +29,7 @@ const optional = (value: string | null | undefined) => (value == null ? value : 
 
 /**
  * MEM-116: the predefined lists of vocabulary of the console (« Catalogue »),
- * each with its level. Their words come with the next story. What a user
+ * each with its level; a title is unique within a level. What a user
  * adds from a list are copies (their own items): deleting a list, or its
  * words, never touches them.
  */
@@ -54,7 +54,7 @@ export class AdminCatalogService {
 
   async create(dto: CreateCatalogListDto): Promise<CatalogList> {
     const title = dto.title.trim();
-    await this.uniqueTitle(title);
+    await this.uniqueTitle(title, dto.level);
     // A new list has no word yet: it can't be published at once.
     if (dto.published) throw new ConflictException(EMPTY_LIST);
     const list = await this.prisma.predefinedList.create({
@@ -67,7 +67,10 @@ export class AdminCatalogService {
   async update(id: string, dto: UpdateCatalogListDto): Promise<CatalogList> {
     const current = await this.list(id);
     const title = dto.title?.trim();
-    if (title !== undefined) await this.uniqueTitle(title, id);
+    // A title is unique within its level: checked again when either changes.
+    if (title !== undefined || dto.level !== undefined) {
+      await this.uniqueTitle(title ?? current.title, dto.level ?? current.level, id);
+    }
     if (dto.published && !current.published && current.entries === 0) throw new ConflictException(EMPTY_LIST);
     const list = await this.prisma.predefinedList.update({
       where: { id },
@@ -84,10 +87,13 @@ export class AdminCatalogService {
     return { id, entries };
   }
 
-  /** 409 when another list has this title, whatever its case. */
-  private async uniqueTitle(title: string, except?: string): Promise<void> {
+  /**
+   * 409 when another list of the same level has this title, whatever its case:
+   * « Monde du travail » may exist in B1 and in B2, not twice in B1.
+   */
+  private async uniqueTitle(title: string, level: LanguageLevel, except?: string): Promise<void> {
     const other = await this.prisma.predefinedList.findFirst({
-      where: { title: { equals: title, mode: 'insensitive' }, ...(except && { id: { not: except } }) },
+      where: { title: { equals: title, mode: 'insensitive' }, level, ...(except && { id: { not: except } }) },
       select: { id: true },
     });
     if (other) throw new ConflictException(DUPLICATE_TITLE);
