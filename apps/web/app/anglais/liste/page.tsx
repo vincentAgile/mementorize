@@ -7,9 +7,9 @@ import type { VocabularyItem } from '../../../lib/vocabulary-table';
 import { VocabularyTable } from '../vocabulary-table';
 import { ListExport } from './list-export';
 
-export const metadata: Metadata = { title: 'Liste · Anglais' };
+export const metadata: Metadata = { title: 'Ma liste · Anglais' };
 
-// Tab "Liste" (MEM-26): the table of the vocabulary, with its sort, filter
+// Tab « Ma liste » (MEM-26, renamed by MEM-123): the table of the vocabulary, with its sort, filter
 // and row actions. After an edit or a deletion the page is refreshed in
 // place: the table component keeps its sort and filter.
 export default async function EnglishListPage({ searchParams }: { searchParams: Promise<{ etat?: string }> }) {

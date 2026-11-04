@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { wordCount } from '../../../lib/catalog';
-import type { CatalogListSummary } from '../../../lib/types';
+import { wordCount } from '../../../../lib/catalog';
+import type { CatalogListSummary } from '../../../../lib/types';
 import { type AddFromListResult, addFromListAction } from './actions';
 import { AddedMessage } from './added-message';
 import { LevelBadge } from './level-badge';
@@ -31,7 +31,7 @@ export function ListCard({ list }: { list: CatalogListSummary }) {
         {list.owned > 0 && <span className="catalog-card__owned"> · {list.owned}&nbsp;déjà dans ma liste</span>}
       </p>
       <div className="catalog-card__actions">
-        <Link href={`/anglais/listes-predefinies/${list.id}`} className="button-link button-link--secondary">
+        <Link href={`/anglais/ajouter-liste/predefinies/${list.id}`} className="button-link button-link--secondary">
           Voir le contenu
         </Link>
         <button

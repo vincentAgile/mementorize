@@ -19,8 +19,21 @@ const nextConfig: NextConfig = {
   },
   // MEM-2: Settings moved to /reglages. Reminder e-mails already sent still
   // link to /settings.
+  // MEM-123: the tabs « Listes prédéfinies » and « Import / export » of the
+  // Anglais space became the two choices of « Ajouter une liste » (the query,
+  // ?niveau=A2, goes along). /anglais/import-export/export still answers:
+  // only the page itself moves.
   async redirects() {
-    return [{ source: '/settings', destination: '/reglages', permanent: true }];
+    return [
+      { source: '/settings', destination: '/reglages', permanent: true },
+      { source: '/anglais/listes-predefinies', destination: '/anglais/ajouter-liste/predefinies', permanent: true },
+      {
+        source: '/anglais/listes-predefinies/:id',
+        destination: '/anglais/ajouter-liste/predefinies/:id',
+        permanent: true,
+      },
+      { source: '/anglais/import-export', destination: '/anglais/ajouter-liste/fichier', permanent: true },
+    ];
   },
 };
 

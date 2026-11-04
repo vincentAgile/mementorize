@@ -1,9 +1,9 @@
 import { AppHeader } from '../app-header';
 
 /**
- * The Anglais space in tabs (v0.4, MEM-24): Apprendre · Réviser
- * (/anglais), Liste (/anglais/liste), Ajouter (/anglais/ajouter) and
- * Import / export (/anglais/import-export, MEM-52), each at its own URL. The tabs are in the header's second band (SubNav, MEM-29);
+ * The Anglais space in tabs (v0.4, MEM-24; MEM-123): Apprendre · Réviser
+ * (/anglais), Ma liste (/anglais/liste), Ajouter une carte (/anglais/ajouter)
+ * and Ajouter une liste (/anglais/ajouter-liste), each at its own URL. The tabs are in the header's second band (SubNav, MEM-29);
  * the header stays in place from one tab to the next, only the content
  * below it changes.
  */
