@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ITEM_NOUN, agree, countOf } from '../../../lib/nouns';
+import { ITEM_NOUN, agree, countOf } from '../../../../lib/nouns';
 
 /**
  * MEM-118: « 88 cartes ajoutées, 12 déjà présentes ignorées. », with where to

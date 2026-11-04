@@ -32,6 +32,8 @@ interface ImportKind<Row extends AnyRow> {
   /** Why a duplicate line won't be imported. */
   duplicate: (row: Extract<Row, { status: 'duplicate' }>) => string;
   space: string;
+  /** The tab of the list of the space, after « depuis » (MEM-123: « Ma liste » in the Anglais space). */
+  list: string;
 }
 
 const VOCABULARY: ImportKind<ImportRow> = {
@@ -73,6 +75,7 @@ const VOCABULARY: ImportKind<ImportRow> = {
     return `${languages}, ${of}`;
   },
   space: '/anglais',
+  list: 'Ma liste',
 };
 
 const QUOTES: ImportKind<QuoteImportRow> = {
@@ -101,6 +104,7 @@ const QUOTES: ImportKind<QuoteImportRow> = {
       ? `déjà dans les citations : «\u00a0${row.of.existing}\u00a0»`
       : `même texte que la ligne ${row.of.line}`,
   space: '/citations',
+  list: 'la Liste',
 };
 
 const KINDS: Record<ListType, ImportKind<AnyRow>> = {
@@ -172,8 +176,8 @@ export function ImportSection({ type, separator }: { type: ListType; separator: 
       <p>
         {typeof kind.format === 'function' ? kind.format(separator) : kind.format} Séparateur :{' '}
         {separatorName(separator)}. La première ligne, celle des en-têtes, est ignorée. Les {kind.noun.many}{' '}
-        {agree('importé', kind.noun, 2)} seront « En attente » : vous les ajouterez à la file d’apprentissage depuis la
-        Liste.
+        {agree('importé', kind.noun, 2)} seront « En attente » : vous les ajouterez à la file d’apprentissage depuis{' '}
+        {kind.list}.
       </p>
 
       {done && 'result' in done && done.result.ok && <Imported kind={kind} result={done.result} onAgain={reset} />}
@@ -404,7 +408,7 @@ function Preview({ kind, analysis, fileName, filter, onFilter, onReset, onImport
         </h3>
         <p>
           {countOf(summary.new, noun)} {summary.new > 1 ? 'seront' : 'sera'} {agree('importé', noun, summary.new)}, en
-          attente, à ajouter ensuite à la file d’apprentissage depuis la Liste.
+          attente, à ajouter ensuite à la file d’apprentissage depuis {kind.list}.
           {left.length > 0 &&
             ` ${capitalize(left.join(' et '))} ne ${leftOut > 1 ? 'seront' : 'sera'} pas intégré${leftOut > 1 ? 's' : ''}.`}
         </p>
@@ -432,7 +436,7 @@ const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1
 
 /** MEM-54: the result, with where to go next. */
 function Imported({
-  kind: { noun, space },
+  kind: { noun, space, list },
   result,
   onAgain,
 }: {
@@ -448,7 +452,7 @@ function Imported({
             ? `${countOf(result.imported, noun)} ${agree('importé', noun, result.imported)}`
             : `${noun.feminine ? 'Aucune' : 'Aucun'} ${noun.one} ${agree('importé', noun, 1)}`}
         </strong>
-        {result.imported > 0 && ', en attente. Ajoutez-les à la file d’apprentissage depuis la Liste'}.
+        {result.imported > 0 && `, en attente. Ajoutez-les à la file d’apprentissage depuis ${list}`}.
         {result.duplicate + result.error > 0 &&
           ` ${plural(result.duplicate, 'doublon')} et ${plural(result.error, 'ligne')} en erreur laissés de côté.`}
       </p>

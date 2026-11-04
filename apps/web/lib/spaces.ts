@@ -42,10 +42,11 @@ export const SPACES: Space[] = [
     reviewLabel: "Réviser l'anglais",
     tabs: [
       { href: '/anglais', label: 'Apprendre · Réviser' },
-      { href: '/anglais/liste', label: 'Liste' },
-      { href: '/anglais/ajouter', label: 'Ajouter' },
-      { href: '/anglais/listes-predefinies', label: 'Listes prédéfinies' }, // MEM-118
-      { href: '/anglais/import-export', label: 'Import / export' }, // MEM-52
+      // MEM-123: « Ma liste », « Ajouter une carte », « Ajouter une liste » (a predefined
+      // list, MEM-118, or a CSV file, MEM-53); the export is in « Ma liste » (MEM-122).
+      { href: '/anglais/liste', label: 'Ma liste' },
+      { href: '/anglais/ajouter', label: 'Ajouter une carte' },
+      { href: '/anglais/ajouter-liste', label: 'Ajouter une liste' },
     ],
     learnHref: '/apprendre',
     prepareHref: '/anglais/preparer', // MEM-94
@@ -130,7 +131,8 @@ export function inSession(space: Space, pathname: string, type: string | null): 
  * The tab shown as the one of the page, when it is not a tab itself: the
  * first one (« Apprendre · Réviser », « Réviser ») during a session or its
  * preparation; « Liste » in the mind map editor (MEM-97); a tab in the pages
- * under it (« Listes prédéfinies » in the content of a list, MEM-118).
+ * under it (« Ajouter une liste » in its two choices and the content of a
+ * predefined list, MEM-123).
  */
 export function highlightedTab(space: Space, pathname: string, type: string | null): string | undefined {
   if (inSession(space, pathname, type)) return space.tabs?.[0]?.href;

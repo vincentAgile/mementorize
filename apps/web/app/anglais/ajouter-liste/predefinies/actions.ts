@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { addFromCatalogList, ApiError, getCatalogList } from '../../../lib/api';
+import { addFromCatalogList, ApiError, getCatalogList } from '../../../../lib/api';
 
 export type AddFromListResult = { added: number; skipped: number; queue: boolean } | { error: string };
 

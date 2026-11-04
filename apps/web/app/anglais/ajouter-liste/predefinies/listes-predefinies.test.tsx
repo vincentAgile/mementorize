@@ -3,12 +3,12 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CatalogListDetail, CatalogListSummary } from '../../../lib/types';
+import type { CatalogListDetail, CatalogListSummary } from '../../../../lib/types';
 
 const addFromListAction = vi.fn();
 vi.mock('./actions', () => ({ addFromListAction }));
 const getCatalogLists = vi.fn();
-vi.mock('../../../lib/api', () => ({ getCatalogLists }));
+vi.mock('../../../../lib/api', () => ({ getCatalogLists }));
 
 const { ListCard } = await import('./list-card');
 const { default: PredefinedListsPage } = await import('./page');
@@ -39,7 +39,7 @@ describe('The lists, as cards (MEM-118)', () => {
     const html = renderToStaticMarkup(<ListCard list={summary({ owned: 12 })} />);
     expect(html).toContain('<span class="level-badge level-badge--a">A2 · Élémentaire</span>');
     expect(text(html)).toContain('Voyage À l’aéroport 40 mots · 12 déjà dans ma liste');
-    expect(html).toContain('href="/anglais/listes-predefinies/l1"');
+    expect(html).toContain('href="/anglais/ajouter-liste/predefinies/l1"');
     expect(text(html)).toContain('Voir le contenu');
     expect(html).toMatch(/<button type="button"[^>]*>Tout ajouter<\/button>/);
     expect(html).not.toMatch(/<button[^>]*disabled/);
@@ -76,7 +76,7 @@ describe('The lists, as cards (MEM-118)', () => {
       ['C1 · Autonome, 1 liste', ''],
       ['C2 · Maîtrise, 0 liste', 'is-disabled'],
     ]);
-    expect(html).toContain('href="/anglais/listes-predefinies?niveau=A2"');
+    expect(html).toContain('href="/anglais/ajouter-liste/predefinies?niveau=A2"');
     expect(html.match(/<article/g)).toHaveLength(4);
   });
 

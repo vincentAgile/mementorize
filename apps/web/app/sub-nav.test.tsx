@@ -71,18 +71,25 @@ describe('SubNav and HeaderTitle: the tabs of « Mes statistiques » (MEM-113)',
     expect(render('/anglais/liste').label).toBe('Espace Anglais');
   });
 
-  it('MEM-118: « Listes prédéfinies » between « Ajouter » and « Import / export », highlighted in a list', () => {
-    const { tabs } = render('/anglais/listes-predefinies');
-    expect(tabs.map((tab) => tab[0])).toEqual([
-      'Apprendre · Réviser',
-      'Liste',
-      'Ajouter',
-      'Listes prédéfinies',
-      'Import / export',
+  it('MEM-123: Apprendre · Réviser, Ma liste, Ajouter une carte, Ajouter une liste', () => {
+    const { tabs } = render('/anglais/ajouter-liste');
+    expect(tabs).toEqual([
+      ['Apprendre · Réviser', '/anglais', null],
+      ['Ma liste', '/anglais/liste', null],
+      ['Ajouter une carte', '/anglais/ajouter', null],
+      ['Ajouter une liste', '/anglais/ajouter-liste', 'page'],
     ]);
-    expect(tabs[3]).toEqual(['Listes prédéfinies', '/anglais/listes-predefinies', 'page']);
-    const inList = render('/anglais/listes-predefinies/0b6a2c5e').tabs;
-    expect(inList.map((tab) => tab[2])).toEqual([null, null, null, 'true', null]);
+  });
+
+  it('MEM-123: « Ajouter une liste » highlighted in every page under it, never « Ajouter une carte »', () => {
+    for (const at of [
+      '/anglais/ajouter-liste/predefinies',
+      '/anglais/ajouter-liste/predefinies/0b6a2c5e',
+      '/anglais/ajouter-liste/fichier',
+    ]) {
+      expect(render(at).tabs.map((tab) => tab[2])).toEqual([null, null, null, 'true']);
+    }
+    expect(render('/anglais/ajouter').tabs.map((tab) => tab[2])).toEqual([null, null, 'page', null]);
   });
 
   it('on a phone, « Mes statistiques » next to the logo, as « Réglages »', () => {

@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getCatalogLists } from '../../../lib/api';
-import { isLevel, LEVELS } from '../../../lib/catalog';
+import { getCatalogLists } from '../../../../lib/api';
+import { isLevel, LEVELS } from '../../../../lib/catalog';
+import { BackToChoice } from '../back-to-choice';
 import { ListCard } from './list-card';
 
-export const metadata: Metadata = { title: 'Listes prédéfinies · Anglais' };
+export const metadata: Metadata = { title: 'Liste prédéfinie · Ajouter une liste' };
 
 /**
- * Tab « Listes prédéfinies » of the Anglais space (MEM-118): the lists
+ * « Liste prédéfinie », a choice of « Ajouter une liste » (MEM-123; before,
+ * the tab « Listes prédéfinies », MEM-118): the lists
  * published in the console, as cards, by level then by title, with a filter
  * by level in the address (?niveau=A2: bookmarks and the Back button work).
  * Each level says how many lists it has; a level without any is off.
@@ -21,18 +23,19 @@ export default async function PredefinedListsPage({ searchParams }: { searchPara
 
   return (
     <section className="catalog-lists" aria-labelledby="catalog-lists-title">
-      <h2 id="catalog-lists-title" className="visually-hidden">
-        Listes prédéfinies
+      <BackToChoice />
+      <h2 id="catalog-lists-title" className="add-list__title">
+        Liste prédéfinie
       </h2>
       <p className="catalog-lists__intro">
         Des listes de mots et d’expressions par niveau, à ajouter à ton vocabulaire en un clic : tu choisis lesquels.
       </p>
       <nav className="level-filter" aria-label="Filtrer par niveau">
-        <Chip href="/anglais/listes-predefinies" active={!level} label="Tous" count={lists.length} />
+        <Chip href="/anglais/ajouter-liste/predefinies" active={!level} label="Tous" count={lists.length} />
         {LEVELS.map(({ value, label }) => (
           <Chip
             key={value}
-            href={`/anglais/listes-predefinies?niveau=${value}`}
+            href={`/anglais/ajouter-liste/predefinies?niveau=${value}`}
             active={level === value}
             label={value}
             title={label}

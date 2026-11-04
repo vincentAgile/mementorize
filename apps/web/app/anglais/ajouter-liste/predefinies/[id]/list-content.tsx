@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { agree, countOf, ITEM_NOUN } from '../../../../lib/nouns';
-import type { CatalogListDetail } from '../../../../lib/types';
-import { QueueChoice } from '../../../lists/queue-choice';
+import { agree, countOf, ITEM_NOUN } from '../../../../../lib/nouns';
+import type { CatalogListDetail } from '../../../../../lib/types';
+import { QueueChoice } from '../../../../lists/queue-choice';
 import { type AddFromListResult, addFromListAction } from '../actions';
 import { AddedMessage } from '../added-message';
 
