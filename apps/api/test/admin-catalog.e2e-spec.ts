@@ -73,7 +73,7 @@ describe('Console: predefined lists (MEM-116, e2e)', () => {
     );
   });
 
-  it('refuses an empty title, an unknown level (400) and a title taken, whatever its case (409)', async () => {
+  it('refuses an empty title, an unknown level (400) and a title taken in the same level, whatever its case (409)', async () => {
     await http().post('/admin/catalog/lists').set(admin).send({ title: '   ', level: 'A1' }).expect(400);
     await http().post('/admin/catalog/lists').set(admin).send({ title: 'Sans niveau' }).expect(400);
     await http().post('/admin/catalog/lists').set(admin).send({ title: 'Niveau', level: 'D1' }).expect(400);
@@ -87,20 +87,27 @@ describe('Console: predefined lists (MEM-116, e2e)', () => {
     const taken = await http()
       .post('/admin/catalog/lists')
       .set(admin)
-      .send({ title: ` CUISINE ${unique}`, level: 'C2' })
+      .send({ title: ` CUISINE ${unique}`, level: 'A1' })
       .expect(409);
-    expect(taken.body.message).toBe('Une liste porte déjà ce titre');
+    expect(taken.body.message).toBe('Une liste de ce niveau porte déjà ce titre');
+    // The same title in another level: allowed.
+    const b2 = await newList({ title: `cuisine ${unique}`, level: 'B2' });
+    expect(b2).toMatchObject({ title: `cuisine ${unique}`, level: 'B2' });
+
     const other = await newList({ title: `Cuisine bis ${unique}`, level: 'A1' });
     await http()
       .patch(`/admin/catalog/lists/${other.id}`)
       .set(admin)
       .send({ title: `cuisine ${unique}` })
       .expect(409);
+    // Moved to a level where the title is taken: refused too; to a free one: allowed.
+    await http().patch(`/admin/catalog/lists/${b2.id}`).set(admin).send({ level: 'A1' }).expect(409);
+    await http().patch(`/admin/catalog/lists/${b2.id}`).set(admin).send({ level: 'C1' }).expect(200);
     // Its own title, in another case: allowed.
     await http()
       .patch(`/admin/catalog/lists/${list.id}`)
       .set(admin)
-      .send({ title: `CUISINE ${unique}`, level: 'C1' })
+      .send({ title: `CUISINE ${unique}` })
       .expect(200);
   });
 

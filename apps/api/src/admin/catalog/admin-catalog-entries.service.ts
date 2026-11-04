@@ -196,7 +196,8 @@ export class AdminCatalogEntriesService {
     const date = now.toISOString().slice(0, 10);
     return {
       csv: toCsv([CSV_HEADERS, ...lines], DEFAULT_SEPARATOR),
-      fileName: `mementorize-liste-${slug(list.title)}-${date}.csv`,
+      // With its level: two lists may share a title (one per level).
+      fileName: `mementorize-liste-${list.level.toLowerCase()}-${slug(list.title)}-${date}.csv`,
     };
   }
 
@@ -218,7 +219,7 @@ export class AdminCatalogEntriesService {
   private async listOf(db: Db, listId: string) {
     const list = await db.predefinedList.findUnique({
       where: { id: listId },
-      select: { title: true, published: true },
+      select: { title: true, level: true, published: true },
     });
     if (!list) throw new NotFoundException(`List ${listId} not found`);
     return list;
