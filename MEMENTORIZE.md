@@ -73,10 +73,25 @@ Production : https://mementorize.delaneuville.fr
 
 ## 4. Vocabulaire du projet
 
-- **Élément de vocabulaire** : mot, expression ou phrase en anglais avec sa traduction française (abrégé « élément » quand le contexte suffit). Dans l'interface, « entrée » reste possible là où la place compte.
-- **Espace** : un sujet (Anglais, Citations, Cartes mentales) avec son sous-menu d'onglets.
-- **Processus d'apprentissage** (première prise de contact avec des éléments) ≠ **processus de révision** (FSRS).
-- **Epic** = une version `v0.x` dans Jira.
+Référentiel unique des mots de l'interface, des stories Jira et de nos échanges. Dans l'interface, on n'emploie que le terme de la colonne « Interface » ; la colonne « À éviter » liste ce qu'on ne doit plus y voir. Le code est en anglais ; `apps/web/lib/nouns.ts` est le seul endroit où les noms des objets sont écrits pour les messages (jamais en dur dans un composant). « Mot », « expression » et « phrase » restent libres pour décrire le contenu d'une carte.
+
+| Interface                                                         | Définition                                                                                                                      | Dans le code                                                   | À éviter                              |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------- |
+| **Carte** (espace Anglais)                                        | ce que l'on apprend et révise : un mot, une expression ou une phrase en anglais avec sa traduction française                    | `Item` de type `Vocabulary` (`ITEM_NOUN`)                      | « élément », « entrée », « fiche »    |
+| **Citation**                                                      | une citation avec indice de rappel, auteur et source                                                                            | `Item` de type `Quote` (`QUOTE_NOUN`)                          | « carte » pour une citation           |
+| **Carte mentale**, **branche**                                    | arbre d'idées éditable ; une branche masquée est une carte à réviser                                                            | `Item` de type `MindMap` ; `Card` `BranchRecall`               | « carte » seul pour une carte mentale |
+| _(invisible)_                                                     | planning de révision FSRS d'un sens d'un mot (deux par mot, un seul révisé) : à ne pas confondre avec la carte de l'utilisateur | `Card`                                                         | l'appeler « carte » dans une story    |
+| **Espace**                                                        | un sujet (Anglais, Citations, Cartes mentales) avec son sous-menu d'onglets                                                     | `Space`                                                        | « module », « section »               |
+| **En attente**, **À apprendre**, **En apprentissage**, **Appris** | les quatre états d'une carte ou d'une citation                                                                                  | `LearningStatus` : `Waiting`, `ToLearn`, `Learning`, `Learned` | « nouveau », « maîtrisé »             |
+| **Apprendre** ≠ **Réviser**                                       | processus d'apprentissage (première prise de contact, file ordonnée) ≠ processus de révision (FSRS)                             | `learning/`, `reviews/`                                        | employer l'un pour l'autre            |
+| **Indice de rappel**                                              | la « question » d'une citation, affichée seule au recto (obligatoire)                                                           | `hint`                                                         | « titre », « thème »                  |
+| **Thématique**                                                    | thème d'une carte de vocabulaire (« Voyage », « Cuisine »)                                                                      | `topic`                                                        | « catégorie », « tag »                |
+| **Niveau**                                                        | A1 à C2 (CECRL) d'une liste prédéfinie ; propre au catalogue, pas un champ des cartes (v0.22, à venir)                          | `LanguageLevel`                                                |                                       |
+| **Liste prédéfinie** (utilisateur), **Catalogue** (console)       | listes de cartes proposées par l'administrateur, copiées dans le vocabulaire de l'utilisateur (v0.22, à venir)                  | `predefined_lists`, `predefined_entries`                       | « pack », « deck »                    |
+| **Mode d'utilisation**                                            | réglage Standard ou Avancé : l'Avancé ajoute des actions comme la réinitialisation de l'apprentissage                           | `usageMode`                                                    |                                       |
+| **Epic**                                                          | une version `v0.x` dans Jira                                                                                                    |                                                                |                                       |
+
+Entretien : ajouter une ligne dès qu'un nouveau terme apparaît dans l'interface ; un terme qui change se change aussi dans `nouns.ts` et dans les stories ouvertes.
 
 ## 5. Méthode de travail
 
