@@ -5,6 +5,7 @@ import { LEARNING_STATUS_LABELS } from '../../../lib/learning-status';
 import type { LearningStatus } from '../../../lib/types';
 import type { VocabularyItem } from '../../../lib/vocabulary-table';
 import { VocabularyTable } from '../vocabulary-table';
+import { ListExport } from './list-export';
 
 export const metadata: Metadata = { title: 'Liste · Anglais' };
 
@@ -15,7 +16,7 @@ export default async function EnglishListPage({ searchParams }: { searchParams: 
   // ?etat=Waiting: opened filtered on a state (the link of "Apprendre · Réviser", MEM-61).
   const { etat } = await searchParams;
   const initialStatus = etat && etat in LEARNING_STATUS_LABELS ? (etat as LearningStatus) : undefined;
-  const [all, { translator, vocabularyPageSize, usageMode }] = await Promise.all([
+  const [all, { translator, vocabularyPageSize, usageMode, csvSeparator }] = await Promise.all([
     getItems('Vocabulary'),
     getPreferences(),
   ]);
@@ -29,13 +30,17 @@ export default async function EnglishListPage({ searchParams }: { searchParams: 
     );
   }
   return (
-    <VocabularyTable
-      items={items}
-      now={new Date().toISOString()}
-      translator={translator}
-      pageSize={vocabularyPageSize}
-      initialStatus={initialStatus}
-      advanced={usageMode === 'Advanced'} // MEM-111
-    />
+    <>
+      {/* MEM-122: the export of every card, above the table. */}
+      <ListExport count={items.length} separator={csvSeparator} />
+      <VocabularyTable
+        items={items}
+        now={new Date().toISOString()}
+        translator={translator}
+        pageSize={vocabularyPageSize}
+        initialStatus={initialStatus}
+        advanced={usageMode === 'Advanced'} // MEM-111
+      />
+    </>
   );
 }
