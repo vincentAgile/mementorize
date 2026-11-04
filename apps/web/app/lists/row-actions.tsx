@@ -131,8 +131,8 @@ export function RowActions({
         <dialog ref={resetRef} className="dialog" aria-labelledby={`reset-${row.id}`}>
           <h3 id={`reset-${row.id}`}>Réinitialiser l’apprentissage de «&nbsp;{name}&nbsp;» ?</h3>
           <p className="dialog__hint">
-            L’élément repasse en «&nbsp;À apprendre&nbsp;» et ses cartes repartent de zéro. L’historique de révisions
-            est conservé.
+            «&nbsp;{name}&nbsp;» repasse en «&nbsp;À apprendre&nbsp;» et repart de zéro. L’historique de révisions est
+            conservé.
           </p>
           <form
             // The row stays (unlike a deletion): the dialog closes once the list is rendered again.

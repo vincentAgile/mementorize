@@ -50,8 +50,7 @@ export const VOCABULARY_COLUMNS: Column<VocabularyRow>[] = [
 ];
 
 const english = (row: VocabularyRow) => row.english;
-const deleteTitle = (count: number) =>
-  count > 1 ? `Supprimer ${count} éléments de vocabulaire` : 'Supprimer l’élément de vocabulaire';
+const deleteTitle = (count: number) => (count > 1 ? `Supprimer ${count} cartes` : 'Supprimer la carte');
 
 interface VocabularyTableProps {
   items: VocabularyItem[];

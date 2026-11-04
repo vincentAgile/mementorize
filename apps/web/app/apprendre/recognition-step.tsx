@@ -57,7 +57,7 @@ export function RecognitionStep({ items, onDone }: RecognitionStepProps) {
     <section aria-label="Anglais → français">
       <p className="review-progress">
         <strong>Étape 2 · Anglais → français</strong> ·{' '}
-        <span aria-label={`Élément ${index + 1} sur ${items.length}`}>
+        <span aria-label={`Carte ${index + 1} sur ${items.length}`}>
           {index + 1} / {items.length}
         </span>{' '}
         · <Link href="/anglais">Arrêter</Link>
@@ -97,7 +97,7 @@ export function RecognitionStep({ items, onDone }: RecognitionStepProps) {
         <p className="review-card__reveal-row">
           {revealed ? (
             <button type="button" className="review-card__reveal" onClick={goOn}>
-              {last ? 'Passer à l’évaluation' : 'Élément suivant'} <kbd>Espace</kbd>
+              {last ? 'Passer à l’évaluation' : 'Carte suivante'} <kbd>Espace</kbd>
             </button>
           ) : (
             <button type="button" className="review-card__reveal" onClick={() => setRevealed(true)}>

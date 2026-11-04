@@ -28,7 +28,9 @@ export async function startSessionAction(type: ListType, ids: string[]): Promise
   const status = new Map((await getItems(type)).map((item) => [item.id, item.learningStatus]));
   const kept = [...new Set(ids)].filter((id) => status.get(id) === 'ToLearn' || status.get(id) === 'Waiting');
   if (kept.length === 0) {
-    return { error: 'Ces éléments ne sont plus à apprendre : rechargez la page.' };
+    return {
+      error: `Ces ${type === 'Quote' ? 'citations' : 'cartes'} ne sont plus à apprendre : rechargez la page.`,
+    };
   }
   const waiting = kept.filter((id) => status.get(id) === 'Waiting');
   if (waiting.length > 0) await queueItems(type, 'add', waiting);

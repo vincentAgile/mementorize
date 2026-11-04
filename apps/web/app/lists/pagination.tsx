@@ -5,7 +5,7 @@ import type { Noun } from '../../lib/nouns';
 import { PAGE_SIZES, pageNumbers } from '../../lib/item-list';
 
 interface PaginationProps {
-  /** « éléments », « citations » par page. */
+  /** « cartes », « citations » par page. */
   noun: Noun;
   page: number;
   pageCount: number;

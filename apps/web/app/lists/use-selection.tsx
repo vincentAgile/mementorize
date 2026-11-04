@@ -64,7 +64,7 @@ export type Selection = ReturnType<typeof useSelection>;
 
 /**
  * Under the selection bar, once the whole page is checked and the list has
- * more: « Sélectionner les 85 éléments de la liste », or « Annuler la sélection ».
+ * more: « Sélectionner les 85 cartes de la liste », or « Annuler la sélection ».
  */
 export function SelectAllNotice({
   selection,

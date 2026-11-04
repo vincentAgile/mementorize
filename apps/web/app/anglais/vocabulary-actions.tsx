@@ -36,9 +36,9 @@ export function VocabularyActions({
       queueMenu={queueMenu}
       relearn={{ title: 'Remettre en apprentissage', label: `Remettre « ${row.english} » en apprentissage` }}
       advanced={advanced}
-      editTitle="Modifier l’élément"
+      editTitle="Modifier la carte"
       editForm={<EditForm row={row} translator={translator} topics={topics} />}
-      deleteTitle="Supprimer l’élément ?"
+      deleteTitle="Supprimer la carte ?"
       deletePreview={
         <p>
           <strong lang="en">{row.english}</strong> → {row.french}

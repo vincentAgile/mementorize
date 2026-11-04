@@ -74,7 +74,7 @@ export async function addVocabularyAction(
       queue,
     });
   } catch (error) {
-    if (error instanceof ApiError) return { values, queue, error: 'Impossible d’enregistrer l’élément. Réessaie.' };
+    if (error instanceof ApiError) return { values, queue, error: 'Impossible d’enregistrer la carte. Réessaie.' };
     throw error; // e.g. the redirect of an expired session
   }
   revalidatePath('/', 'layout'); // the counter of the "Apprendre · Réviser" tab, the list

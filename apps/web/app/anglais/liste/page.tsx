@@ -24,7 +24,7 @@ export default async function EnglishListPage({ searchParams }: { searchParams: 
   if (items.length === 0) {
     return (
       <p className="space__empty">
-        Aucun élément de vocabulaire pour le moment. <Link href="/anglais/ajouter">Ajouter un premier élément</Link>
+        Aucune carte pour le moment. <Link href="/anglais/ajouter">Ajouter une première carte</Link>
       </p>
     );
   }

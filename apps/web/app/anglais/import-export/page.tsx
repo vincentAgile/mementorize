@@ -27,14 +27,13 @@ export default async function EnglishImportExportPage() {
         <h2 id="export-title">Exporter</h2>
         {count === 0 ? (
           <p>
-            Aucun élément de vocabulaire à exporter pour le moment.{' '}
-            <Link href="/anglais/ajouter">Ajouter un premier élément</Link>
+            Aucune carte à exporter pour le moment. <Link href="/anglais/ajouter">Ajouter une première carte</Link>
           </p>
         ) : (
           <>
             <p>
               Tout le vocabulaire, quel que soit son état : {count}
-              {NBSP}élément{count > 1 ? 's' : ''}. Une ligne par élément : expression française, expression anglaise,
+              {NBSP}carte{count > 1 ? 's' : ''}. Une ligne par carte : expression française, expression anglaise,
               thématique, phrase d’exemple en français, phrase d’exemple en anglais. Le fichier se réimporte tel quel.
             </p>
             {/* A plain link: the route sends the file, the browser downloads it. */}

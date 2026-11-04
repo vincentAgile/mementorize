@@ -14,7 +14,7 @@ interface SelectionBarProps {
   ids: string[];
   /** The actions on the learning queue (MEM-63, MEM-64). */
   queue: boolean;
-  /** « Supprimer 3 éléments de vocabulaire ? », « Supprimer la citation ? » */
+  /** « Supprimer 3 cartes ? », « Supprimer la citation ? » */
   deleteTitle: (count: number) => string;
   onClear: () => void;
   /** After the deletion: how many items were deleted (null: it failed). */

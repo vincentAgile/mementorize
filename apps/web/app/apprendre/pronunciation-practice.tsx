@@ -392,7 +392,7 @@ export function PracticePanel({ practice }: { practice: PronunciationPractice })
           <p className="practice__recording">
             <span className="practice__dot" aria-hidden="true" />
             Enregistrement… <span className="practice__time">{mmss(practice.elapsed)}</span>
-            <span className="practice__hint"> · dites l’élément, puis arrêtez (R)</span>
+            <span className="practice__hint"> · dites l’expression, puis arrêtez (R)</span>
           </p>
         )}
         {state.name === 'assessing' && <p className="practice__message">Évaluation…</p>}

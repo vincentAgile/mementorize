@@ -34,7 +34,7 @@ export async function SpaceStatistics({ type }: { type: ListType }) {
     return (
       <section className="statistics">
         <p className="statistics__message">
-          Rien à afficher pour le moment : les statistiques apparaissent dès qu’un premier élément est appris.{' '}
+          Rien à afficher pour le moment : les statistiques apparaissent dès qu’une première carte est apprise.{' '}
           <Link href={space.href}>Apprendre · Réviser</Link>
         </p>
       </section>

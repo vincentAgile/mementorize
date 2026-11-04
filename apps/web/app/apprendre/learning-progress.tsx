@@ -37,7 +37,7 @@ export function LearningProgress({ type }: { type: ListType }) {
 }
 
 /** How a space counts its items, in the chart. */
-const NOUNS: Record<ItemType, string> = { Vocabulary: 'éléments', Quote: 'citations', MindMap: 'cartes mentales' };
+const NOUNS: Record<ItemType, string> = { Vocabulary: 'cartes', Quote: 'citations', MindMap: 'cartes mentales' };
 
 /**
  * The next review of a space and its progress: at the end of a learning
