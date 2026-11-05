@@ -20,6 +20,8 @@ interface LearningSessionViewProps {
   showDelays: boolean;
   /** MEM-91: the pronunciation assessment is configured on the server. */
   canAssess?: boolean;
+  /** MEM-128: the Guided learning mode, read on the server; kept until the end of the session. */
+  guided?: boolean;
 }
 
 /**
@@ -42,7 +44,13 @@ interface LearningSessionViewProps {
  * the others, not answered yet or waiting after « À revoir », stay in their
  * state ("À apprendre"). Leaving during step 1 or 2 changes nothing.
  */
-export function LearningSessionView({ session, now, showDelays, canAssess = false }: LearningSessionViewProps) {
+export function LearningSessionView({
+  session,
+  now,
+  showDelays,
+  canAssess = false,
+  guided = false,
+}: LearningSessionViewProps) {
   const [items] = useState(session.items);
   const [phase, setPhase] = useState<Phase>('listen');
   // The answers being sent, one item after the other, in the order they got through.
@@ -104,7 +112,7 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
   }
 
   if (phase === 'recognize') {
-    return <RecognitionStep items={items} onDone={() => setPhase('evaluate')} />;
+    return <RecognitionStep items={items} guided={guided} onDone={() => setPhase('evaluate')} />;
   }
 
   if (phase === 'evaluate') {
@@ -114,6 +122,7 @@ export function LearningSessionView({ session, now, showDelays, canAssess = fals
         now={now}
         showDelays={showDelays}
         canAssess={canAssess}
+        guided={guided}
         onItemDone={itemDone}
         onFinished={() => void finish()}
       />

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import { formatDelay } from '../../lib/format';
 import type { LearningItem } from '../../lib/types';
+import { TO_ENGLISH } from '../../lib/guided-questions';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import type { Answer } from '../review/rating-buttons';
 import { type CardFace, ReviewCard } from '../review/review-card';
@@ -17,6 +18,8 @@ interface LearningEvaluationProps {
   showDelays: boolean;
   /** The pronunciation assessment is configured on the server: offered on the answer, as in the review (MEM-91). */
   canAssess: boolean;
+  /** MEM-128: the Guided learning mode: « Comment le dit-on en anglais ? » under the French. */
+  guided?: boolean;
   /**
    * An item is through: its last answer is not « À revoir ». `answers`: all
    * the answers it got, in their order (the « À revoir » before included).
@@ -30,12 +33,13 @@ const RATINGS = ['Again', 'Hard', 'Good'] as const;
 
 /**
  * The French → English card of an item, as the review shows it
- * (review/page.tsx): no heading and no question (MEM-100).
+ * (review/page.tsx): no heading; no question (MEM-100), but in the Guided
+ * mode (MEM-128).
  */
-function facesOf(item: LearningItem, canAssess: boolean): { front: CardFace; back: CardFace } {
+function facesOf(item: LearningItem, canAssess: boolean, guided: boolean): { front: CardFace; back: CardFace } {
   const english = { main: item.word, lang: 'en', speak: true, audioUrl: pronunciationUrl(item.id, item.word) };
   return {
-    front: { main: item.translation, lang: 'fr' },
+    front: { main: item.translation, lang: 'fr', ...(guided && { prompt: TO_ENGLISH }) },
     back: {
       ...english,
       ...(canAssess && { assessItemId: item.id }),
@@ -62,6 +66,7 @@ export function LearningEvaluation({
   now,
   showDelays,
   canAssess,
+  guided = false,
   onItemDone,
   onFinished,
 }: LearningEvaluationProps) {
@@ -94,7 +99,7 @@ export function LearningEvaluation({
   // Put back after « À revoir »: the delays of its card once rated so.
   const due = answers[item.id]?.length ? item.nextDueAfterAgain : item.nextDue;
   const position = items.length - pile.length; // the items through (« À revoir » does not count)
-  const { front, back } = facesOf(item, canAssess);
+  const { front, back } = facesOf(item, canAssess, guided);
 
   return (
     <section className="learning-evaluation" aria-label="Évaluation de l’apprentissage">

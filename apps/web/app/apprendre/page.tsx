@@ -6,6 +6,7 @@ import {
   getQuoteLearningSession,
   pronunciationAssessmentEnabled,
 } from '../../lib/api';
+import { learningModeOf } from '../../lib/types';
 import { AppHeader } from '../app-header';
 import { LearningSessionView } from './learning-session';
 import { QuoteLearningSessionView } from './quote-learning-session';
@@ -42,7 +43,7 @@ export default async function LearningPage({ searchParams }: Props) {
 }
 
 async function VocabularySession({ now, ids }: { now: string; ids?: string[] }) {
-  const [session, { showReviewDelays }, canAssess] = await Promise.all([
+  const [session, preferences, canAssess] = await Promise.all([
     getLearningSession(ids),
     getPreferences(),
     pronunciationAssessmentEnabled(), // « Évaluer ma prononciation », if configured (MEM-101)
@@ -55,7 +56,15 @@ async function VocabularySession({ now, ids }: { now: string; ids?: string[] }) 
       </NothingToLearn>
     );
   }
-  return <LearningSessionView session={session} now={now} showDelays={showReviewDelays} canAssess={canAssess} />;
+  return (
+    <LearningSessionView
+      session={session}
+      now={now}
+      showDelays={preferences.showReviewDelays}
+      canAssess={canAssess}
+      guided={learningModeOf(preferences) === 'Guided'} // MEM-128
+    />
+  );
 }
 
 async function QuotesSession({ now, ids }: { now: string; ids?: string[] }) {

@@ -5374,3 +5374,8 @@ a.add-list__choice:focus-visible {
     color: #bbb;
   }
 }
+
+/* MEM-128: the question of step 2, its room kept once the answer is shown */
+.review-card__question--ghost {
+  visibility: hidden;
+}
