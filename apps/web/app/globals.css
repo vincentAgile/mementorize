@@ -5262,3 +5262,115 @@ a.add-list__choice:focus-visible {
     color: #bbb;
   }
 }
+
+/* MEM-127: the explanation of a learning session, in the Guided mode */
+.learning-intro {
+  max-width: 44rem;
+}
+
+.learning-intro__title {
+  margin: 0 0 1rem;
+  font-size: 1.35rem;
+}
+
+.learning-intro__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.learning-intro__step {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: 0.1rem 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.learning-intro__when {
+  grid-row: span 3;
+  color: #0f6366;
+  font-weight: 700;
+}
+
+.learning-intro__step:first-child .learning-intro__when {
+  color: #666;
+  font-weight: 600;
+}
+
+.learning-intro__name {
+  font-weight: 600;
+}
+
+.learning-intro__text {
+  color: #444;
+}
+
+.learning-intro__heading {
+  color: #777;
+  font-size: 0.8rem;
+}
+
+.learning-intro__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin: 1.25rem 0 0;
+}
+
+.learning-intro__start {
+  margin-top: 0;
+  padding: 0.6rem 1.4rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.learning-intro__back {
+  color: #147d80;
+}
+
+@media (max-width: 639px) {
+  .learning-intro__step {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .learning-intro__when {
+    grid-row: auto;
+    font-size: 0.85rem;
+  }
+
+  /* « Commencer » stays at the bottom of the screen, above the bar of the spaces */
+  .learning-intro__actions {
+    position: sticky;
+    bottom: calc(3.75rem + env(safe-area-inset-bottom));
+    padding: 0.75rem 0;
+    background: Canvas;
+  }
+
+  .learning-intro__start {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .learning-intro__step {
+    border-color: #444;
+  }
+
+  .learning-intro__when,
+  .learning-intro__back {
+    color: #7fd3d6;
+  }
+
+  .learning-intro__step:first-child .learning-intro__when,
+  .learning-intro__text,
+  .learning-intro__heading {
+    color: #bbb;
+  }
+}

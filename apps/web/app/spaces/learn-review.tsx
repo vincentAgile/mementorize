@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { getDueReviews, getItems } from '../../lib/api';
+import { getDueReviews, getItems, getPreferences } from '../../lib/api';
 import { NBSP } from '../../lib/format';
 import { countOf } from '../../lib/nouns';
 import { reviewHref, type Space } from '../../lib/spaces';
+import { learningModeOf } from '../../lib/types';
 import { NothingDue } from '../nothing-due';
 
 const plural = (count: number, one: string, many: string) => `${count}${NBSP}${count > 1 ? many : one}`;
@@ -17,7 +18,14 @@ const plural = (count: number, one: string, many: string) => `${count}${NBSP}${c
  * learning process: the review card only.
  */
 export async function LearnReview({ space }: { space: Space }) {
-  const [items, due] = await Promise.all([getItems(space.type), getDueReviews(1, space.type)]);
+  const [items, due, preferences] = await Promise.all([
+    getItems(space.type),
+    getDueReviews(1, space.type),
+    getPreferences(),
+  ]);
+  // MEM-127: in the Guided mode, « Apprendre » explains the steps first (the Anglais space only).
+  const learnHref =
+    space.introHref && learningModeOf(preferences) === 'Guided' ? space.introHref : (space.prepareHref ?? space.href);
   const { noun } = space;
   const toLearn = items.filter((item) => item.learningStatus === 'ToLearn').length;
   const waiting = items.filter((item) => item.learningStatus === 'Waiting').length; // MEM-61
@@ -55,8 +63,8 @@ export async function LearnReview({ space }: { space: Space }) {
           {toLearn > 0 ? (
             <>
               <p>{countOf(toLearn, noun)} à apprendre.</p>
-              {/* MEM-94: the session is prepared first. */}
-              <Link href={space.prepareHref ?? space.href} className="space__review space__review--learn">
+              {/* MEM-94: the session is prepared first; MEM-127: explained before, in the Guided mode. */}
+              <Link href={learnHref} className="space__review space__review--learn">
                 Apprendre <span className="space__review-count">{toLearn}</span>
               </Link>
             </>
