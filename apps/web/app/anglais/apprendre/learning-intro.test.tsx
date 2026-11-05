@@ -30,27 +30,29 @@ describe('The explanation of the steps, in the Guided mode (MEM-127)', () => {
     pronunciationAssessmentEnabled.mockResolvedValue(true);
   });
 
-  it('the four steps, numbered as the headings of the session, the selection before; « Commencer » and « Retour »', async () => {
+  it('the four steps, numbered as the headings of the session, the selection before; « Commencer » and « Retour »; no heading recalled', async () => {
     getPreferences.mockResolvedValue({ learningMode: 'Guided' });
     const html = renderToStaticMarkup(await LearningIntroPage());
     expect(text(html)).toContain('Comment se passe l’apprentissage ?');
     const steps = [...html.matchAll(/<li class="learning-intro__step">(.*?)<\/li>/g)].map((m) => text(m[1]));
     expect(steps).toEqual([
       'Avant de commencer Sélectionner les cartes à apprendre Choisis jusqu’à 10 cartes dans ta file.',
-      'Étape 1 Écouter et prononcer Écoute chaque mot anglais, répète-le et évalue ta prononciation. Étape 1 · Écoute et prononciation',
-      'Étape 2 Restituer en français Tu vois le mot anglais : retrouve sa traduction, puis vérifie. Étape 2 · Anglais → français',
-      'Étape 3 Restituer en anglais Tu vois le français : retrouve le mot anglais, puis note ta réponse. Étape 3 · Évaluation de l’apprentissage',
+      'Étape 1 Écouter et prononcer Écoute chaque mot ou expression anglaise, répète et évalue ta prononciation.',
+      'Étape 2 Restituer en français Tu vois le mot ou l’expression en anglais : retrouve sa traduction, puis vérifie.',
+      'Étape 3 Restituer en anglais Tu vois le mot ou l’expression en français : retrouve la traduction en anglais, puis évalue ta réponse.',
     ]);
     expect(html).toMatch(/<a class="space__review learning-intro__start" href="\/anglais\/preparer">Commencer<\/a>/);
     expect(html).toContain('<a class="learning-intro__back" href="/anglais">Retour</a>');
     expect(html).toContain('<ol class="learning-intro__steps">');
+    expect(html).not.toContain('learning-intro__heading');
+    expect(text(html)).not.toMatch(/Étape \d ·/);
   });
 
   it('without the pronunciation assessment, step 1 doesn’t promise it', async () => {
     getPreferences.mockResolvedValue({ learningMode: 'Guided' });
     pronunciationAssessmentEnabled.mockResolvedValue(false);
     const html = renderToStaticMarkup(await LearningIntroPage());
-    expect(text(html)).toContain('Écoute chaque mot anglais et répète-le.');
+    expect(text(html)).toContain('Écoute chaque mot ou expression anglaise, puis répète.');
     expect(html).not.toContain('évalue ta prononciation');
   });
 

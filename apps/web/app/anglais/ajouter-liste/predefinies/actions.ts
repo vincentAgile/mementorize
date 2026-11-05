@@ -24,7 +24,7 @@ export async function addFromListAction(
       if (!list) return { error: 'Cette liste n’est plus proposée : recharge la page.' };
       ids = list.entries.map((entry) => entry.id);
     }
-    if (ids.length === 0) return { error: 'Choisis au moins un mot.' };
+    if (ids.length === 0) return { error: 'Choisis au moins un mot ou une expression.' };
     const result = await addFromCatalogList(listId, ids, queue === true);
     revalidatePath('/', 'layout'); // the lists, the counters of the menu, the vocabulary
     return { ...result, queue: queue === true };

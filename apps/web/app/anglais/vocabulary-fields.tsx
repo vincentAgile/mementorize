@@ -34,7 +34,7 @@ const BLOCKS: { title: string; lang: 'en' | 'fr'; fields: FieldSpec[] }[] = [
         label: 'Mot ou expression',
         required: true,
         lang: 'en',
-        placeholder: 'Mot, expression ou phrase',
+        placeholder: 'Mot ou expression',
         maxLength: 200,
       },
       {

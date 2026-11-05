@@ -50,7 +50,7 @@ export async function addVocabularyAction(
   // MEM-62: the checkbox "Ajouter à la file d'apprentissage" (checked by default).
   const queue = formData.get('queue') === 'on';
   const fieldErrors: VocabularyAddState['fieldErrors'] = {};
-  if (!values.word) fieldErrors.word = 'Saisis le mot, l’expression ou la phrase en anglais.';
+  if (!values.word) fieldErrors.word = 'Saisis le mot ou l’expression en anglais.';
   else if (values.word.length > MAX.word) fieldErrors.word = `${MAX.word}\u00a0caractères au plus.`;
   if (!values.translation) fieldErrors.translation = 'Saisis la traduction en français.';
   else if (values.translation.length > MAX.translation)
