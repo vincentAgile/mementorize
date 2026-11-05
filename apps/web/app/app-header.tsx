@@ -1,4 +1,4 @@
-import { getDueSummary, getPreferences, getProfile } from '../lib/api';
+import { getChatStatus, getDueSummary, getPreferences, getProfile } from '../lib/api';
 import { mindMapsEnabledOf } from '../lib/types';
 import { HeaderActions } from './header-actions';
 import { HeaderTitle } from './header-title';
@@ -22,7 +22,12 @@ import { SubNav } from './sub-nav';
  * page's <main>.
  */
 export async function AppHeader() {
-  const [due, profile, preferences] = await Promise.all([getDueSummary(), getProfile(), getPreferences()]);
+  const [due, profile, preferences, chat] = await Promise.all([
+    getDueSummary(),
+    getProfile(),
+    getPreferences(),
+    getChatStatus(), // MEM-131: the tab « Chat IA »
+  ]);
 
   return (
     <header className="app-header">
@@ -37,7 +42,7 @@ export async function AppHeader() {
           <HeaderActions profile={profile} />
         </div>
       </div>
-      <SubNav />
+      <SubNav chat={chat.enabled} />
     </header>
   );
 }

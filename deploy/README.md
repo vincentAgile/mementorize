@@ -579,7 +579,7 @@ puis `docker compose up -d api`. Pour ouvrir à tout le monde plus tard : `CONVE
 - les conversations sont supprimées 90 jours après leur début ;
 - les journaux de l'API notent pour chaque appel l'utilisateur, la durée et les jetons consommés, jamais le texte.
 
-**Limites** : 30 messages par jour et par utilisateur, 20 par conversation, 1 000 caractères par message, 3 requêtes par seconde. Si Claude ne répond pas, l'application l'indique et le message ne compte pas.
+**Limites** : 30 messages par jour et par utilisateur, 20 par conversation, 1 000 caractères par message, 3 envois par seconde. Si Claude ne répond pas, l'application l'indique et le message ne compte pas.
 
 **Coût** : `docker compose logs api | grep "model call"` donne les jetons de chaque appel ; le détail est sur la console Anthropic, **Usage**.
 

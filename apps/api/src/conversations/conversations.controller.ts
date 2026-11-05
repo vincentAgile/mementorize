@@ -28,7 +28,7 @@ import { SendMessageDto } from './dto/send-message.dto.js';
  * conversation: 404.
  */
 @Controller('conversations')
-@UseGuards(JwtAuthGuard, ConversationRateGuard)
+@UseGuards(JwtAuthGuard)
 export class ConversationsController {
   constructor(
     private readonly conversations: ConversationsService,
@@ -37,7 +37,10 @@ export class ConversationsController {
 
   /**
    * GET /conversations/status — { enabled: false } (no AI model, or an
-   * account it is not open to), or the limits and the messages sent today.
+   * account it is not open to), or the limits, the messages sent today and
+   * when that count starts again. Read on every page (the menu, MEM-131):
+   * like the other readings, outside the 3 requests per second, which hold
+   * the writings (a page loaded twice in a second must not fail).
    */
   @Get('status')
   status(@CurrentUser() user: AuthUser) {
@@ -47,7 +50,7 @@ export class ConversationsController {
 
   /** POST /conversations — a new conversation, opened by the question of the AI. */
   @Post()
-  @UseGuards(ConversationAccessGuard)
+  @UseGuards(ConversationAccessGuard, ConversationRateGuard)
   create(@CurrentUser() user: AuthUser) {
     return this.conversations.create(user.id);
   }
@@ -67,7 +70,7 @@ export class ConversationsController {
   }
 
   @Delete(':id')
-  @UseGuards(ConversationAccessGuard)
+  @UseGuards(ConversationAccessGuard, ConversationRateGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@CurrentUser() user: AuthUser, @Param('id', new ParseUUIDPipe()) id: string) {
     await this.conversations.remove(user.id, id);
@@ -82,7 +85,7 @@ export class ConversationsController {
    * written), 429 (limits), 502 or 503 (the provider failed).
    */
   @Post(':id/messages')
-  @UseGuards(ConversationAccessGuard)
+  @UseGuards(ConversationAccessGuard, ConversationRateGuard)
   async send(
     @CurrentUser() user: AuthUser,
     @Param('id', new ParseUUIDPipe()) id: string,

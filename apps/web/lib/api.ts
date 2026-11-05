@@ -2,6 +2,7 @@ import 'server-only';
 import { redirect } from 'next/navigation';
 import { getSessionToken } from './session';
 import type { ApiSession } from './session-cookie';
+import type { ChatStatus, Conversation, ConversationSummary } from './chat';
 import type {
   CatalogListDetail,
   CatalogListSummary,
@@ -592,4 +593,86 @@ export function addFromCatalogList(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ entryIds, queue }),
   });
+}
+
+// ---------------------------------------------------------------------------
+// MEM-131: the « Chat IA » (the conversations with the AI of MEM-130)
+// ---------------------------------------------------------------------------
+
+/** Whether the « Chat IA » is open to the user, with its limits. Off if the API can't say: read on every page. */
+export async function getChatStatus(): Promise<ChatStatus> {
+  const token = await getSessionToken();
+  if (!token) return { enabled: false };
+  try {
+    const res = await fetch(`${API_URL}/conversations/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5_000),
+    });
+    const status = res.ok ? ((await res.json()) as ChatStatus) : null;
+    return status?.enabled === true ? status : { enabled: false };
+  } catch {
+    return { enabled: false };
+  }
+}
+
+/** The most recent first. */
+export function listConversations(): Promise<ConversationSummary[]> {
+  return authedFetch<ConversationSummary[]>('/conversations');
+}
+
+/** A conversation with its messages in order; null when it doesn't exist (any more). */
+export async function getConversation(id: string): Promise<Conversation | null> {
+  try {
+    return await authedFetch<Conversation>(`/conversations/${encodeURIComponent(id)}`);
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.status === 400)) return null;
+    throw error;
+  }
+}
+
+export async function deleteConversation(id: string): Promise<void> {
+  try {
+    await authedFetch<void>(`/conversations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  } catch (error) {
+    if (!(error instanceof ApiError && error.status === 404)) throw error;
+  }
+}
+
+/**
+ * A message of the user, for app/anglais/chat/envoyer/route.ts: creates the
+ * conversation first when there is none yet. The answer of the API as it is
+ * (the stream of the reply, or the refusal), and the id of the conversation.
+ */
+export async function sendChatMessage(
+  conversationId: string | null,
+  text: string,
+): Promise<{ response: Response; conversationId: string | null }> {
+  const token = await getSessionToken();
+  if (!token) return { response: Response.json({ message: 'Not logged in' }, { status: 401 }), conversationId };
+  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  try {
+    let id = conversationId;
+    if (!id) {
+      const created = await fetch(`${API_URL}/conversations`, {
+        method: 'POST',
+        headers,
+        cache: 'no-store',
+        signal: AbortSignal.timeout(API_TIMEOUT_MS),
+      });
+      if (!created.ok) return { response: created, conversationId: null };
+      id = ((await created.json()) as { id: string }).id;
+    }
+    const response = await fetch(`${API_URL}/conversations/${encodeURIComponent(id)}/messages`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ text }),
+      cache: 'no-store',
+      // The reply comes in a stream: the time to write it, not the usual 15 s.
+      signal: AbortSignal.timeout(120_000),
+    });
+    return { response, conversationId: id };
+  } catch {
+    return { response: Response.json({ message: 'API unreachable' }, { status: 503 }), conversationId };
+  }
 }

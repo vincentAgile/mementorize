@@ -16,7 +16,7 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 /** The target retentions of a new account (MEM-75). */
 const RETENTIONS_90 = { vocabularyRetention: 90, quoteRetention: 90, mindMapRetention: 90 };
 /** The mode of use of a new account (MEM-110). */
-const STANDARD = { usageMode: 'Standard', learningMode: 'Guided', mindMapsEnabled: false };
+const STANDARD = { usageMode: 'Standard', learningMode: 'Guided', mindMapsEnabled: false, chatNoticeAccepted: false };
 
 describe('API (e2e)', () => {
   let app: NestExpressApplication;
@@ -1027,6 +1027,12 @@ describe('API (e2e)', () => {
     expect(
       (await http().put('/preferences').set(auth).send({ mindMapsEnabled: false }).expect(200)).body.homeSpace,
     ).toBe('Quote');
+
+    // MEM-131: the privacy notice of the « Chat IA », not read until « J'ai compris ».
+    expect(guided.body.chatNoticeAccepted).toBe(false);
+    const read = await http().put('/preferences').set(auth).send({ chatNoticeAccepted: true }).expect(200);
+    expect(read.body).toMatchObject({ chatNoticeAccepted: true, homeSpace: 'Quote' });
+    await http().put('/preferences').set(auth).send({ chatNoticeAccepted: 'oui' }).expect(400);
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);

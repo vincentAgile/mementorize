@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { inSettings, SETTINGS_TABS } from '../lib/settings';
 import { inStatistics, STATISTICS_TABS } from '../lib/statistics';
+import { CHAT_HREF } from '../lib/chat';
 import { activeSpace, highlightedTab } from '../lib/spaces';
 
 /**
@@ -18,14 +19,17 @@ import { activeSpace, highlightedTab } from '../lib/spaces';
  * its place from one space to the next.
  * A Client Component, to know which tab is open.
  */
-export function SubNav() {
+export function SubNav({ chat = false }: { chat?: boolean }) {
   const pathname = usePathname();
   const type = useSearchParams().get('type');
   const space = activeSpace(pathname, type);
   // MEM-78: the Settings have their tabs too, under the gear.
   const settings = inSettings(pathname);
   const statistics = inStatistics(pathname); // MEM-113
-  const tabs = settings ? SETTINGS_TABS : statistics ? STATISTICS_TABS : space?.tabs;
+  const tabs = (settings ? SETTINGS_TABS : statistics ? STATISTICS_TABS : space?.tabs)?.filter(
+    // MEM-131: « Chat IA » only when the API offers it to the user.
+    (tab) => chat || tab.href !== CHAT_HREF,
+  );
   const label = settings ? 'Réglages' : statistics ? 'Mes statistiques' : `Espace ${space?.label}`;
   // A learning or review session belongs to the first tab ("Apprendre · Réviser");
   // the mind map editor to « Liste » (MEM-97).

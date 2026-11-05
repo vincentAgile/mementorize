@@ -96,4 +96,9 @@ export class PreferencesDto {
   @IfSent()
   @IsBoolean()
   mindMapsEnabled?: boolean;
+
+  /** MEM-131: the privacy notice of the « Chat IA », read (« J'ai compris »). */
+  @IfSent()
+  @IsBoolean()
+  chatNoticeAccepted?: boolean;
 }

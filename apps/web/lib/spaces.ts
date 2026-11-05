@@ -49,6 +49,8 @@ export const SPACES: Space[] = [
       { href: '/anglais/liste', label: 'Ma liste' },
       { href: '/anglais/ajouter', label: 'Ajouter une carte' },
       { href: '/anglais/ajouter-liste', label: 'Ajouter une liste' },
+      // MEM-131: only when the API offers it to the user (CHAT_HREF, SubNav's `chat`).
+      { href: '/anglais/chat', label: 'Chat IA' },
     ],
     learnHref: '/apprendre',
     prepareHref: '/anglais/preparer', // MEM-94

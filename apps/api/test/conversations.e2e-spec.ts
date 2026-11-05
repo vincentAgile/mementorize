@@ -91,6 +91,7 @@ describe('Conversations with the AI (e2e, MEM-130)', () => {
       enabled: true,
       limits: { messagesPerDay: 30, messagesPerConversation: 20, maxLength: 1000 },
       usedToday: 0,
+      resetAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT/),
     });
     const res = await http().post('/conversations').set(auth).expect(201);
     expect(res.body).toMatchObject({
@@ -395,8 +396,11 @@ describe('Conversations: at most 3 requests per second (e2e, MEM-130)', () => {
       .expect(201);
     const auth = { Authorization: `Bearer ${res.body.accessToken as string}` };
     const statuses: number[] = [];
-    for (let i = 0; i < 4; i++) statuses.push((await http().get('/conversations').set(auth)).status);
-    expect(statuses).toEqual([200, 200, 200, 429]);
+    for (let i = 0; i < 4; i++) statuses.push((await http().post('/conversations').set(auth)).status);
+    expect(statuses).toEqual([201, 201, 201, 429]);
+    // The readings are not counted: the status (every page, for the menu), the list, a conversation.
+    await http().get('/conversations/status').set(auth).expect(200);
+    await http().get('/conversations').set(auth).expect(200);
   });
 });
 
