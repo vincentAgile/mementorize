@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { LearningItem } from '../../lib/types';
+import { TO_FRENCH } from '../../lib/guided-questions';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
 
@@ -11,6 +12,8 @@ interface RecognitionStepProps {
   items: LearningItem[];
   /** After the last item: on to « Évaluation de l'apprentissage ». */
   onDone: () => void;
+  /** MEM-128: the Guided learning mode: « Comment le dit-on en français ? » under the English. */
+  guided?: boolean;
 }
 
 /**
@@ -26,7 +29,7 @@ interface RecognitionStepProps {
  * same card, as many times as wanted: nothing is saved, the English isn't
  * read again (nor cut), and the focus goes back to « Afficher la réponse ».
  */
-export function RecognitionStep({ items, onDone }: RecognitionStepProps) {
+export function RecognitionStep({ items, onDone, guided = false }: RecognitionStepProps) {
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   // MEM-126: after « Réessayer », the focus on « Afficher la réponse ».
@@ -95,6 +98,15 @@ export function RecognitionStep({ items, onDone }: RecognitionStepProps) {
             {item.word}
           </blockquote>
         </Speakable>
+        {/* MEM-128: the question, with the answer hidden; then its room only, so that nothing moves. */}
+        {guided && (
+          <p
+            className={revealed ? 'review-card__question review-card__question--ghost' : 'review-card__question'}
+            aria-hidden={revealed ? true : undefined}
+          >
+            {TO_FRENCH}
+          </p>
+        )}
         {/* The answer keeps its room while hidden: the button below stays where it is (MEM-100). */}
         <div
           className={revealed ? undefined : 'review-card__face--ghost'}
