@@ -17,6 +17,16 @@
   box-sizing: border-box;
 }
 
+/*
+ * The room of the vertical scroll bar is always kept (Windows, Linux:
+ * a 15 px bar): a page long enough to scroll (the Settings) doesn't shift
+ * the header and the column of the page to the left of a short one.
+ * Nothing changes where the scroll bars lie over the page (macOS, phones).
+ */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   line-height: 1.5;
