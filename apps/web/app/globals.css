@@ -803,6 +803,38 @@ kbd {
   cursor: pointer;
 }
 
+/* MEM-126: « Réessayer » next to « Carte suivante », secondary; the row keeps its height */
+.recognition__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.review-card__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: calc(0.6rem - 1px) 1rem;
+  border: 1px solid #147d80;
+  border-radius: 4px;
+  background: transparent;
+  color: #147d80;
+  font: inherit;
+  cursor: pointer;
+}
+
+.review-card__retry:hover {
+  background: rgba(20, 125, 128, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .review-card__retry {
+    border-color: #7fd3d6;
+    color: #7fd3d6;
+  }
+}
+
 /*
  * MEM-46: four coloured buttons, the label always shown (the colour is not
  * the only cue). Dark text on the orange and the yellow, white text on the
