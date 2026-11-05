@@ -1,4 +1,4 @@
-import type { ItemType, Translator, UsageMode } from '@prisma/client';
+import type { ItemType, LearningMode, Translator, UsageMode } from '@prisma/client';
 import { IsBoolean, IsEnum, IsIn, ValidateBy, ValidateIf } from 'class-validator';
 import { separatorProblem } from '../../items/csv/separator.js';
 import { ITEM_TYPES } from '../../items/item-content.js';
@@ -11,6 +11,12 @@ export const TRANSLATORS = { DeepL: 'DeepL', Google: 'Google' } as const satisfi
 export const USAGE_MODES = { Standard: 'Standard', Advanced: 'Advanced' } as const satisfies Record<
   UsageMode,
   UsageMode
+>;
+
+/** Runtime list of the learning modes (MEM-125), in sync with the Prisma enum. */
+export const LEARNING_MODES = { Guided: 'Guided', Autonomous: 'Autonomous' } as const satisfies Record<
+  LearningMode,
+  LearningMode
 >;
 
 /** A separator of the CSV files (MEM-80): a single character, but the double quote and the line breaks. */
@@ -76,4 +82,9 @@ export class PreferencesDto {
   @IfSent()
   @IsEnum(USAGE_MODES)
   usageMode?: UsageMode;
+
+  /** The learning mode (MEM-125): Guided explains each step of the learning; Autonomous doesn't. */
+  @IfSent()
+  @IsEnum(LEARNING_MODES)
+  learningMode?: LearningMode;
 }
