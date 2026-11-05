@@ -157,6 +157,10 @@ body {
   .app-header__top .header-actions__icon.is-active {
     align-self: end;
     padding: 0.55rem 0.75rem 0.6rem;
+    /* Wider than the other icons (0.3rem each side): the extra width taken
+       back from the margins, so that no icon moves when the gear or
+       « Ressources » becomes the active one. */
+    margin-inline: -0.45rem;
     border-radius: 8px 8px 0 0;
     background: var(--band-2);
   }
