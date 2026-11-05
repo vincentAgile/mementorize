@@ -1,4 +1,5 @@
-import { getDueSummary, getProfile } from '../lib/api';
+import { getDueSummary, getPreferences, getProfile } from '../lib/api';
+import { mindMapsEnabledOf } from '../lib/types';
 import { HeaderActions } from './header-actions';
 import { HeaderTitle } from './header-title';
 import { Logo } from './logo';
@@ -21,7 +22,7 @@ import { SubNav } from './sub-nav';
  * page's <main>.
  */
 export async function AppHeader() {
-  const [due, profile] = await Promise.all([getDueSummary(), getProfile()]);
+  const [due, profile, preferences] = await Promise.all([getDueSummary(), getProfile(), getPreferences()]);
 
   return (
     <header className="app-header">
@@ -31,7 +32,8 @@ export async function AppHeader() {
           <span className="app-header__divider" aria-hidden="true" />
           <HeaderTitle />
           {/* In reading order (MEM-33): the menu before the icons; the grid places them. */}
-          <MainNav due={due} />
+          {/* « Espace cartes mentales »: off, the space leaves the menu. */}
+          <MainNav due={due} mindMaps={mindMapsEnabledOf(preferences)} />
           <HeaderActions profile={profile} />
         </div>
       </div>

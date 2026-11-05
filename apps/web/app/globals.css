@@ -554,6 +554,11 @@ body {
     background: var(--band-1);
   }
 
+  /* « Espace cartes mentales » off: Anglais, Citations and Ressources */
+  .page__nav--3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
   .page__nav a {
     flex-direction: column;
     justify-content: center;

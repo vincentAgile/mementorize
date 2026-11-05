@@ -22,7 +22,7 @@ const plural = (value: number, word: string) => `${count(value)}${NBSP}${word}${
  * history (MEM-76). It runs in the background: while it does, the status is
  * checked every few seconds, and a message says when it ends or fails.
  */
-export function OptimizationForm({ spaces }: { spaces: SpaceOptimization[] }) {
+export function OptimizationForm({ spaces, types }: { spaces: SpaceOptimization[]; types: ItemType[] }) {
   const [states, setStates] = useState(spaces);
   const running = states.some((space) => space.status === 'Running');
 
@@ -49,7 +49,7 @@ export function OptimizationForm({ spaces }: { spaces: SpaceOptimization[] }) {
         la prochaine révision de chaque carte.
       </p>
       <div className="settings__form optimization">
-        {ORDER.map((type) => {
+        {ORDER.filter((type) => types.includes(type)).map((type) => {
           const space = states.find((one) => one.type === type);
           return space && <SpaceRow key={type} space={space} onChange={update} />;
         })}

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { getOptimization, getPreferences } from '../../../lib/api';
+import { visibleTypes } from '../../../lib/spaces';
+import { mindMapsEnabledOf } from '../../../lib/types';
 import { OptimizationForm } from '../optimization-form';
 import { RetentionForm } from '../retention-form';
 import { ReviewForm } from '../review-form';
@@ -11,6 +13,8 @@ export const metadata: Metadata = { title: 'Révision · Réglages' };
 // of its FSRS weights on the user's history (MEM-76).
 export default async function ReviewSettingsPage() {
   const [preferences, optimization] = await Promise.all([getPreferences(), getOptimization()]);
+  // Cartes mentales only when the space is on (« Espace cartes mentales »).
+  const types = visibleTypes(mindMapsEnabledOf(preferences));
   return (
     <>
       <ReviewForm showReviewDelays={preferences.showReviewDelays} />
@@ -20,8 +24,9 @@ export default async function ReviewSettingsPage() {
           Quote: preferences.quoteRetention,
           MindMap: preferences.mindMapRetention,
         }}
+        types={types}
       />
-      <OptimizationForm spaces={optimization} />
+      <OptimizationForm spaces={optimization} types={types} />
     </>
   );
 }

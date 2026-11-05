@@ -220,6 +220,11 @@ export interface Preferences {
    * learningModeOf.
    */
   learningMode?: LearningMode;
+  /**
+   * « Espace cartes mentales »: off by default, everything about the space
+   * hidden. Missing while the API doesn't send it yet: see mindMapsEnabledOf.
+   */
+  mindMapsEnabled?: boolean;
 }
 
 /** The modes of use (MEM-110): Standard by default, or Advanced. */
@@ -231,6 +236,10 @@ export type LearningMode = 'Guided' | 'Autonomous';
 /** The learning mode of the preferences; Guided while the API doesn't send it yet (MEM-125). */
 export const learningModeOf = (preferences: Pick<Preferences, 'learningMode'>): LearningMode =>
   preferences.learningMode ?? 'Guided';
+
+/** The space Cartes mentales is on; off while the API doesn't send it yet (the default). */
+export const mindMapsEnabledOf = (preferences: Pick<Preferences, 'mindMapsEnabled'>): boolean =>
+  preferences.mindMapsEnabled === true;
 
 /** MEM-76: where a space stands, for the optimization of its FSRS weights. */
 export interface SpaceOptimization {

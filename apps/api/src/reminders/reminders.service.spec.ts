@@ -10,7 +10,7 @@ describe('RemindersService', () => {
   const NOW = new Date('2026-10-13T06:05:00Z');
 
   const prisma = {
-    user: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    user: { findMany: vi.fn(), findUnique: vi.fn(), findUniqueOrThrow: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     card: { count: vi.fn() },
   };
   const mail = { enabled: true, send: vi.fn() };
@@ -30,6 +30,7 @@ describe('RemindersService', () => {
     mail.enabled = true;
     prisma.user.updateMany.mockResolvedValue({ count: 1 });
     prisma.card.count.mockResolvedValue(3);
+    prisma.user.findUniqueOrThrow.mockResolvedValue({ mindMapsEnabled: false });
     mail.send.mockResolvedValue(undefined);
     const config = new ConfigService({ APP_URL: 'https://app.example.fr/', JWT_SECRET: 'secret' });
     service = new RemindersService(prisma as unknown as PrismaService, mail as unknown as MailService, config);
@@ -54,7 +55,8 @@ describe('RemindersService', () => {
           due: { lte: NOW },
           kind: { not: 'EnglishToFrench' },
           learnedAt: null,
-          item: { userId: 'user-1', learningStatus: 'Learning' },
+          // The space Cartes mentales off (by default): its cards hidden, not counted.
+          item: { userId: 'user-1', learningStatus: 'Learning', type: { not: 'MindMap' } },
         },
       });
       const sentMail = mail.send.mock.calls[0][0];
@@ -65,6 +67,22 @@ describe('RemindersService', () => {
       expect(sentMail.headers['List-Unsubscribe']).toMatch(
         /^<https:\/\/app\.example\.fr\/unsubscribe\?user=user-1&token=/,
       );
+    });
+
+    it('counts the cards of the mind maps when the space is on', async () => {
+      prisma.user.findMany.mockResolvedValue([aUser()]);
+      prisma.user.findUniqueOrThrow.mockResolvedValue({ mindMapsEnabled: true });
+
+      await expect(service.sendDueReminders(NOW)).resolves.toBe(1);
+
+      expect(prisma.card.count).toHaveBeenCalledWith({
+        where: {
+          due: { lte: NOW },
+          kind: { not: 'EnglishToFrench' },
+          learnedAt: null,
+          item: { userId: 'user-1', learningStatus: 'Learning' },
+        },
+      });
     });
 
     it('waits for the hour, in the time zone of the user', async () => {

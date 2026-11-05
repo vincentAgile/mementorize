@@ -16,7 +16,7 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 /** The target retentions of a new account (MEM-75). */
 const RETENTIONS_90 = { vocabularyRetention: 90, quoteRetention: 90, mindMapRetention: 90 };
 /** The mode of use of a new account (MEM-110). */
-const STANDARD = { usageMode: 'Standard', learningMode: 'Guided' };
+const STANDARD = { usageMode: 'Standard', learningMode: 'Guided', mindMapsEnabled: false };
 
 describe('API (e2e)', () => {
   let app: NestExpressApplication;
@@ -1011,6 +1011,22 @@ describe('API (e2e)', () => {
     }
     const guided = await http().put('/preferences').set(auth).send({ learningMode: 'Guided' }).expect(200);
     expect(guided.body.learningMode).toBe('Guided');
+
+    // « Espace cartes mentales »: off by default; on, then off: the home page leaves the space.
+    expect(guided.body.mindMapsEnabled).toBe(false);
+    const on = await http().put('/preferences').set(auth).send({ mindMapsEnabled: true }).expect(200);
+    expect(on.body).toMatchObject({ mindMapsEnabled: true, learningMode: 'Guided' });
+    await http().put('/preferences').set(auth).send({ homeSpace: 'MindMap' }).expect(200);
+    const off = await http().put('/preferences').set(auth).send({ mindMapsEnabled: false }).expect(200);
+    expect(off.body).toMatchObject({ mindMapsEnabled: false, homeSpace: 'Vocabulary' });
+    for (const refused of ['true', 1, null, 'Activé']) {
+      await http().put('/preferences').set(auth).send({ mindMapsEnabled: refused }).expect(400);
+    }
+    // Off while the home page is another space: it stays.
+    await http().put('/preferences').set(auth).send({ homeSpace: 'Quote' }).expect(200);
+    expect(
+      (await http().put('/preferences').set(auth).send({ mindMapsEnabled: false }).expect(200)).body.homeSpace,
+    ).toBe('Quote');
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);

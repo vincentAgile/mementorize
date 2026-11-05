@@ -1,3 +1,4 @@
+import { requireMindMaps } from '../../lib/mind-maps-access';
 import { AppHeader } from '../app-header';
 
 /**
@@ -6,8 +7,10 @@ import { AppHeader } from '../app-header';
  * (/cartes-mentales/ajouter), each at its own URL. The tabs are in the
  * header's second band (SubNav, MEM-29). The editor of a map
  * (/mind-maps/[id]) stays a page of its own, under the tab « Liste ».
+ * Only when the space is on (« Espace cartes mentales »).
  */
-export default function MindMapsLayout({ children }: { children: React.ReactNode }) {
+export default async function MindMapsLayout({ children }: { children: React.ReactNode }) {
+  await requireMindMaps();
   return (
     <>
       <AppHeader />
