@@ -6,7 +6,7 @@ import { ConversationLimitsService } from './conversation-limits.js';
 import { ConversationRateGuard } from './conversation-rate.guard.js';
 import { ConversationsController } from './conversations.controller.js';
 import { ConversationsService } from './conversations.service.js';
-import { AnthropicConversationModel } from './model/anthropic-conversation-model.js';
+import { AnthropicConversationModel, type Effort } from './model/anthropic-conversation-model.js';
 import { CONVERSATION_MODEL } from './model/conversation-model.js';
 import { FakeConversationModel } from './model/fake-conversation-model.js';
 
@@ -45,6 +45,7 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
           text('ANTHROPIC_API_KEY'),
           text('ANTHROPIC_MODEL'),
           Number(text('ANTHROPIC_TIMEOUT_MS') || DEFAULT_TIMEOUT_MS),
+          (text('ANTHROPIC_EFFORT') || undefined) as Effort | undefined,
         );
       },
     },
