@@ -69,6 +69,8 @@ model User {
   /// « Espace cartes mentales »: off by default, everything about the space
   /// hidden; on for the accounts that had mind maps when it came in.
   mindMapsEnabled Boolean @default(false)
+  /// MEM-131: the user has read the privacy notice of the « Chat IA » (« J'ai compris »).
+  chatNoticeAccepted Boolean @default(false)
 
   @@map("users")
 }

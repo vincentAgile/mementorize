@@ -99,7 +99,9 @@ export class ConversationsService {
       where: { userId_day: { userId, day: localDate(now, timeZone) } },
       select: { count: true },
     });
-    return { enabled: true, limits, usedToday: usage?.count ?? 0 };
+    // MEM-131: when the count of the day starts again, for the web app's message before the limit.
+    const resetAt = startOfNextLocalDay(now, timeZone).toISOString();
+    return { enabled: true, limits, usedToday: usage?.count ?? 0, resetAt };
   }
 
   async create(userId: string) {

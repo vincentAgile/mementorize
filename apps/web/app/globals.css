@@ -5392,3 +5392,355 @@ a.add-list__choice:focus-visible {
 .review-card__question--ghost {
   visibility: hidden;
 }
+
+/* --- MEM-131: « Chat IA », a written conversation with the AI ---------------- */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.chat__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.chat__title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.chat__notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 1rem;
+  line-height: 1.5;
+}
+
+.chat__notice p {
+  flex: 1 1 22rem;
+  margin: 0;
+}
+
+.chat__messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat__message {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: min(85%, 40rem);
+}
+
+.chat__message--ai {
+  align-self: flex-start;
+}
+
+.chat__message--user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.chat__bubble {
+  margin: 0;
+  padding: 0.65rem 0.9rem;
+  border-radius: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat__message--ai .chat__bubble {
+  border-bottom-left-radius: 4px;
+  background: #f1f3f3;
+  color: #1f2a2b;
+}
+
+.chat__message--user .chat__bubble {
+  border-bottom-right-radius: 4px;
+  background: #147d80;
+  color: #fff;
+}
+
+/* The « … » while the AI thinks */
+.chat__typing span {
+  display: inline-block;
+  font-weight: 700;
+  animation: chat-typing 1.2s infinite ease-in-out;
+}
+
+.chat__typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.chat__typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes chat-typing {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+  }
+  30% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat__typing span {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* The last message stays above the input fixed at the bottom */
+.chat__end {
+  height: 0;
+  scroll-margin-bottom: 10rem;
+}
+
+/* The evaluation of a message, under it */
+.chat-feedback {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #d5e4e4;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.chat-feedback__title {
+  margin: 0 0 0.35rem;
+  color: #0f6366;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chat-feedback__label {
+  margin: 0.5rem 0 0.15rem;
+  color: #4a5a5b;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.chat-feedback__ok,
+.chat-feedback__corrected {
+  margin: 0;
+}
+
+/* A change: underlined and in bold, not by colour only */
+.chat-feedback__change {
+  background: rgba(27, 175, 122, 0.14);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.chat-feedback__list {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.chat-feedback__list li + li {
+  margin-top: 0.3rem;
+}
+
+.chat-feedback__type {
+  display: inline-block;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: #e6f2f2;
+  color: #0f6366;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.chat-feedback__list del {
+  color: #8a3b2a;
+}
+
+.chat-feedback__why {
+  color: #4a5a5b;
+}
+
+.chat-feedback__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.5rem 0 0;
+}
+
+.chat-feedback__copied {
+  color: #0f6366;
+  font-size: 0.85rem;
+}
+
+/* The input, fixed at the bottom of the screen */
+.chat__composer {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-inline: -0.5rem;
+  padding: 0.75rem 0.5rem calc(0.75rem + env(safe-area-inset-bottom));
+  border-top: 1px solid #e3e8e8;
+  background: #fff;
+}
+
+.chat__input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.chat__input {
+  flex: 1;
+  min-height: 2.9rem;
+  max-height: 10rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #b9c4c4;
+  border-radius: 8px;
+  font: inherit;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.chat__input:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 1px;
+}
+
+.chat__input[readonly],
+.chat__input:disabled {
+  background: #f5f7f7;
+}
+
+.chat__send {
+  min-height: 2.9rem;
+  padding: 0 1.2rem;
+  border: none;
+  border-radius: 6px;
+  background: #147d80;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat__send:hover:not(:disabled) {
+  background: #0f6366;
+}
+
+.chat__send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.chat__counter {
+  margin: 0;
+  color: #4a5a5b;
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.chat__limit {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  background: #fff4e5;
+  color: #6b3d00;
+  line-height: 1.5;
+}
+
+.chat__error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
+/* « Mes conversations » */
+.chat-list summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.chat-list__items {
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-list__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid #eef1f1;
+}
+
+.chat-list__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-list__date {
+  color: #4a5a5b;
+  font-size: 0.85rem;
+}
+
+.chat-list__title {
+  overflow: hidden;
+  max-width: 34rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.chat-list__open {
+  color: #4a5a5b;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 639px) {
+  .chat__message {
+    max-width: 92%;
+  }
+
+  /* Above the bar of the spaces, at the bottom of the screen */
+  .chat__composer {
+    bottom: calc(3.75rem + env(safe-area-inset-bottom));
+    padding-bottom: 0.75rem;
+  }
+
+  .chat__end {
+    scroll-margin-bottom: 13rem;
+  }
+}

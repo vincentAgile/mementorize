@@ -101,4 +101,29 @@ describe('SubNav and HeaderTitle: the tabs of « Mes statistiques » (MEM-113)',
     mount(<HeaderTitle />);
     expect(container.querySelector('h1')?.textContent).toBe('Mes statistiques');
   });
+
+  it('« Chat IA », fifth tab of Anglais, only when the API offers it (MEM-131)', () => {
+    pathname = '/anglais';
+    mount(<SubNav />);
+    expect([...container.querySelectorAll('nav a')].map((a) => a.textContent)).toEqual([
+      'Apprendre · Réviser',
+      'Ma liste',
+      'Ajouter une carte',
+      'Ajouter une liste',
+    ]);
+    pathname = '/anglais/chat';
+    mount(<SubNav chat />);
+    const tabs = [...container.querySelectorAll('nav a')];
+    expect(tabs.map((a) => a.textContent)).toEqual([
+      'Apprendre · Réviser',
+      'Ma liste',
+      'Ajouter une carte',
+      'Ajouter une liste',
+      'Chat IA',
+    ]);
+    expect(tabs[4].getAttribute('aria-current')).toBe('page');
+    pathname = '/anglais/chat/autre';
+    mount(<SubNav chat />);
+    expect(container.querySelector('nav a.is-active')?.textContent).toBe('Chat IA');
+  });
 });
