@@ -8,7 +8,7 @@ import { StartLink } from './start-link';
 
 export const metadata: Metadata = { title: 'Comment se passe l’apprentissage ? · Anglais' };
 
-/** The steps of a learning session, as its headings name them (steps 1 to 3); the selection comes before, unnumbered. */
+/** The steps of a learning session, numbered as its headings (steps 1 to 3); the selection comes before, unnumbered. */
 function steps(assessment: boolean) {
   return [
     {
@@ -21,21 +21,18 @@ function steps(assessment: boolean) {
       name: 'Écouter et prononcer',
       // The assessment only when it is configured (MEM-90).
       text: assessment
-        ? 'Écoute chaque mot anglais, répète-le et évalue ta prononciation.'
-        : 'Écoute chaque mot anglais et répète-le.',
-      heading: 'Étape 1 · Écoute et prononciation',
+        ? 'Écoute chaque mot ou expression anglaise, répète et évalue ta prononciation.'
+        : 'Écoute chaque mot ou expression anglaise, puis répète.',
     },
     {
       when: 'Étape 2',
       name: 'Restituer en français',
-      text: 'Tu vois le mot anglais : retrouve sa traduction, puis vérifie.',
-      heading: 'Étape 2 · Anglais → français',
+      text: 'Tu vois le mot ou l’expression en anglais : retrouve sa traduction, puis vérifie.',
     },
     {
       when: 'Étape 3',
       name: 'Restituer en anglais',
-      text: 'Tu vois le français : retrouve le mot anglais, puis note ta réponse.',
-      heading: 'Étape 3 · Évaluation de l’apprentissage',
+      text: 'Tu vois le mot ou l’expression en français : retrouve la traduction en anglais, puis évalue ta réponse.',
     },
   ];
 }
@@ -62,7 +59,6 @@ export default async function LearningIntroPage() {
             <span className="learning-intro__when">{step.when}</span>
             <span className="learning-intro__name">{step.name}</span>
             <span className="learning-intro__text">{step.text}</span>
-            {step.heading && <span className="learning-intro__heading">{step.heading}</span>}
           </li>
         ))}
       </ol>

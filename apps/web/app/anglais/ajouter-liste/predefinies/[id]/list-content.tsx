@@ -56,7 +56,7 @@ export function ListContent({ list }: { list: CatalogListDetail }) {
         </p>
       )}
       <table className="catalog-content__table">
-        <caption className="visually-hidden">Mots de la liste « {list.title} »</caption>
+        <caption className="visually-hidden">Mots et expressions de la liste « {list.title} »</caption>
         <thead>
           <tr>
             <th scope="col" className="catalog-content__check">

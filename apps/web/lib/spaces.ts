@@ -40,7 +40,7 @@ export const SPACES: Space[] = [
     label: 'Anglais',
     shortLabel: 'Anglais',
     href: '/anglais',
-    emptyText: 'Aucune carte pour le moment : commence par ajouter un mot, une expression ou une phrase.',
+    emptyText: 'Aucune carte pour le moment : commence par ajouter un mot ou une expression.',
     reviewLabel: "Réviser l'anglais",
     tabs: [
       { href: '/anglais', label: 'Apprendre · Réviser' },

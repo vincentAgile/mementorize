@@ -5311,7 +5311,7 @@ a.add-list__choice:focus-visible {
 }
 
 .learning-intro__when {
-  grid-row: span 3;
+  grid-row: span 2;
   color: #0f6366;
   font-weight: 700;
 }
@@ -5327,11 +5327,6 @@ a.add-list__choice:focus-visible {
 
 .learning-intro__text {
   color: #444;
-}
-
-.learning-intro__heading {
-  color: #777;
-  font-size: 0.8rem;
 }
 
 .learning-intro__actions {
@@ -5388,8 +5383,7 @@ a.add-list__choice:focus-visible {
   }
 
   .learning-intro__step:first-child .learning-intro__when,
-  .learning-intro__text,
-  .learning-intro__heading {
+  .learning-intro__text {
     color: #bbb;
   }
 }
