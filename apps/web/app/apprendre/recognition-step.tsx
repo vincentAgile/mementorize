@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { LearningItem } from '../../lib/types';
 import { pronunciationUrl } from '../../lib/pronunciation-url';
 import { Speakable, usePronunciationAudio } from '../speech/speak-button';
@@ -22,10 +22,16 @@ interface RecognitionStepProps {
  * evaluation after the last one. No heading and no question on the card. No
  * rating: nothing is sent to the API, no state changes. Shortcut: Space (or
  * Enter) reveals, then goes on.
+ * MEM-126: with the answer shown, « Réessayer » (R) hides it again, on the
+ * same card, as many times as wanted: nothing is saved, the English isn't
+ * read again (nor cut), and the focus goes back to « Afficher la réponse ».
  */
 export function RecognitionStep({ items, onDone }: RecognitionStepProps) {
   const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
+  // MEM-126: after « Réessayer », the focus on « Afficher la réponse ».
+  const [retried, setRetried] = useState(0);
+  const revealButton = useRef<HTMLButtonElement>(null);
   const item = items[index];
   const last = index === items.length - 1;
   const audioUrl = pronunciationUrl(item.id, item.word);
@@ -38,9 +44,24 @@ export function RecognitionStep({ items, onDone }: RecognitionStepProps) {
     setIndex(index + 1);
   }
 
+  function retry() {
+    setRevealed(false);
+    setRetried((n) => n + 1);
+  }
+
+  useEffect(() => {
+    if (retried > 0) revealButton.current?.focus();
+  }, [retried]);
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+      const typing = (event.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable="true"]');
+      if ((event.key === 'r' || event.key === 'R') && revealed && !typing) {
+        event.preventDefault();
+        retry();
+        return;
+      }
       if (event.key !== ' ' && event.key !== 'Enter') return;
       // A focused button or link handles Enter/Space itself, once.
       const target = event.target as HTMLElement | null;
@@ -94,13 +115,19 @@ export function RecognitionStep({ items, onDone }: RecognitionStepProps) {
             </p>
           )}
         </div>
-        <p className="review-card__reveal-row">
+        <p className="review-card__reveal-row recognition__buttons">
           {revealed ? (
-            <button type="button" className="review-card__reveal" onClick={goOn}>
-              {last ? 'Passer à l’évaluation' : 'Carte suivante'} <kbd>Espace</kbd>
-            </button>
+            <>
+              <button type="button" className="review-card__reveal" onClick={goOn}>
+                {last ? 'Passer à l’évaluation' : 'Carte suivante'} <kbd>Espace</kbd>
+              </button>
+              {/* MEM-126: back to the English alone, on the same card; secondary, moving on stays the main action. */}
+              <button type="button" className="review-card__retry" onClick={retry}>
+                Réessayer <kbd>R</kbd>
+              </button>
+            </>
           ) : (
-            <button type="button" className="review-card__reveal" onClick={() => setRevealed(true)}>
+            <button ref={revealButton} type="button" className="review-card__reveal" onClick={() => setRevealed(true)}>
               Afficher la réponse <kbd>Espace</kbd>
             </button>
           )}
