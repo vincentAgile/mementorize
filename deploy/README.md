@@ -564,9 +564,11 @@ L'API peut tenir des conversations écrites en anglais avec Claude, l'IA d'Anthr
 
 ```bash
 ANTHROPIC_API_KEY="sk-ant-…"
-ANTHROPIC_MODEL="claude-haiku-4-5"
+ANTHROPIC_MODEL="claude-sonnet-5-5"
 # facultatif : délai avant d'abandonner, en millisecondes (valeur par défaut)
 ANTHROPIC_TIMEOUT_MS=30000
+# facultatif, conseillé : réflexion courte avant de répondre, plus rapide pour une conversation
+ANTHROPIC_EFFORT=low
 # les comptes qui y ont accès : adresses séparées par des virgules, * pour tous ; vide, personne
 CONVERSATION_ALLOWED_EMAILS="vcarpentier33@gmail.com"
 ```

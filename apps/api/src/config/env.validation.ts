@@ -48,13 +48,13 @@ export function validateEnv(env: Record<string, unknown>): Record<string, unknow
   }
   // MEM-130: the conversations with the AI, by Claude. Optional: off without both.
   if (text('ANTHROPIC_API_KEY') && !text('ANTHROPIC_MODEL')) {
-    problems.push('ANTHROPIC_MODEL is needed with ANTHROPIC_API_KEY (e.g. claude-haiku-4-5)');
+    problems.push('ANTHROPIC_MODEL is needed with ANTHROPIC_API_KEY (e.g. claude-sonnet-5-5)');
   }
   if (text('ANTHROPIC_MODEL') && !text('ANTHROPIC_API_KEY')) {
     problems.push('ANTHROPIC_API_KEY is needed with ANTHROPIC_MODEL');
   }
   if (text('ANTHROPIC_MODEL') && !/^claude-[a-z0-9.-]+$/.test(text('ANTHROPIC_MODEL'))) {
-    problems.push('ANTHROPIC_MODEL must be the name of a Claude model, e.g. claude-haiku-4-5');
+    problems.push('ANTHROPIC_MODEL must be the name of a Claude model, e.g. claude-sonnet-5-5');
   }
   if (/\s/.test(text('ANTHROPIC_API_KEY'))) problems.push('ANTHROPIC_API_KEY must not contain spaces');
   if (
@@ -62,6 +62,9 @@ export function validateEnv(env: Record<string, unknown>): Record<string, unknow
     !(Number.isInteger(Number(text('ANTHROPIC_TIMEOUT_MS'))) && Number(text('ANTHROPIC_TIMEOUT_MS')) >= 1000)
   ) {
     problems.push('ANTHROPIC_TIMEOUT_MS must be a whole number of milliseconds, 1000 or more');
+  }
+  if (text('ANTHROPIC_EFFORT') && !['low', 'medium', 'high'].includes(text('ANTHROPIC_EFFORT'))) {
+    problems.push('ANTHROPIC_EFFORT must be low, medium or high');
   }
   if (text('CONVERSATION_AI_FAKE') && !['true', 'false'].includes(text('CONVERSATION_AI_FAKE'))) {
     problems.push('CONVERSATION_AI_FAKE must be true or false');

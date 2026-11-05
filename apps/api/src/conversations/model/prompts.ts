@@ -17,35 +17,36 @@ export const REPLY_SYSTEM_PROMPT = `You are a kind, warm conversation partner in
 /** The evaluation: the corrections of one message of the learner. */
 export const EVALUATION_SYSTEM_PROMPT = `You review one message written in English by a French speaker who is practising English in a chat. The earlier messages are only context: review the last message of the learner, nothing else.
 
-Answer with the report_evaluation tool:
+Answer with a JSON object:
 - corrected: the whole message, corrected with as few changes as possible, keeping the learner's words and tone.
 - corrections: one entry per mistake, in the order of the message. type is grammar, vocabulary, spelling or phrasing (correct but unnatural English). original is the words of the learner, exactly as written; suggestion is what to write instead; explanation is one short sentence in simple English.
 - Do not flag casual chat style, a missing final full stop, or capital letters alone.
-- praise: when the message has no mistake, corrections is empty and praise is one short, specific sentence of praise; otherwise praise is null.`;
+- praise: when the message has no mistake, corrections is empty and praise is one short, specific sentence of praise; otherwise praise is an empty string.`;
 
-/** The tool the model must call for the evaluation: its input is the structured output. */
-export const EVALUATION_TOOL = {
-  name: 'report_evaluation',
-  description: 'Reports the corrected message and its corrections.',
-  input_schema: {
-    type: 'object' as const,
-    properties: {
-      corrected: { type: 'string', description: 'The whole message, corrected.' },
-      corrections: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            type: { type: 'string', enum: ['grammar', 'vocabulary', 'spelling', 'phrasing'] },
-            original: { type: 'string' },
-            suggestion: { type: 'string' },
-            explanation: { type: 'string', description: 'One sentence, in English.' },
-          },
-          required: ['type', 'original', 'suggestion', 'explanation'],
+/**
+ * The structured output of the evaluation (JSON schema). Not a forced tool:
+ * recent models refuse `tool_choice` « tool » (Claude Sonnet 5.5, 400).
+ */
+export const EVALUATION_SCHEMA = {
+  type: 'object',
+  properties: {
+    corrected: { type: 'string', description: 'The whole message, corrected.' },
+    corrections: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['grammar', 'vocabulary', 'spelling', 'phrasing'] },
+          original: { type: 'string' },
+          suggestion: { type: 'string' },
+          explanation: { type: 'string', description: 'One sentence, in English.' },
         },
+        required: ['type', 'original', 'suggestion', 'explanation'],
+        additionalProperties: false,
       },
-      praise: { type: ['string', 'null'], description: 'Short praise when there is no mistake; null otherwise.' },
     },
-    required: ['corrected', 'corrections', 'praise'],
+    praise: { type: 'string', description: 'Short praise when there is no mistake; empty otherwise.' },
   },
+  required: ['corrected', 'corrections', 'praise'],
+  additionalProperties: false,
 };
