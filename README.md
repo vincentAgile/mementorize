@@ -98,6 +98,8 @@ navigateur ──3001──▶ web ──(frontend)──▶ api ──(backend)
 
 **Service externe.** L'évaluation de la prononciation (MEM-90) passe par [Azure AI Speech](https://learn.microsoft.com/azure/ai-services/speech-service/), hors des conteneurs : l'API lui envoie l'enregistrement, converti en mémoire et jamais conservé. Sans `AZURE_SPEECH_KEY` et `AZURE_SPEECH_REGION`, la fonctionnalité est désactivée et l'application ne la propose pas. Mise en place : [deploy/README.md](./deploy/README.md#évaluation-de-la-prononciation-avec-azure-mem-90).
 
+**Service externe.** Les conversations écrites en anglais (MEM-130) passent par [Claude](https://docs.claude.com/), l'IA d'Anthropic : l'API lui envoie le texte de la conversation, jamais d'audio. Sans `ANTHROPIC_API_KEY` et `ANTHROPIC_MODEL`, la fonctionnalité est désactivée. Mise en place : [deploy/README.md](./deploy/README.md#conversations-avec-claude-mem-130).
+
 **Ordre de démarrage.** `depends_on` avec conditions : `postgres` _healthy_ (`pg_isready`) → `migrate` _completed successfully_ → `api` _healthy_ (`GET /health`, qui interroge aussi la base) → `web`. Sans ces conditions, les services démarreraient en même temps et l'API tenterait de se connecter à une base pas encore prête.
 
 **Isolation.** Seul `web` est publié sur la machine hôte. L'API n'est joignable que par `web`, sur le réseau `frontend` (le navigateur ne l'appelle jamais directement, voir [apps/web/README.md](./apps/web/README.md)) ; la base n'est que sur le réseau `backend`, que `web` ne voit pas. Les conteneurs s'adressent les uns aux autres par nom de service (`http://api:3000`, `postgres:5432`), résolu par le DNS de Docker.

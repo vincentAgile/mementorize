@@ -99,6 +99,14 @@ services:
       AZURE_SPEECH_REGION: ${AZURE_SPEECH_REGION:-}
       PRONUNCIATION_PER_MINUTE: ${PRONUNCIATION_PER_MINUTE:-10}
       PRONUNCIATION_PER_DAY: ${PRONUNCIATION_PER_DAY:-100}
+      # Written conversations with the AI (MEM-130), by Claude. Off without the
+      # key and the model. CONVERSATION_AI_FAKE=true: a fake model, locally only.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
+      ANTHROPIC_TIMEOUT_MS: ${ANTHROPIC_TIMEOUT_MS:-30000}
+      CONVERSATION_AI_FAKE: ${CONVERSATION_AI_FAKE:-false}
+      # The accounts it is open to: e-mails separated by commas, `*` for everyone; empty, nobody.
+      CONVERSATION_ALLOWED_EMAILS: ${CONVERSATION_ALLOWED_EMAILS:-}
     depends_on:
       postgres:
         condition: service_healthy
