@@ -199,7 +199,7 @@ export interface Profile {
 }
 
 /** The services of the translate buttons (MEM-44). */
-export type Translator = 'DeepL' | 'Google';
+export type Translator = 'DeepL' | 'DeepLAmerican' | 'Google';
 
 /** The user's preferences of the web app (MEM-6, MEM-44). */
 export interface Preferences {

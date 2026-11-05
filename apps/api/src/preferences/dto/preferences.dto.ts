@@ -5,7 +5,11 @@ import { ITEM_TYPES } from '../../items/item-content.js';
 import { type Retention, RETENTIONS } from '../../scheduling/scheduler.service.js';
 
 /** Runtime list of the translation services (MEM-44), in sync with the Prisma enum. */
-export const TRANSLATORS = { DeepL: 'DeepL', Google: 'Google' } as const satisfies Record<Translator, Translator>;
+export const TRANSLATORS = {
+  DeepL: 'DeepL',
+  DeepLAmerican: 'DeepLAmerican',
+  Google: 'Google',
+} as const satisfies Record<Translator, Translator>;
 
 /** Runtime list of the modes of use (MEM-110), in sync with the Prisma enum. */
 export const USAGE_MODES = { Standard: 'Standard', Advanced: 'Advanced' } as const satisfies Record<

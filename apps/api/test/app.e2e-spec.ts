@@ -1030,6 +1030,10 @@ describe('API (e2e)', () => {
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);
+    // DeepL towards American English, next to DeepL (British English) and Google.
+    const american = await http().put('/preferences').set(auth).send({ translator: 'DeepLAmerican' }).expect(200);
+    expect(american.body.translator).toBe('DeepLAmerican');
+    await http().put('/preferences').set(auth).send({ translator: 'DeepL' }).expect(200);
     await http().get('/preferences').expect(401);
   });
 

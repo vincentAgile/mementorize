@@ -70,9 +70,11 @@ model User {
   @@map("users")
 }
 
-/// Services of the translate buttons of the vocabulary forms (MEM-44).
+/// Services of the translate buttons of the vocabulary forms (MEM-44):
+/// DeepL towards British English, DeepL towards American English, Google.
 enum Translator {
   DeepL
+  DeepLAmerican
   Google
 }
 

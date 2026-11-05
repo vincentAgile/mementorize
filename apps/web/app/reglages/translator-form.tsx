@@ -1,15 +1,14 @@
 'use client';
 
-import { TRANSLATOR_NAMES } from '../../lib/translate-url';
+import { TRANSLATOR_CHOICES } from '../../lib/translate-url';
 import type { Translator } from '../../lib/types';
 import { saveTranslatorAction } from './actions';
 import { AutoSelect } from './auto-save';
 
-const CHOICES: Translator[] = ['DeepL', 'Google'];
-
 /**
- * Choice of the service of the translate buttons (MEM-44): DeepL by
- * default, or Google Translate. Saved at the selection (MEM-79).
+ * Choice of the service of the translate buttons (MEM-44): DeepL towards
+ * British English by default, DeepL towards American English, or Google
+ * Translate. Saved at the selection (MEM-79).
  */
 export function TranslatorForm({ translator }: { translator: Translator }) {
   return (
@@ -23,7 +22,7 @@ export function TranslatorForm({ translator }: { translator: Translator }) {
           label="Traduire avec"
           name="translator"
           initial={translator}
-          options={CHOICES.map((choice) => ({ value: choice, label: TRANSLATOR_NAMES[choice] }))}
+          options={TRANSLATOR_CHOICES}
           save={saveTranslatorAction}
         />
       </div>
