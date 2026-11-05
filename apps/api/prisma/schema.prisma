@@ -26,6 +26,9 @@ model User {
   pronunciationUsage PronunciationUsage[]
   /// The FSRS weights optimized on the user's history, per space (MEM-76).
   fsrsParameters FsrsParameters[]
+  /// The written conversations with the AI (MEM-130), and how many messages per day.
+  conversations     Conversation[]
+  conversationUsage ConversationUsage[]
 
   /// E-mail reminder of the due reviews (phase 11), once a day at most.
   /// Off until the user turns it on in the settings.
@@ -429,4 +432,61 @@ model PredefinedEntry {
 
   @@index([listId, position])
   @@map("predefined_entries")
+}
+
+/// MEM-130: who wrote a message of a conversation with the AI.
+enum ConversationRole {
+  Assistant
+  User
+}
+
+/// MEM-130: a written conversation in English with the AI. Text only, never
+/// audio. Deleted after 90 days (a daily task).
+model Conversation {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// The beginning of the first message of the user; null until then.
+  title     String?
+  createdAt DateTime @default(now())
+  /// The last message: the list shows the most recent first.
+  updatedAt DateTime @updatedAt
+  messages  ConversationMessage[]
+
+  @@index([userId, updatedAt])
+  @@index([createdAt])
+  @@map("conversations")
+}
+
+/// MEM-130: a message of a conversation, in order (position from 0: the
+/// opening question of the AI).
+model ConversationMessage {
+  id             String           @id @default(uuid())
+  conversationId String
+  conversation   Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  position       Int
+  role           ConversationRole
+  /// 4000 characters at most.
+  text           String           @db.VarChar(4000)
+  /// For a message of the user: the corrected version and the corrections
+  /// ({ corrected, corrections: [{ type, original, suggestion, explanation }], praise }).
+  evaluation     Json?
+  createdAt      DateTime         @default(now())
+
+  @@unique([conversationId, position])
+  @@map("conversation_messages")
+}
+
+/// MEM-130: how many messages the user sent to the AI, per local day (the
+/// daily cap). Kept apart from the messages: deleting a conversation gives
+/// none back.
+model ConversationUsage {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// YYYY-MM-DD, in the user's time zone (reminderTimeZone).
+  day    String
+  count  Int    @default(0)
+
+  @@id([userId, day])
+  @@map("conversation_usage")
 }

@@ -380,6 +380,24 @@ Le JSON des requêtes peut atteindre 3 Mo (`main.ts`), pour un fichier de 1 Mo.
 - **Réglages** : `AZURE_SPEECH_KEY` et `AZURE_SPEECH_REGION` (sans eux, la fonctionnalité est désactivée) ; `PRONUNCIATION_PER_MINUTE` (10) et `PRONUNCIATION_PER_DAY` (100) par utilisateur. Création de la ressource Azure : [deploy/README.md](../../deploy/README.md#évaluation-de-la-prononciation-avec-azure-mem-90).
 - **Tests** : `azure-pronunciation-assessor.spec.ts` ; `test/pronunciation-assessment.e2e-spec.ts` pour la route.
 
+## Conversations avec l'IA (MEM-130)
+
+`src/conversations/` : des conversations écrites en anglais avec une IA, texte seulement. Le modèle est derrière une interface indépendante du fournisseur (`model/conversation-model.ts`) : Claude d'Anthropic (`anthropic-conversation-model.ts`, SDK `@anthropic-ai/sdk`) et un faux modèle sans IA (`fake-conversation-model.ts`) pour les tests et le travail en local. Changer de fournisseur, c'est écrire une autre implémentation, rien d'autre.
+
+- **Tables** : `conversations` et `conversation_messages` (position, rôle `Assistant` ou `User`, texte de 4 000 caractères au plus, `evaluation` en JSON pour un message de l'utilisateur), plus `conversation_usage` (messages par utilisateur et par jour local, pour la limite quotidienne : supprimer une conversation ne rend rien).
+- **Routes** (utilisateur connecté ; la conversation d'un autre : 404) :
+  - `GET /conversations/status` : `{ enabled: false }` sans modèle ; sinon `{ enabled, limits, usedToday }`. Sans modèle, toutes les autres routes répondent 503.
+  - `POST /conversations` : crée la conversation avec la première question, écrite par l'application : « What do you want to talk about today? ».
+  - `GET /conversations` (la plus récente d'abord, avec `messageCount`), `GET /conversations/:id` (messages dans l'ordre), `DELETE /conversations/:id` (204).
+  - `POST /conversations/:id/messages { text }` : enregistre le message puis répond en flux SSE (`text/event-stream`) : `evaluation` (le message enregistré, avec `{ corrected, corrections[], praise }`), des `delta` (la réponse, morceau par morceau), puis `done` (la réponse enregistrée). Avant le flux : 400 (vide ou trop long), 404, 409 (le message précédent attend sa réponse), 429, 502 ou 503.
+- **Deux appels du modèle, en parallèle** : l'évaluation (sortie structurée, outil `report_evaluation` imposé, sur la question et le message) et la réponse (en flux, sur les 20 derniers échanges). Les consignes (`model/prompts.ts`) sont en anglais : un interlocuteur bienveillant, au niveau de l'utilisateur sans le dire, 120 mots au plus, qui relance par une question et reste dans son rôle.
+- **Échec du fournisseur** : délai dépassé, 429 ou surcharge → 503 ; autre erreur ou réponse inexploitable → 502. Jamais de réponse vide, jamais de nouvel essai automatique : le message est retiré et ne compte pas. En plein flux, un événement `error` remplace `done`.
+- **Limites** (`conversation-limits.ts`) : 30 messages par jour et par utilisateur (jour du fuseau de l'utilisateur, celui des rappels), 20 par conversation, 1 000 caractères par message. Au-delà, 429 avec `reason` (`daily-limit` et `retryAt`, le minuit local suivant ; ou `conversation-limit`). Ces valeurs deviendront des paramètres de la console ; d'ici là, ce sont les valeurs par défaut. Toutes les routes : 3 requêtes par seconde et par utilisateur (`rate-limit`).
+- **Purge** : chaque nuit (3 h 41), les conversations commencées il y a plus de 90 jours.
+- **Journal** : une ligne par appel du modèle (`model call:`), avec l'utilisateur, la durée et les jetons en entrée et en sortie ; jamais le texte.
+- **Réglages** : `ANTHROPIC_API_KEY` et `ANTHROPIC_MODEL` (sans eux, désactivé) ; `ANTHROPIC_TIMEOUT_MS` (30 000). En local, `CONVERSATION_AI_FAKE=true` active le faux modèle (refusé en production).
+- **Tests** : `anthropic-conversation-model.spec.ts` (avec un faux client de l'API) ; `test/conversations.e2e-spec.ts` avec le faux modèle.
+
 ## Sens de révision du vocabulaire (MEM-40)
 
 Un élément de vocabulaire garde ses deux cartes (`EnglishToFrench`, `FrenchToEnglish`), chacune avec son calendrier, mais **seule la carte français → anglais est révisée et comptée** : `REVIEWED_CARD` (`src/reviews/in-review.ts`) s'ajoute à `IN_REVIEW` dans toutes les requêtes sur les cartes dues (révision, compteurs, e-mail de rappel, prochaine révision). Les cartes anglais → français et leur historique restent en base, ignorés : un futur réglage du sens pourra les réactiver.

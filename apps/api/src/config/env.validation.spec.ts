@@ -62,4 +62,18 @@ describe('validateEnv', () => {
     );
     expect(() => validateEnv({ ...valid, PRONUNCIATION_PER_DAY: '0' })).toThrow(/PRONUNCIATION_PER_DAY/);
   });
+
+  it('checks the settings of the conversations with the AI (MEM-130), optional', () => {
+    expect(validateEnv({ ...valid, ANTHROPIC_API_KEY: 'sk-ant-x', ANTHROPIC_MODEL: 'claude-haiku-4-5' })).toBeTruthy();
+    expect(() => validateEnv({ ...valid, ANTHROPIC_API_KEY: 'sk-ant-x' })).toThrow(/ANTHROPIC_MODEL is needed/);
+    expect(() => validateEnv({ ...valid, ANTHROPIC_MODEL: 'claude-haiku-4-5' })).toThrow(/ANTHROPIC_API_KEY is needed/);
+    expect(() => validateEnv({ ...valid, ANTHROPIC_API_KEY: 'k', ANTHROPIC_MODEL: 'gpt-4' })).toThrow(/Claude model/);
+    expect(() =>
+      validateEnv({ ...valid, ANTHROPIC_API_KEY: 'k', ANTHROPIC_MODEL: 'claude-x', ANTHROPIC_TIMEOUT_MS: '10' }),
+    ).toThrow(/ANTHROPIC_TIMEOUT_MS/);
+    expect(validateEnv({ ...valid, CONVERSATION_AI_FAKE: 'true' })).toBeTruthy();
+    expect(() => validateEnv({ ...valid, NODE_ENV: 'production', CONVERSATION_AI_FAKE: 'true' })).toThrow(
+      /local work only/,
+    );
+  });
 });

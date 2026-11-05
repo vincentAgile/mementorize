@@ -556,6 +556,31 @@ puis `docker compose up -d api`.
 
 Pour suivre la consommation : portail Azure, ressource Speech, **Métriques**.
 
+## Conversations avec Claude (MEM-130)
+
+L'API peut tenir des conversations écrites en anglais avec Claude, l'IA d'Anthropic : elle corrige chaque message de l'utilisateur et lui répond. Sans configuration, la fonctionnalité est désactivée.
+
+**Activer** : une clé d'API sur [console.anthropic.com](https://console.anthropic.com) (**API Keys**), avec une limite de dépense mensuelle (**Limits**). Puis, dans `.env` :
+
+```bash
+ANTHROPIC_API_KEY="sk-ant-…"
+ANTHROPIC_MODEL="claude-haiku-4-5"
+# facultatif : délai avant d'abandonner, en millisecondes (valeur par défaut)
+ANTHROPIC_TIMEOUT_MS=30000
+```
+
+puis `docker compose up -d api`. Une erreur de configuration (modèle sans clé, nom de modèle invalide) empêche l'API de démarrer, avec un message clair.
+
+**Confidentialité** :
+
+- seul le texte part chez Anthropic, jamais d'audio ; la clé reste sur le serveur ;
+- les conversations sont supprimées 90 jours après leur début ;
+- les journaux de l'API notent pour chaque appel l'utilisateur, la durée et les jetons consommés, jamais le texte.
+
+**Limites** : 30 messages par jour et par utilisateur, 20 par conversation, 1 000 caractères par message, 3 requêtes par seconde. Si Claude ne répond pas, l'application l'indique et le message ne compte pas.
+
+**Coût** : `docker compose logs api | grep "model call"` donne les jetons de chaque appel ; le détail est sur la console Anthropic, **Usage**.
+
 ## Console d'administration (MEM-82)
 
 Une console séparée de l'application, à l'adresse `https://<domaine>/admin`. Aucun lien n'y mène depuis l'application. Elle a ses propres comptes, sans rapport avec ceux des utilisateurs : un compte utilisateur ne l'ouvre jamais.
