@@ -1,6 +1,7 @@
 import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module.js';
+import { ConversationAccess, ConversationAccessGuard } from './conversation-access.js';
 import { ConversationLimitsService } from './conversation-limits.js';
 import { ConversationRateGuard } from './conversation-rate.guard.js';
 import { ConversationsController } from './conversations.controller.js';
@@ -14,7 +15,8 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
 /**
  * MEM-130: the conversations with the AI. Claude when ANTHROPIC_API_KEY and
  * ANTHROPIC_MODEL are set; the fake model when CONVERSATION_AI_FAKE=true
- * (local work only); otherwise null: the feature is off.
+ * (local work only); otherwise null: the feature is off. Open only to the
+ * accounts of CONVERSATION_ALLOWED_EMAILS (`*`: everyone).
  */
 @Module({
   imports: [AuthModule],
@@ -23,6 +25,8 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
     ConversationsService,
     ConversationLimitsService,
     ConversationRateGuard,
+    ConversationAccess,
+    ConversationAccessGuard,
     {
       provide: CONVERSATION_MODEL,
       inject: [ConfigService],

@@ -105,6 +105,8 @@ services:
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
       ANTHROPIC_TIMEOUT_MS: ${ANTHROPIC_TIMEOUT_MS:-30000}
       CONVERSATION_AI_FAKE: ${CONVERSATION_AI_FAKE:-false}
+      # The accounts it is open to: e-mails separated by commas, `*` for everyone; empty, nobody.
+      CONVERSATION_ALLOWED_EMAILS: ${CONVERSATION_ALLOWED_EMAILS:-}
     depends_on:
       postgres:
         condition: service_healthy

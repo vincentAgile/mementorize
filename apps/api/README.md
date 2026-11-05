@@ -395,6 +395,7 @@ Le JSON des requêtes peut atteindre 3 Mo (`main.ts`), pour un fichier de 1 Mo.
 - **Limites** (`conversation-limits.ts`) : 30 messages par jour et par utilisateur (jour du fuseau de l'utilisateur, celui des rappels), 20 par conversation, 1 000 caractères par message. Au-delà, 429 avec `reason` (`daily-limit` et `retryAt`, le minuit local suivant ; ou `conversation-limit`). Ces valeurs deviendront des paramètres de la console ; d'ici là, ce sont les valeurs par défaut. Toutes les routes : 3 requêtes par seconde et par utilisateur (`rate-limit`).
 - **Purge** : chaque nuit (3 h 41), les conversations commencées il y a plus de 90 jours.
 - **Journal** : une ligne par appel du modèle (`model call:`), avec l'utilisateur, la durée et les jetons en entrée et en sortie ; jamais le texte.
+- **Comptes autorisés** (`conversation-access.ts`) : `CONVERSATION_ALLOWED_EMAILS`, des adresses séparées par des virgules (sans tenir compte des majuscules), ou `*` pour tout le monde ; vide, personne. Pour les autres comptes, le statut répond `{ enabled: false }` et les autres routes 403.
 - **Réglages** : `ANTHROPIC_API_KEY` et `ANTHROPIC_MODEL` (sans eux, désactivé) ; `ANTHROPIC_TIMEOUT_MS` (30 000). En local, `CONVERSATION_AI_FAKE=true` active le faux modèle (refusé en production).
 - **Tests** : `anthropic-conversation-model.spec.ts` (avec un faux client de l'API) ; `test/conversations.e2e-spec.ts` avec le faux modèle.
 

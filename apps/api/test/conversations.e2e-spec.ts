@@ -4,14 +4,20 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
+import { ConfigService } from '@nestjs/config';
+import { ConversationAccess } from '../src/conversations/conversation-access.js';
 import { ConversationRateGuard } from '../src/conversations/conversation-rate.guard.js';
 import { ConversationsService } from '../src/conversations/conversations.service.js';
 import { CONVERSATION_MODEL, type ConversationModel } from '../src/conversations/model/conversation-model.js';
 import { FakeConversationModel } from '../src/conversations/model/fake-conversation-model.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 
-async function start(model: ConversationModel | null | undefined, { rateLimit = false } = {}) {
+/** The accounts the conversations are open to, as CONVERSATION_ALLOWED_EMAILS would say. */
+const accessFor = (value: string) => new ConversationAccess({ get: () => value } as unknown as ConfigService);
+
+async function start(model: ConversationModel | null | undefined, { rateLimit = false, allowed = '*' } = {}) {
   let builder = Test.createTestingModule({ imports: [AppModule] });
+  builder = builder.overrideProvider(ConversationAccess).useValue(accessFor(allowed));
   if (model !== undefined) builder = builder.overrideProvider(CONVERSATION_MODEL).useValue(model);
   // 3 requests per second would slow the scenarios down: tested on its own.
   if (!rateLimit) builder = builder.overrideGuard(ConversationRateGuard).useValue({ canActivate: () => true });
@@ -331,6 +337,43 @@ describe('Conversations with the AI (e2e, MEM-130)', () => {
     await http().get(`/conversations/${old.id}`).set(auth).expect(404);
     await http().get(`/conversations/${recent.id}`).set(auth).expect(200);
     expect(await prisma.conversationMessage.count({ where: { conversationId: old.id } })).toBe(0);
+  });
+});
+
+describe('Conversations open to some accounts only (e2e, MEM-130)', () => {
+  const allowedEmail = `chat-Allowed-${unique}@e2e.test`;
+  let app: NestExpressApplication;
+  const http = () => request(app.getHttpServer());
+  const login = async (email: string) => {
+    const res = await http().post('/auth/register').send({ email, password: 'password123' }).expect(201);
+    return { Authorization: `Bearer ${res.body.accessToken as string}` };
+  };
+
+  beforeAll(async () => {
+    app = await start(new FakeConversationModel(), { allowed: ` ${allowedEmail.toUpperCase()} , someone@else.test` });
+  });
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  it('is off for the other accounts: the status says so, the other routes answer 403', async () => {
+    const allowed = await login(allowedEmail);
+    const other = await login(`chat-closed-${unique}@e2e.test`);
+    const { body: conversation } = await http().post('/conversations').set(allowed).expect(201);
+    expect((await http().get('/conversations/status').set(allowed).expect(200)).body.enabled).toBe(true);
+
+    expect((await http().get('/conversations/status').set(other).expect(200)).body).toEqual({ enabled: false });
+    const closed = await http().post('/conversations').set(other).expect(403);
+    expect(closed.body.message).toBe('The conversations with the AI are not open to this account');
+    await http().get('/conversations').set(other).expect(403);
+    await http().get(`/conversations/${conversation.id}`).set(other).expect(403);
+    await http().delete(`/conversations/${conversation.id}`).set(other).expect(403);
+    await http().post(`/conversations/${conversation.id}/messages`).set(other).send({ text: 'Hi' }).expect(403);
+  });
+
+  it('is open to nobody when the setting is empty', () => {
+    expect(accessFor('').allows({ id: 'u', email: allowedEmail })).toBe(false);
+    expect(accessFor('*').allows({ id: 'u', email: 'anyone@e2e.test' })).toBe(true);
   });
 });
 

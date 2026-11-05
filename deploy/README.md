@@ -567,9 +567,11 @@ ANTHROPIC_API_KEY="sk-ant-…"
 ANTHROPIC_MODEL="claude-haiku-4-5"
 # facultatif : délai avant d'abandonner, en millisecondes (valeur par défaut)
 ANTHROPIC_TIMEOUT_MS=30000
+# les comptes qui y ont accès : adresses séparées par des virgules, * pour tous ; vide, personne
+CONVERSATION_ALLOWED_EMAILS="vcarpentier33@gmail.com"
 ```
 
-puis `docker compose up -d api`. Une erreur de configuration (modèle sans clé, nom de modèle invalide) empêche l'API de démarrer, avec un message clair.
+puis `docker compose up -d api`. Pour ouvrir à tout le monde plus tard : `CONVERSATION_ALLOWED_EMAILS="*"`, puis `docker compose up -d api`. Une erreur de configuration (modèle sans clé, nom de modèle invalide) empêche l'API de démarrer, avec un message clair.
 
 **Confidentialité** :
 
