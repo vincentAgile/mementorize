@@ -214,10 +214,23 @@ export interface Preferences {
   mindMapRetention: number;
   /** MEM-110: the mode of use; Advanced adds the actions that change the learning (MEM-111). */
   usageMode: UsageMode;
+  /**
+   * MEM-125: how much the learning and the review of the vocabulary explain.
+   * Missing while the API doesn't send it yet (during a deployment): see
+   * learningModeOf.
+   */
+  learningMode?: LearningMode;
 }
 
 /** The modes of use (MEM-110): Standard by default, or Advanced. */
 export type UsageMode = 'Standard' | 'Advanced';
+
+/** The learning modes (MEM-125): Guided by default, or Autonomous. */
+export type LearningMode = 'Guided' | 'Autonomous';
+
+/** The learning mode of the preferences; Guided while the API doesn't send it yet (MEM-125). */
+export const learningModeOf = (preferences: Pick<Preferences, 'learningMode'>): LearningMode =>
+  preferences.learningMode ?? 'Guided';
 
 /** MEM-76: where a space stands, for the optimization of its FSRS weights. */
 export interface SpaceOptimization {

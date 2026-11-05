@@ -12,7 +12,7 @@ import {
 } from '../../lib/api';
 import { separatorProblem } from '../../lib/csv-separator';
 import { findSpace } from '../../lib/spaces';
-import type { ItemType, Preferences, SpaceOptimization, Translator, UsageMode } from '../../lib/types';
+import type { ItemType, LearningMode, Preferences, SpaceOptimization, Translator, UsageMode } from '../../lib/types';
 import type { SaveResult } from './save-result';
 
 // MEM-79: each setting is saved as soon as its change is confirmed. A Server
@@ -57,6 +57,17 @@ const USAGE_MODES: UsageMode[] = ['Standard', 'Advanced'];
 export async function saveUsageModeAction(usageMode: UsageMode): Promise<SaveResult> {
   if (!USAGE_MODES.includes(usageMode)) return { invalid: 'Mode d’utilisation invalide.' };
   return save({ usageMode }, 'all');
+}
+
+const LEARNING_MODES: LearningMode[] = ['Guided', 'Autonomous'];
+
+/**
+ * The learning mode (MEM-125). Every page is rendered again: the learning
+ * and the review read it on the server, at the next session.
+ */
+export async function saveLearningModeAction(learningMode: LearningMode): Promise<SaveResult> {
+  if (!LEARNING_MODES.includes(learningMode)) return { invalid: 'Mode d’apprentissage invalide.' };
+  return save({ learningMode }, 'all');
 }
 
 /** Show the delays under the rating buttons (MEM-49). */

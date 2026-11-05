@@ -17,7 +17,7 @@ export class PreferencesController {
   }
 
   /**
-   * PUT /preferences { homeSpace?, translator?, …, usageMode?: Standard | Advanced (MEM-110) }: only what is
+   * PUT /preferences { homeSpace?, translator?, …, usageMode?: Standard | Advanced (MEM-110), learningMode?: Guided | Autonomous (MEM-125) }: only what is
    * sent changes.
    */
   @Put()

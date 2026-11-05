@@ -60,6 +60,9 @@ model User {
   /// Mode d'utilisation (MEM-110): Advanced adds the actions that change the
   /// learning (MEM-111). Standard by default, existing accounts included.
   usageMode UsageMode @default(Standard)
+  /// Mode d'apprentissage (MEM-125): how much the learning and the review of
+  /// the vocabulary explain. Guided by default, existing accounts included.
+  learningMode LearningMode @default(Guided)
 
   @@map("users")
 }
@@ -74,6 +77,12 @@ enum Translator {
 enum UsageMode {
   Standard
   Advanced
+}
+
+/// The learning mode (MEM-125): Guided explains each step and asks the question; Autonomous goes straight to it.
+enum LearningMode {
+  Guided
+  Autonomous
 }
 
 enum ItemType {

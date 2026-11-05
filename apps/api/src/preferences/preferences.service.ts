@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ItemType, Translator, UsageMode } from '@prisma/client';
+import type { ItemType, LearningMode, Translator, UsageMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { PreferencesDto } from './dto/preferences.dto.js';
 
@@ -16,6 +16,8 @@ export interface Preferences {
   mindMapRetention: number;
   /** The mode of use (MEM-110): Standard, or Advanced. */
   usageMode: UsageMode;
+  /** The learning mode (MEM-125): Guided, or Autonomous. */
+  learningMode: LearningMode;
 }
 
 const SELECT = {
@@ -28,6 +30,7 @@ const SELECT = {
   quoteRetention: true,
   mindMapRetention: true,
   usageMode: true,
+  learningMode: true,
 } as const;
 
 const toPreferences = ({ csvDelimiter, ...rest }: { csvDelimiter: string } & Omit<Preferences, 'csvSeparator'>) => ({
@@ -35,7 +38,7 @@ const toPreferences = ({ csvDelimiter, ...rest }: { csvDelimiter: string } & Omi
   csvSeparator: csvDelimiter,
 });
 
-/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55, MEM-58, MEM-75, MEM-110), stored on their account. */
+/** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55, MEM-58, MEM-75, MEM-110, MEM-125), stored on their account. */
 @Injectable()
 export class PreferencesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -58,6 +61,7 @@ export class PreferencesService {
         quoteRetention: dto.quoteRetention,
         mindMapRetention: dto.mindMapRetention,
         usageMode: dto.usageMode,
+        learningMode: dto.learningMode,
       },
       select: SELECT,
     });

@@ -16,7 +16,7 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 /** The target retentions of a new account (MEM-75). */
 const RETENTIONS_90 = { vocabularyRetention: 90, quoteRetention: 90, mindMapRetention: 90 };
 /** The mode of use of a new account (MEM-110). */
-const STANDARD = { usageMode: 'Standard' };
+const STANDARD = { usageMode: 'Standard', learningMode: 'Guided' };
 
 describe('API (e2e)', () => {
   let app: NestExpressApplication;
@@ -999,6 +999,18 @@ describe('API (e2e)', () => {
     }
     const standard = await http().put('/preferences').set(auth).send({ usageMode: 'Standard' }).expect(200);
     expect(standard.body.usageMode).toBe('Standard');
+
+    // MEM-125: the learning mode, Guided by default; Autonomous, then back; not sent, unchanged.
+    expect(standard.body.learningMode).toBe('Guided');
+    const autonomous = await http().put('/preferences').set(auth).send({ learningMode: 'Autonomous' }).expect(200);
+    expect(autonomous.body).toMatchObject({ learningMode: 'Autonomous', usageMode: 'Standard', quoteRetention: 95 });
+    await http().put('/preferences').set(auth).send({ quoteRetention: 90 }).expect(200);
+    expect((await http().get('/preferences').set(auth).expect(200)).body.learningMode).toBe('Autonomous');
+    for (const refused of ['Guidé', 'guided', 'Expert', '', null, false]) {
+      await http().put('/preferences').set(auth).send({ learningMode: refused }).expect(400);
+    }
+    const guided = await http().put('/preferences').set(auth).send({ learningMode: 'Guided' }).expect(200);
+    expect(guided.body.learningMode).toBe('Guided');
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);
