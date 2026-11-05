@@ -40,7 +40,7 @@ export async function saveHomeSpaceAction(homeSpace: ItemType): Promise<SaveResu
   return save({ homeSpace }, 'settings');
 }
 
-const TRANSLATORS: Translator[] = ['DeepL', 'Google'];
+const TRANSLATORS: Translator[] = ['DeepL', 'DeepLAmerican', 'Google'];
 
 /** The service of the translate buttons of the vocabulary forms (MEM-44). */
 export async function saveTranslatorAction(translator: Translator): Promise<SaveResult> {
