@@ -5,7 +5,7 @@ import { getDueReviews, getLearningProgress, getPreferences, pronunciationAssess
 import { findSpace } from '../../lib/spaces';
 import { ProgressSummary } from '../apprendre/learning-progress';
 import { AppHeader } from '../app-header';
-import { learningModeOf } from '../../lib/types';
+import { learningModeOf, mindMapsEnabledOf } from '../../lib/types';
 import { facesOf } from './faces';
 import { ReviewSession, type SessionCard } from './review-session';
 
@@ -35,6 +35,8 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     getPreferences(),
     pronunciationAssessmentEnabled(),
   ]);
+  // « Espace cartes mentales » off: its review is hidden too.
+  if (space.type === 'MindMap' && !mindMapsEnabledOf(preferences)) redirect('/');
   const now = new Date();
 
   // Nothing (left) to review in a subject: when its next review is, and its

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { activeSpace, SPACES } from '../lib/spaces';
+import { activeSpace, visibleSpaces } from '../lib/spaces';
 import type { DueSummary, ItemType } from '../lib/types';
 
 interface NavLink {
@@ -20,10 +20,11 @@ interface NavLink {
   phoneOnly?: boolean;
 }
 
-function navLinks(due: DueSummary, pathname: string, type: string | null): NavLink[] {
+function navLinks(due: DueSummary, pathname: string, type: string | null, mindMaps: boolean): NavLink[] {
   const current = activeSpace(pathname, type);
   return [
-    ...SPACES.map((space) => ({
+    // Cartes mentales only when the space is on (Réglages › Général).
+    ...visibleSpaces(mindMaps).map((space) => ({
       href: space.href,
       label: space.label,
       shortLabel: space.shortLabel,
@@ -81,13 +82,13 @@ function DueBadge({ count }: { count: number }) {
  * A Client Component: only the browser knows the current URL, to highlight
  * the section we are in.
  */
-export function MainNav({ due }: { due: DueSummary }) {
+export function MainNav({ due, mindMaps }: { due: DueSummary; mindMaps: boolean }) {
   const pathname = usePathname();
   const type = useSearchParams().get('type');
 
   return (
-    <nav className="page__nav" aria-label="Navigation principale">
-      {navLinks(due, pathname, type).map((link) => (
+    <nav className={mindMaps ? 'page__nav' : 'page__nav page__nav--3'} aria-label="Navigation principale">
+      {navLinks(due, pathname, type, mindMaps).map((link) => (
         <Link
           key={link.href}
           href={link.href}

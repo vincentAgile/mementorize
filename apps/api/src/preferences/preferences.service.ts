@@ -18,6 +18,8 @@ export interface Preferences {
   usageMode: UsageMode;
   /** The learning mode (MEM-125): Guided, or Autonomous. */
   learningMode: LearningMode;
+  /** « Espace cartes mentales »: off by default, the space hidden. */
+  mindMapsEnabled: boolean;
 }
 
 const SELECT = {
@@ -31,6 +33,7 @@ const SELECT = {
   mindMapRetention: true,
   usageMode: true,
   learningMode: true,
+  mindMapsEnabled: true,
 } as const;
 
 const toPreferences = ({ csvDelimiter, ...rest }: { csvDelimiter: string } & Omit<Preferences, 'csvSeparator'>) => ({
@@ -47,12 +50,23 @@ export class PreferencesService {
     return toPreferences(await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: SELECT }));
   }
 
-  /** Changes the preferences sent; the others stay as they are. */
+  /**
+   * Changes the preferences sent; the others stay as they are. The space
+   * Cartes mentales turned off while it is the home page: Anglais instead.
+   */
   async update(userId: string, dto: PreferencesDto): Promise<Preferences> {
+    let homeSpace = dto.homeSpace;
+    if (dto.mindMapsEnabled === false && homeSpace === undefined) {
+      const { homeSpace: current } = await this.prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { homeSpace: true },
+      });
+      if (current === 'MindMap') homeSpace = 'Vocabulary';
+    }
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        homeSpace: dto.homeSpace,
+        homeSpace,
         translator: dto.translator,
         showReviewDelays: dto.showReviewDelays,
         csvDelimiter: dto.csvSeparator,
@@ -62,6 +76,7 @@ export class PreferencesService {
         mindMapRetention: dto.mindMapRetention,
         usageMode: dto.usageMode,
         learningMode: dto.learningMode,
+        mindMapsEnabled: dto.mindMapsEnabled,
       },
       select: SELECT,
     });

@@ -90,6 +90,18 @@ export const SPACES: Space[] = [
   },
 ];
 
+/**
+ * The spaces shown to the user: Cartes mentales only when « Espace cartes
+ * mentales » is on (Réglages › Général); else everything about it is hidden.
+ */
+export function visibleSpaces(mindMapsEnabled: boolean): Space[] {
+  return SPACES.filter((space) => space.type !== 'MindMap' || mindMapsEnabled);
+}
+
+/** The types of the spaces shown, in the order of the menu. */
+export const visibleTypes = (mindMapsEnabled: boolean): ItemType[] =>
+  visibleSpaces(mindMapsEnabled).map((space) => space.type);
+
 export function spaceOf(type: ItemType): Space {
   return SPACES.find((space) => space.type === type)!;
 }

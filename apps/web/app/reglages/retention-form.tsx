@@ -20,7 +20,7 @@ const ORDER: ItemType[] = ['Vocabulary', 'Quote', 'MindMap'];
  * remembering a card at which it comes back. Saved at the selection
  * (MEM-79); it applies from the next review of each card.
  */
-export function RetentionForm({ retentions }: { retentions: Record<ItemType, number> }) {
+export function RetentionForm({ retentions, types }: { retentions: Record<ItemType, number>; types: ItemType[] }) {
   return (
     <section className="settings">
       <h2>Rétention cible</h2>
@@ -30,7 +30,7 @@ export function RetentionForm({ retentions }: { retentions: Record<ItemType, num
         recalculées.
       </p>
       <div className="settings__form">
-        {ORDER.map((type) => {
+        {ORDER.filter((type) => types.includes(type)).map((type) => {
           const space = SPACES.find((one) => one.type === type)!;
           return (
             <AutoSelect

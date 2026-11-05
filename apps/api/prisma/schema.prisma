@@ -63,6 +63,9 @@ model User {
   /// Mode d'apprentissage (MEM-125): how much the learning and the review of
   /// the vocabulary explain. Guided by default, existing accounts included.
   learningMode LearningMode @default(Guided)
+  /// « Espace cartes mentales »: off by default, everything about the space
+  /// hidden; on for the accounts that had mind maps when it came in.
+  mindMapsEnabled Boolean @default(false)
 
   @@map("users")
 }

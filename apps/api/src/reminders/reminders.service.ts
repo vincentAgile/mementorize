@@ -179,8 +179,19 @@ export class RemindersService {
     };
   }
 
-  private dueCount(userId: string, now: Date): Promise<number> {
-    return this.prisma.card.count({ where: { due: { lte: now }, ...REVIEWED_CARD, item: { userId, ...IN_REVIEW } } });
+  /** The cards due now; not those of the mind maps while the space is off (it is hidden). */
+  private async dueCount(userId: string, now: Date): Promise<number> {
+    const { mindMapsEnabled } = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { mindMapsEnabled: true },
+    });
+    return this.prisma.card.count({
+      where: {
+        due: { lte: now },
+        ...REVIEWED_CARD,
+        item: { userId, ...IN_REVIEW, ...(!mindMapsEnabled && { type: { not: 'MindMap' } }) },
+      },
+    });
   }
 
   private toSettings(user: { reminderEnabled: boolean; reminderHour: number; reminderTimeZone: string }) {

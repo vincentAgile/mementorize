@@ -87,4 +87,9 @@ export class PreferencesDto {
   @IfSent()
   @IsEnum(LEARNING_MODES)
   learningMode?: LearningMode;
+
+  /** « Espace cartes mentales »: off, everything about the space is hidden. */
+  @IfSent()
+  @IsBoolean()
+  mindMapsEnabled?: boolean;
 }

@@ -59,6 +59,16 @@ export async function saveUsageModeAction(usageMode: UsageMode): Promise<SaveRes
   return save({ usageMode }, 'all');
 }
 
+/**
+ * « Espace cartes mentales »: every page is rendered again, the menu
+ * included. Off, the API also moves the home page to Anglais if it was
+ * Cartes mentales.
+ */
+export async function saveMindMapsEnabledAction(enabled: boolean): Promise<SaveResult> {
+  if (typeof enabled !== 'boolean') return { invalid: 'Valeur invalide.' };
+  return save({ mindMapsEnabled: enabled }, 'all');
+}
+
 const LEARNING_MODES: LearningMode[] = ['Guided', 'Autonomous'];
 
 /**
