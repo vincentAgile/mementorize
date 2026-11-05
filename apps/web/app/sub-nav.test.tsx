@@ -92,6 +92,10 @@ describe('SubNav and HeaderTitle: the tabs of « Mes statistiques » (MEM-113)',
     expect(render('/anglais/ajouter').tabs.map((tab) => tab[2])).toEqual([null, null, 'page', null]);
   });
 
+  it('MEM-127: « Apprendre · Réviser » highlighted on the explanation of the steps', () => {
+    expect(render('/anglais/apprendre').tabs.map((tab) => tab[2])).toEqual(['true', null, null, null]);
+  });
+
   it('on a phone, « Mes statistiques » next to the logo, as « Réglages »', () => {
     pathname = '/statistiques/citations';
     mount(<HeaderTitle />);

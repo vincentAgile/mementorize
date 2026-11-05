@@ -22,6 +22,8 @@ export interface Space {
   learnHref?: string;
   /** MEM-94: the page where a learning session is prepared, before it starts. */
   prepareHref?: string;
+  /** MEM-127: in the Guided learning mode, the page that explains the steps, before the preparation. */
+  introHref?: string;
   /** How its items are named in the messages (v0.12): « carte », « citation ». */
   noun: Noun;
 }
@@ -50,6 +52,7 @@ export const SPACES: Space[] = [
     ],
     learnHref: '/apprendre',
     prepareHref: '/anglais/preparer', // MEM-94
+    introHref: '/anglais/apprendre', // MEM-127
     noun: ITEM_NOUN,
   },
   {
@@ -123,6 +126,8 @@ export function inSession(space: Space, pathname: string, type: string | null): 
     (pathname === '/review' && type === space.type) ||
     // MEM-94: the preparation of a learning session; MEM-95: its selection page.
     (space.prepareHref !== undefined && startsWith(pathname, space.prepareHref)) ||
+    // MEM-127: the explanation of the steps, before the preparation.
+    (space.introHref !== undefined && startsWith(pathname, space.introHref)) ||
     (pathname === '/apprendre' && space.learnHref !== undefined && learnedType(type) === space.type)
   );
 }
