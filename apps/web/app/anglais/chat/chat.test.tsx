@@ -488,6 +488,229 @@ describe('« Chat IA »: reading aloud (MEM-132)', () => {
   });
 });
 
+describe('« Chat IA »: speaking instead of typing (MEM-133)', () => {
+  const voiceStatus = { ...status, voiceInput: true };
+  const token = { token: 't', region: 'westeurope', expiresAt: '2026-11-06T12:00:00Z' };
+  type Callbacks = Parameters<import('../../../lib/voice-input').Recognizer>[2];
+  let callbacks: Callbacks;
+  const stopRecognition = vi.fn(async () => undefined);
+  const recognizer = vi.fn(async (_stream: MediaStream, _token: typeof token, given: Callbacks) => {
+    callbacks = given;
+    return { stop: stopRecognition };
+  });
+  const track = { stop: vi.fn() };
+  const getMicrophone = vi.fn(async () => ({ getTracks: () => [track] }) as unknown as MediaStream);
+  const getToken = vi.fn(async (): Promise<typeof token | { error: string }> => token);
+  const deps = { recognizer, getMicrophone, getToken };
+  const mic = () => container.querySelector<HTMLButtonElement>('.chat__mic');
+  const scores = {
+    score: 82,
+    accuracy: 80,
+    fluency: 90,
+    completeness: 100,
+    words: [
+      { word: 'I', accuracy: 95, error: 'None' },
+      { word: 'thought', accuracy: 40, error: 'Mispronunciation' },
+    ],
+  };
+
+  beforeEach(() => {
+    Object.defineProperty(navigator, 'mediaDevices', { value: { getUserMedia: vi.fn() }, configurable: true });
+    recognizer.mockClear();
+    stopRecognition.mockClear();
+    getMicrophone.mockClear();
+    getToken.mockClear();
+  });
+
+  const mountChat = (chatStatus = voiceStatus) =>
+    mount(
+      <Chat
+        status={chatStatus}
+        conversation={null}
+        missing={false}
+        conversations={[]}
+        noticeAccepted
+        autoRead={false}
+        voiceDeps={deps}
+      />,
+    );
+
+  it('writes the words heard in the input, at the cursor, while the user speaks', async () => {
+    mountChat();
+    type('Well.');
+    input().setSelectionRange(0, 0);
+    await act(async () => mic()!.click());
+    await flush();
+    expect(FakeVoice.last.calls.at(-1)).toEqual(['stop']); // the reading is cut: no echo
+    expect(mic()!.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('.chat__listening')?.textContent).toBe('Je t’écoute…');
+    expect(sendButton().disabled).toBe(true);
+
+    act(() => callbacks.onInterim('I thought'));
+    expect(input().value).toBe('I thought Well.');
+    act(() => callbacks.onInterim('I thought it was'));
+    expect(input().value).toBe('I thought it was Well.');
+    act(() => callbacks.onFinal('I thought it was great.', scores));
+    expect(input().value).toBe('I thought it was great. Well.');
+    act(() => callbacks.onInterim('Really'));
+    expect(input().value).toBe('I thought it was great. Really Well.');
+
+    await act(async () => mic()!.click()); // « Arrêter »
+    expect(stopRecognition).toHaveBeenCalled();
+    expect(track.stop).toHaveBeenCalled();
+    expect(mic()!.getAttribute('aria-pressed')).toBe('false');
+    expect(input().readOnly).toBe(false);
+  });
+
+  it('sends the pronunciation with the message only when it is the text recognized', async () => {
+    fetchMock.mockResolvedValue(
+      sse([
+        { event: 'evaluation', data: { message: message({ id: 'm1', role: 'User', text: 'x', evaluation: wrong }) } },
+        { event: 'delta', data: { text: 'Nice!' } },
+        { event: 'done', data: { message: message({ id: 'm2', position: 2, text: 'Nice!' }) } },
+      ]).response,
+    );
+    mountChat();
+    await act(async () => mic()!.click());
+    await flush();
+    act(() => callbacks.onFinal('I thought it was great.', scores));
+    await act(async () => mic()!.click());
+    act(() => sendButton().click());
+    await flush();
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).pronunciation).toEqual({
+      score: 82,
+      accuracy: 80,
+      fluency: 90,
+      completeness: 100,
+      words: ['thought'],
+    });
+
+    // Changed at the keyboard: no pronunciation (it would mean nothing).
+    fetchMock.mockResolvedValue(
+      sse([
+        { event: 'evaluation', data: { message: message({ id: 'm3', role: 'User', text: 'x', evaluation: wrong }) } },
+        { event: 'delta', data: { text: 'Nice!' } },
+        { event: 'done', data: { message: message({ id: 'm4', position: 4, text: 'Nice!' }) } },
+      ]).response,
+    );
+    await act(async () => mic()!.click());
+    await flush();
+    act(() => callbacks.onFinal('I like films.', scores));
+    await act(async () => mic()!.click());
+    type('I like old films.');
+    act(() => sendButton().click());
+    await flush();
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).not.toHaveProperty('pronunciation');
+  });
+
+  it('shows the pronunciation in the feedback', () => {
+    const conversation: Conversation = {
+      id: 'c9',
+      title: 'I thought it was great.',
+      createdAt: '2026-11-05T19:00:00.000Z',
+      updatedAt: '2026-11-05T19:01:00.000Z',
+      messages: [
+        message({}),
+        message({
+          id: 'm1',
+          position: 1,
+          role: 'User',
+          text: 'I thought it was great.',
+          evaluation: {
+            corrected: 'I thought it was great.',
+            corrections: [],
+            praise: 'Nice!',
+            pronunciation: { score: 82.4, accuracy: 80, fluency: 90, completeness: null, words: ['thought'] },
+          },
+        }),
+      ],
+    };
+    mount(
+      <Chat
+        status={voiceStatus}
+        conversation={conversation}
+        missing={false}
+        conversations={[]}
+        noticeAccepted
+        voiceDeps={deps}
+      />,
+    );
+    expect(container.querySelector('.chat-feedback__pronunciation')?.textContent).toBe(
+      'Pronunciation · 82/100Accuracy 80 · Fluency 90Words to practise: thought',
+    );
+  });
+
+  it('stops by itself after 8 seconds without speech', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      mountChat();
+      await act(async () => mic()!.click());
+      await act(async () => vi.advanceTimersByTimeAsync(0));
+      act(() => callbacks.onInterim('Hello'));
+      await act(async () => vi.advanceTimersByTimeAsync(7_000));
+      expect(stopRecognition).not.toHaveBeenCalled();
+      act(() => callbacks.onFinal('Hello.', null)); // speech: the 8 seconds start again
+      await act(async () => vi.advanceTimersByTimeAsync(7_000));
+      expect(stopRecognition).not.toHaveBeenCalled();
+      await act(async () => vi.advanceTimersByTimeAsync(1_100));
+      expect(stopRecognition).toHaveBeenCalled();
+      expect(input().value).toBe('Hello.'); // what was heard stays
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('says why when the microphone is refused, the limit reached, or the connection lost', async () => {
+    getMicrophone.mockRejectedValueOnce(new DOMException('no', 'NotAllowedError'));
+    mountChat();
+    await act(async () => mic()!.click());
+    await flush();
+    expect(container.querySelector('.chat__error')?.textContent).toContain(
+      'Autorise le micro dans ton navigateur pour parler.',
+    );
+
+    getToken.mockResolvedValueOnce({
+      error: 'Limite de reconnaissance vocale atteinte : continue au clavier, ou réessaie plus tard.',
+    });
+    await act(async () => mic()!.click());
+    await flush();
+    expect(container.querySelector('.chat__error')?.textContent).toContain('Limite de reconnaissance vocale atteinte');
+    expect(input().disabled).toBe(false); // the keyboard stays
+
+    await act(async () => mic()!.click());
+    await flush();
+    act(() => callbacks.onFinal('I was saying', null));
+    await act(async () => callbacks.onError('connection'));
+    await flush();
+    expect(container.querySelector('.chat__error')?.textContent).toContain(
+      'La connexion a été perdue : le texte déjà reconnu est conservé.',
+    );
+    expect(input().value).toBe('I was saying');
+    const resume = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Reprendre')!;
+    await act(async () => resume.click());
+    await flush();
+    expect(recognizer).toHaveBeenCalledTimes(2); // once refused (micro, then limit), then started twice
+  });
+
+  it('stops when the connection fails while the recognition starts', async () => {
+    recognizer.mockImplementationOnce(async (_stream, _token, given) => {
+      given.onError('connection');
+      return { stop: stopRecognition };
+    });
+    mountChat();
+    await act(async () => mic()!.click());
+    await flush();
+    expect(mic()!.getAttribute('aria-pressed')).toBe('false');
+    expect(stopRecognition).toHaveBeenCalled();
+    expect(container.querySelector('.chat__error')?.textContent).toContain('La connexion a été perdue');
+  });
+
+  it('has no microphone when the server has no recognition', () => {
+    mountChat({ ...status, voiceInput: false });
+    expect(mic()).toBeNull();
+  });
+});
+
 describe('« Chat IA »: the page (MEM-131)', () => {
   const text = (html: string) =>
     html

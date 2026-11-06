@@ -65,13 +65,7 @@ export class PronunciationAssessmentService {
       const referenceText = item && englishOf(item.content);
       if (!referenceText) throw new NotFoundException('Vocabulary item not found');
 
-      if (this.perMinute.blocked(userId, now.getTime())) {
-        throw new HttpException('Too many assessments: wait a minute', HttpStatus.TOO_MANY_REQUESTS);
-      }
-      this.perMinute.fail(userId, now.getTime()); // counts the attempt
-      if (!(await this.countToday(userId, now))) {
-        throw new HttpException('Daily limit of assessments reached', HttpStatus.TOO_MANY_REQUESTS);
-      }
+      await this.consume(userId, now);
 
       return await this.assessor.assess(recording, referenceText);
     } catch (error) {
@@ -85,6 +79,21 @@ export class PronunciationAssessmentService {
       throw error;
     } finally {
       recording.data.fill(0); // never kept, even in memory
+    }
+  }
+
+  /**
+   * One more use of the speech service by this user: an assessment of a
+   * card, or a recording of the « Chat IA » (MEM-133). 429 beyond the limits
+   * per minute and per day, which both share.
+   */
+  async consume(userId: string, now = new Date()): Promise<void> {
+    if (this.perMinute.blocked(userId, now.getTime())) {
+      throw new HttpException('Too many assessments: wait a minute', HttpStatus.TOO_MANY_REQUESTS);
+    }
+    this.perMinute.fail(userId, now.getTime()); // counts the attempt
+    if (!(await this.countToday(userId, now))) {
+      throw new HttpException('Daily limit of assessments reached', HttpStatus.TOO_MANY_REQUESTS);
     }
   }
 

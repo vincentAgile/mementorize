@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { ConversationAccess, ConversationAccessGuard } from './conversation-access.js';
 import { ConversationRateGuard, ConversationSpeechRateGuard } from './conversation-rate.guard.js';
 import { ConversationSpeech } from './conversation-speech.js';
+import { ConversationVoiceInput } from './conversation-voice-input.js';
 import { ConversationsService } from './conversations.service.js';
 import { SendMessageDto } from './dto/send-message.dto.js';
 import { SpeechDto } from './dto/speech.dto.js';
@@ -36,7 +37,21 @@ export class ConversationsController {
     private readonly conversations: ConversationsService,
     private readonly access: ConversationAccess,
     private readonly speech: ConversationSpeech,
+    private readonly voiceInput: ConversationVoiceInput,
   ) {}
+
+  /**
+   * POST /conversations/voice-token — MEM-133: a token of 10 minutes for the
+   * speech recognition in the browser ({ token, region, expiresAt }); the
+   * key never leaves the server. 503 without Azure, 429 beyond the limits of
+   * the pronunciation assessment (shared).
+   */
+  @Post('voice-token')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ConversationAccessGuard, ConversationRateGuard)
+  voiceToken(@CurrentUser() user: AuthUser) {
+    return this.voiceInput.token(user.id);
+  }
 
   /**
    * POST /conversations/speech { text } — MEM-132: a sentence read by
@@ -73,9 +88,11 @@ export class ConversationsController {
    * the writings (a page loaded twice in a second must not fail).
    */
   @Get('status')
-  status(@CurrentUser() user: AuthUser) {
+  async status(@CurrentUser() user: AuthUser) {
     if (!this.access.allows(user)) return { enabled: false };
-    return this.conversations.status(user.id);
+    const status = await this.conversations.status(user.id);
+    // MEM-133: the microphone, when Azure is configured.
+    return status.enabled ? { ...status, voiceInput: this.voiceInput.enabled } : status;
   }
 
   /** POST /conversations — a new conversation, opened by the question of the AI. */
@@ -122,7 +139,7 @@ export class ConversationsController {
     @Body() body: SendMessageDto,
     @Res() response: Response,
   ): Promise<void> {
-    const events = await this.conversations.send(user.id, id, body.text);
+    const events = await this.conversations.send(user.id, id, body.text, undefined, body.pronunciation);
     response.status(HttpStatus.OK);
     response.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     response.setHeader('Cache-Control', 'no-cache, no-transform');

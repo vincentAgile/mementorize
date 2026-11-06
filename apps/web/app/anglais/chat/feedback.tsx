@@ -38,6 +38,7 @@ export function Feedback({
   return (
     <section className="chat-feedback" aria-label="Feedback">
       <h3 className="chat-feedback__title">Feedback</h3>
+      {evaluation.pronunciation && <SpokenScores pronunciation={evaluation.pronunciation} />}
       {correct ? (
         <p className="chat-feedback__ok">Great, no corrections needed.</p>
       ) : (
@@ -86,5 +87,37 @@ export function Feedback({
         </>
       )}
     </section>
+  );
+}
+
+const score = (value: number) => Math.round(value);
+
+/**
+ * MEM-133: the pronunciation of a message said aloud (and sent as
+ * recognized): its scores and the words to work on, in English like the
+ * rest of the feedback.
+ */
+function SpokenScores({ pronunciation }: { pronunciation: NonNullable<Evaluation['pronunciation']> }) {
+  return (
+    <div className="chat-feedback__pronunciation">
+      <h4 className="chat-feedback__label">Pronunciation · {score(pronunciation.score)}/100</h4>
+      <p className="chat-feedback__scores">
+        Accuracy {score(pronunciation.accuracy)} · Fluency {score(pronunciation.fluency)}
+        {pronunciation.completeness !== null && <> · Completeness {score(pronunciation.completeness)}</>}
+      </p>
+      {pronunciation.words.length > 0 ? (
+        <p className="chat-feedback__words">
+          Words to practise:{' '}
+          {pronunciation.words.map((word, index) => (
+            <span key={word}>
+              {index > 0 && ', '}
+              <strong>{word}</strong>
+            </span>
+          ))}
+        </p>
+      ) : (
+        <p className="chat-feedback__words">Every word was clear.</p>
+      )}
+    </div>
   );
 }

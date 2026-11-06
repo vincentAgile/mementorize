@@ -15,6 +15,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { localDate, startOfNextLocalDay } from '../reminders/local-time.js';
 import { ConversationLimitsService } from './conversation-limits.js';
+import { sanitizePronunciation, type SpokenPronunciation } from './conversation-voice-input.js';
 import {
   type ChatTurn,
   CONVERSATION_MODEL,
@@ -153,7 +154,7 @@ export class ConversationsService {
    * Then the events: the evaluation, the reply piece by piece, and the reply
    * saved (or an error, if the provider fails in the middle).
    */
-  async send(userId: string, conversationId: string, rawText: unknown, now = new Date()) {
+  async send(userId: string, conversationId: string, rawText: unknown, now = new Date(), rawPronunciation?: unknown) {
     const model = this.requireModel();
     const turn = await this.start(userId, conversationId, rawText, now);
 
@@ -182,7 +183,12 @@ export class ConversationsService {
         error instanceof ConversationModelError ? error : new ConversationModelError('failed', 'Empty reply'),
       );
     }
-    const message = await this.saveEvaluation(turn, evaluated.value);
+    // MEM-133: said aloud, the pronunciation measured in the browser joins the evaluation.
+    const pronunciation = sanitizePronunciation(rawPronunciation);
+    const message = await this.saveEvaluation(
+      turn,
+      pronunciation ? { ...evaluated.value, pronunciation } : evaluated.value,
+    );
     return this.events(turn, message, first.value.value, reply, replyStart);
   }
 
@@ -285,7 +291,10 @@ export class ConversationsService {
     });
   }
 
-  private async saveEvaluation(turn: Turn, evaluation: Evaluation): Promise<SavedMessage> {
+  private async saveEvaluation(
+    turn: Turn,
+    evaluation: Evaluation & { pronunciation?: SpokenPronunciation },
+  ): Promise<SavedMessage> {
     return this.prisma.conversationMessage.update({
       where: { id: turn.message.id },
       data: { evaluation: evaluation as unknown as Prisma.InputJsonValue },

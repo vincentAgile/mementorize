@@ -554,6 +554,8 @@ puis `docker compose up -d api`.
 - 10 évaluations par minute et 100 par jour par utilisateur, réglables ;
 - 15 secondes au plus par évaluation : au-delà, ou si Azure ne répond pas, l'application l'indique sans bloquer l'apprentissage.
 
+**Micro du Chat IA (MEM-133)** : la même ressource sert à la saisie vocale du Chat IA, sans autre réglage. L'API donne au navigateur un jeton de 10 minutes (service `issueToken` de la ressource) ; le navigateur envoie la voix directement à Azure, en flux : l'audio ne passe jamais par le serveur de Mementorize et n'est pas conservé, et la clé reste sur le serveur. Chaque enregistrement compte dans les limites ci-dessus (par minute et par jour). Sans Azure, le bouton micro n'est pas affiché.
+
 Pour suivre la consommation : portail Azure, ressource Speech, **Métriques**.
 
 ## Conversations avec Claude (MEM-130)
