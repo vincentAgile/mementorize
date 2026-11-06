@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { type FormEvent, type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { ChatVoice, OPENING_AUDIO_HREF, sentenceSplitter } from '../../../lib/chat-voice';
 import {
   CHAT_HREF,
   CHAT_SEND_HREF,
@@ -18,6 +19,8 @@ import {
   SOMETHING_WENT_WRONG,
   sseReader,
 } from '../../../lib/chat';
+import { saveChatAutoReadAction } from './actions';
+import { ChatSpeakButton } from './chat-speak-button';
 import { ConversationList } from './conversation-list';
 import { Feedback } from './feedback';
 import { PrivacyNotice } from './privacy-notice';
@@ -48,6 +51,12 @@ const OPENING: Bubble = { key: 'opening', role: 'Assistant', text: OPENING_QUEST
  * reply of the AI, piece by piece. Nothing is sent twice: the input is
  * read-only and « Envoyer » disabled while waiting. A failure gives the text
  * back to the input, with « Réessayer ».
+ *
+ * MEM-132: the messages of the AI are read aloud (lib/chat-voice.ts): the
+ * opening question on arrival, read in advance; a reply sentence by sentence
+ * while it is written, when « Lire automatiquement les réponses » is on.
+ * Each one has its loudspeaker. Sending a message or leaving the page stops
+ * the reading; the evaluation is never read by itself.
  */
 export function Chat({
   status,
@@ -55,13 +64,23 @@ export function Chat({
   missing,
   conversations,
   noticeAccepted,
+  autoRead: initialAutoRead = true,
+  voice: givenVoice,
 }: {
   status: OpenStatus;
   conversation: Conversation | null;
   missing: boolean;
   conversations: ConversationSummary[];
   noticeAccepted: boolean;
+  autoRead?: boolean;
+  /** For the tests: the reader of the page. */
+  voice?: ChatVoice;
 }) {
+  const [voice] = useState(() => givenVoice ?? new ChatVoice());
+  const [autoRead, setAutoRead] = useState(initialAutoRead);
+  const autoReadRef = useRef(autoRead);
+  /** The opening question couldn't be read on arrival (no gesture yet): « Écouter » is shown. */
+  const [listenHint, setListenHint] = useState(false);
   const [conversationId, setConversationId] = useState(conversation?.id ?? null);
   const [bubbles, setBubbles] = useState<Bubble[]>(conversation ? conversation.messages.map(toBubble) : [OPENING]);
   /** The reply on its way: hidden from screen readers until it is whole (read once). */
@@ -80,6 +99,30 @@ export function Chat({
   const end = useRef<HTMLLIElement>(null);
   const busy = phase !== 'idle';
 
+  // On arrival, the opening question, read in advance on the server; the reading stops when the page is left.
+  const opening = bubbles.length === 1 ? bubbles[0] : null;
+  const openingKey = useRef(opening?.key);
+  useEffect(() => {
+    const stop = () => voice.stop();
+    window.addEventListener('pagehide', stop);
+    if (openingKey.current && autoReadRef.current) {
+      void voice
+        .speak(openingKey.current, [{ text: OPENING_QUESTION, url: OPENING_AUDIO_HREF }])
+        .then((ended) => ended === 'blocked' && setListenHint(true));
+    }
+    return () => {
+      window.removeEventListener('pagehide', stop);
+      voice.stop();
+    };
+  }, [voice]);
+
+  function changeAutoRead(next: boolean) {
+    setAutoRead(next);
+    autoReadRef.current = next;
+    if (!next) voice.stop();
+    void saveChatAutoReadAction(next).catch(() => false);
+  }
+
   // The last message in sight, without taking the focus from the input.
   useEffect(() => {
     end.current?.scrollIntoView?.({ block: 'end', behavior: 'smooth' });
@@ -87,12 +130,15 @@ export function Chat({
 
   async function send(text: string) {
     if (!text || busy || limit || notice) return;
+    voice.stop(); // a message sent: the reading in progress stops
+    setListenHint(false);
     const key = `pending-${Date.now()}`;
     setError(null);
     setPhase('waiting');
     setInput('');
     setBubbles((list) => [...list, { key, role: 'User', text, evaluation: null }]);
     const giveBack = (message: string, retry: boolean) => {
+      voice.stop();
       setBubbles((list) => list.filter((bubble) => bubble.key !== key));
       setStreaming(null);
       setInput(text);
@@ -138,6 +184,9 @@ export function Chat({
     const decoder = new TextDecoder();
     const chunks = response.body.getReader();
     let reply = '';
+    // The reply is read sentence by sentence, as soon as each one is complete.
+    const sentences = sentenceSplitter();
+    const READING = 'reply';
     try {
       for (;;) {
         const { value, done } = await chunks.read();
@@ -150,10 +199,13 @@ export function Chat({
             );
           } else if (event.event === 'delta') {
             reply += event.data.text;
+            if (autoReadRef.current) voice.append(READING, sentences.push(event.data.text));
             setStreaming(reply);
             setPhase('streaming');
           } else if (event.event === 'done') {
             const saved = event.data.message;
+            if (autoReadRef.current) voice.append(READING, sentences.flush());
+            voice.rename(READING, saved.id);
             setStreaming(null);
             setBubbles((list) => [...list, toBubble(saved)]);
             setPhase('idle');
@@ -215,6 +267,10 @@ export function Chat({
         <h2 id="chat-title" className="chat__title">
           Chat IA
         </h2>
+        <label className="chat__auto-read">
+          <input type="checkbox" checked={autoRead} onChange={(event) => changeAutoRead(event.target.checked)} />
+          Lire automatiquement les réponses
+        </label>
         <Link href={`${CHAT_HREF}?nouvelle=${Date.now()}`} className="button-link button-link--secondary chat__new">
           Nouvelle conversation
         </Link>
@@ -229,8 +285,22 @@ export function Chat({
             <p className="visually-hidden" lang="fr">
               {bubble.role === 'User' ? 'Moi :' : 'IA :'}
             </p>
-            <p className="chat__bubble">{bubble.text}</p>
-            {bubble.evaluation && <Feedback written={bubble.text} evaluation={bubble.evaluation} />}
+            <div className="chat__bubble-row">
+              <p className="chat__bubble">{bubble.text}</p>
+              {bubble.role === 'Assistant' && (
+                <ChatSpeakButton
+                  voice={voice}
+                  readingKey={bubble.key}
+                  text={bubble.text}
+                  url={bubble.text === OPENING_QUESTION ? OPENING_AUDIO_HREF : undefined}
+                  label={listenHint && bubble.key === opening?.key ? 'Écouter' : undefined}
+                  onPlay={() => setListenHint(false)}
+                />
+              )}
+            </div>
+            {bubble.evaluation && (
+              <Feedback written={bubble.text} evaluation={bubble.evaluation} voice={voice} readingKey={bubble.key} />
+            )}
           </li>
         ))}
         {streaming !== null && (

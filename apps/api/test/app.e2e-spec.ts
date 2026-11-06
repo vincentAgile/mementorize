@@ -16,7 +16,13 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 /** The target retentions of a new account (MEM-75). */
 const RETENTIONS_90 = { vocabularyRetention: 90, quoteRetention: 90, mindMapRetention: 90 };
 /** The mode of use of a new account (MEM-110). */
-const STANDARD = { usageMode: 'Standard', learningMode: 'Guided', mindMapsEnabled: false, chatNoticeAccepted: false };
+const STANDARD = {
+  usageMode: 'Standard',
+  learningMode: 'Guided',
+  mindMapsEnabled: false,
+  chatNoticeAccepted: false,
+  chatAutoRead: true,
+};
 
 describe('API (e2e)', () => {
   let app: NestExpressApplication;
@@ -1033,6 +1039,12 @@ describe('API (e2e)', () => {
     const read = await http().put('/preferences').set(auth).send({ chatNoticeAccepted: true }).expect(200);
     expect(read.body).toMatchObject({ chatNoticeAccepted: true, homeSpace: 'Quote' });
     await http().put('/preferences').set(auth).send({ chatNoticeAccepted: 'oui' }).expect(400);
+
+    // MEM-132: « Lire automatiquement les réponses », on by default.
+    expect(guided.body.chatAutoRead).toBe(true);
+    const silent = await http().put('/preferences').set(auth).send({ chatAutoRead: false }).expect(200);
+    expect(silent.body).toMatchObject({ chatAutoRead: false, chatNoticeAccepted: true });
+    await http().put('/preferences').set(auth).send({ chatAutoRead: 'non' }).expect(400);
 
     await http().put('/preferences').set(auth).send({ homeSpace: 'Nope' }).expect(400);
     await http().put('/preferences').set(auth).send({ translator: 'Babelfish' }).expect(400);

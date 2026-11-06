@@ -71,6 +71,8 @@ model User {
   mindMapsEnabled Boolean @default(false)
   /// MEM-131: the user has read the privacy notice of the « Chat IA » (« J'ai compris »).
   chatNoticeAccepted Boolean @default(false)
+  /// MEM-132: the replies of the « Chat IA » are read aloud as they come (« Lire automatiquement les réponses »).
+  chatAutoRead       Boolean @default(true)
 
   @@map("users")
 }

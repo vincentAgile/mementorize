@@ -16,9 +16,11 @@ import type { AuthUser } from '../auth/auth-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { ConversationAccess, ConversationAccessGuard } from './conversation-access.js';
-import { ConversationRateGuard } from './conversation-rate.guard.js';
+import { ConversationRateGuard, ConversationSpeechRateGuard } from './conversation-rate.guard.js';
+import { ConversationSpeech } from './conversation-speech.js';
 import { ConversationsService } from './conversations.service.js';
 import { SendMessageDto } from './dto/send-message.dto.js';
+import { SpeechDto } from './dto/speech.dto.js';
 
 /**
  * MEM-130: the written conversations with the AI. Off without an AI model:
@@ -33,7 +35,35 @@ export class ConversationsController {
   constructor(
     private readonly conversations: ConversationsService,
     private readonly access: ConversationAccess,
+    private readonly speech: ConversationSpeech,
   ) {}
+
+  /**
+   * POST /conversations/speech { text } — MEM-132: a sentence read by
+   * Kokoro (audio/mpeg), 500 characters at most. Neither the text nor the
+   * audio is kept. 503 without Kokoro (the web app then uses the browser's
+   * voice), 502 if it fails. 3 per second too, counted apart from the
+   * messages.
+   */
+  @Post('speech')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ConversationAccessGuard, ConversationSpeechRateGuard)
+  async speak(@Body() body: SpeechDto, @Res() response: Response): Promise<void> {
+    const { audio, mimeType } = await this.speech.speak(body.text);
+    response.setHeader('Content-Type', mimeType);
+    response.setHeader('Cache-Control', 'no-store');
+    response.end(Buffer.from(audio));
+  }
+
+  /** GET /conversations/speech/opening — MEM-132: the opening question, read in advance. */
+  @Get('speech/opening')
+  @UseGuards(ConversationAccessGuard)
+  async opening(@Res() response: Response): Promise<void> {
+    const { audio, mimeType } = await this.speech.openingSpeech();
+    response.setHeader('Content-Type', mimeType);
+    response.setHeader('Cache-Control', 'private, max-age=86400');
+    response.end(Buffer.from(audio));
+  }
 
   /**
    * GET /conversations/status — { enabled: false } (no AI model, or an

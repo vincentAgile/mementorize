@@ -15,6 +15,16 @@ export async function acceptChatNoticeAction(): Promise<boolean> {
   }
 }
 
+/** MEM-132: « Lire automatiquement les réponses », kept for the user. False if it couldn't be saved. */
+export async function saveChatAutoReadAction(autoRead: boolean): Promise<boolean> {
+  try {
+    await savePreferences({ chatAutoRead: autoRead });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Deletes a conversation of « Mes conversations »; the open one gives way to a new one. */
 export async function deleteConversationAction(id: string, open: boolean): Promise<void> {
   await deleteConversation(id);

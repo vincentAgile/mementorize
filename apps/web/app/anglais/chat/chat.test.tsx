@@ -7,7 +7,38 @@ import type { ChatMessage, ChatStatus, Conversation, ConversationSummary, Evalua
 
 const acceptChatNoticeAction = vi.fn(async () => true);
 const deleteConversationAction = vi.fn(async () => undefined);
-vi.mock('./actions', () => ({ acceptChatNoticeAction, deleteConversationAction }));
+const saveChatAutoReadAction = vi.fn<(autoRead: boolean) => Promise<boolean>>(async () => true);
+vi.mock('./actions', () => ({ acceptChatNoticeAction, deleteConversationAction, saveChatAutoReadAction }));
+
+/** MEM-132: the reader of the page, without sound: what it is asked is kept. */
+class FakeVoice {
+  static last: FakeVoice;
+  static speakEnd: 'done' | 'blocked' = 'done';
+  calls: unknown[][] = [];
+  owned: string | null = null;
+  listeners = new Set<() => void>();
+  constructor() {
+    FakeVoice.last = this;
+  }
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+  owner = () => this.owned;
+  speak = (key: string, sentences: unknown[]) => {
+    this.calls.push(['speak', key, sentences]);
+    return Promise.resolve(FakeVoice.speakEnd);
+  };
+  append = (key: string, sentences: string[]) => {
+    if (sentences.length) this.calls.push(['append', key, sentences]);
+  };
+  rename = (from: string, to: string) => this.calls.push(['rename', from, to]);
+  stop = () => this.calls.push(['stop']);
+}
+vi.mock('../../../lib/chat-voice', async (original) => ({
+  ...(await original<typeof import('../../../lib/chat-voice')>()),
+  ChatVoice: FakeVoice,
+}));
 const getChatStatus = vi.fn();
 const getConversation = vi.fn();
 const getPreferences = vi.fn();
@@ -330,6 +361,130 @@ describe('« Chat IA »: the conversation (MEM-131)', () => {
     expect(deleteConversationAction).not.toHaveBeenCalled();
     await act(async () => items[1].querySelector<HTMLButtonElement>('.danger-button')!.click());
     expect(deleteConversationAction).toHaveBeenCalledWith('c2', false);
+  });
+});
+
+describe('« Chat IA »: reading aloud (MEM-132)', () => {
+  const reply = (texts: string[], text = texts.join('')) =>
+    sse([
+      {
+        event: 'evaluation',
+        data: { message: message({ id: 'm1', role: 'User', text: 'I go to the cinema.', evaluation: wrong }) },
+      },
+      ...texts.map((piece) => ({ event: 'delta', data: { text: piece } })),
+      { event: 'done', data: { message: message({ id: 'm2', position: 2, text }) } },
+    ]).response;
+
+  it('reads the opening question on arrival, prepared in advance', async () => {
+    mount(<Chat status={status} conversation={null} missing={false} conversations={[]} noticeAccepted />);
+    await flush();
+    expect(FakeVoice.last.calls[0]).toEqual([
+      'speak',
+      'opening',
+      [{ text: 'What do you want to talk about today?', url: '/anglais/chat/voix/ouverture' }],
+    ]);
+    expect(container.textContent).not.toContain('Écouter');
+  });
+
+  it('puts « Écouter » forward when the browser refuses the sound before a gesture', async () => {
+    FakeVoice.speakEnd = 'blocked';
+    mount(<Chat status={status} conversation={null} missing={false} conversations={[]} noticeAccepted />);
+    await flush();
+    FakeVoice.speakEnd = 'done';
+    const listen = container.querySelector<HTMLButtonElement>('.chat__speak--hint');
+    expect(listen?.textContent).toBe('Écouter');
+    act(() => listen!.click());
+    expect(FakeVoice.last.calls.at(-1)).toEqual([
+      'speak',
+      'opening',
+      [{ text: 'What do you want to talk about today?', url: '/anglais/chat/voix/ouverture' }],
+    ]);
+    expect(container.querySelector('.chat__speak--hint')).toBeNull();
+  });
+
+  it('stops at the sending, then reads the reply sentence by sentence while it is written', async () => {
+    fetchMock.mockResolvedValueOnce(reply(['Nice! What did', ' you see? Tell', ' me more']));
+    mount(<Chat status={status} conversation={null} missing={false} conversations={[]} noticeAccepted />);
+    await flush();
+    const voice = FakeVoice.last;
+    voice.calls.length = 0;
+    type('I go to the cinema.');
+    act(() => sendButton().click());
+    await flush();
+    expect(voice.calls).toEqual([
+      ['stop'],
+      ['append', 'reply', ['Nice!']],
+      ['append', 'reply', ['What did you see?']],
+      ['append', 'reply', ['Tell me more']],
+      ['rename', 'reply', 'm2'],
+    ]);
+  });
+
+  it('reads nothing by itself when « Lire automatiquement les réponses » is off, and keeps the choice', async () => {
+    fetchMock.mockResolvedValueOnce(reply(['Nice! What did you see?']));
+    mount(
+      <Chat status={status} conversation={null} missing={false} conversations={[]} noticeAccepted autoRead={false} />,
+    );
+    await flush();
+    const voice = FakeVoice.last;
+    expect(voice.calls).toEqual([]); // not even the opening question
+    const box = container.querySelector<HTMLInputElement>('.chat__auto-read input')!;
+    expect(box.checked).toBe(false);
+    type('I go to the cinema.');
+    act(() => sendButton().click());
+    await flush();
+    expect(voice.calls.filter(([kind]) => kind === 'append' || kind === 'speak')).toEqual([]);
+
+    act(() => box.click());
+    expect(saveChatAutoReadAction).toHaveBeenLastCalledWith(true);
+    act(() => box.click());
+    expect(saveChatAutoReadAction).toHaveBeenLastCalledWith(false);
+    expect(voice.calls.at(-1)).toEqual(['stop']); // turned off: the reading stops
+  });
+
+  it('has a loudspeaker on each message of the AI and on the corrected version, never reads the evaluation by itself', async () => {
+    const conversation: Conversation = {
+      id: 'c9',
+      title: 'I go to the cinema.',
+      createdAt: '2026-11-05T19:00:00.000Z',
+      updatedAt: '2026-11-05T19:01:00.000Z',
+      messages: [
+        message({}),
+        message({ id: 'm1', position: 1, role: 'User', text: 'Yesterday I go to the cinema.', evaluation: wrong }),
+        message({ id: 'm2', position: 2, text: 'Nice! What did you see?' }),
+      ],
+    };
+    mount(<Chat status={status} conversation={conversation} missing={false} conversations={[]} noticeAccepted />);
+    await flush();
+    const voice = FakeVoice.last;
+    expect(voice.calls).toEqual([]); // a conversation reopened: nothing read on arrival
+    const speakers = [...container.querySelectorAll<HTMLButtonElement>('.chat__speak')];
+    expect(speakers.map((button) => button.getAttribute('aria-label'))).toEqual([
+      'Écouter',
+      'Écouter la version corrigée',
+      'Écouter',
+    ]);
+    act(() => speakers[2].click());
+    expect(voice.calls.at(-1)).toEqual(['speak', 'm2', ['Nice!', 'What did you see?']]);
+    act(() => speakers[1].click());
+    expect(voice.calls.at(-1)).toEqual(['speak', 'corrected-m1', ['Yesterday I went to the cinema.']]);
+
+    // Read: the button stops it.
+    act(() => {
+      voice.owned = 'm2';
+      voice.listeners.forEach((listener) => listener());
+    });
+    expect(speakers[2].getAttribute('aria-pressed')).toBe('true');
+    act(() => speakers[2].click());
+    expect(voice.calls.at(-1)).toEqual(['stop']);
+  });
+
+  it('stops the reading when the page is left', async () => {
+    mount(<Chat status={status} conversation={null} missing={false} conversations={[]} noticeAccepted />);
+    await flush();
+    const voice = FakeVoice.last;
+    act(() => root.unmount());
+    expect(voice.calls.at(-1)).toEqual(['stop']);
   });
 });
 

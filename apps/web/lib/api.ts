@@ -676,3 +676,26 @@ export async function sendChatMessage(
     return { response: Response.json({ message: 'API unreachable' }, { status: 503 }), conversationId };
   }
 }
+
+/**
+ * MEM-132: a sentence of the « Chat IA » read by Kokoro, for
+ * app/anglais/chat/voix/route.ts; `opening`: the opening question, read in
+ * advance. The answer of the API as it is (the audio, or 400, 403, 429, 502,
+ * 503: the page then uses the browser's voice).
+ */
+export async function chatSpeech(request: { text: string } | 'opening'): Promise<Response> {
+  const token = await getSessionToken();
+  if (!token) return new Response(null, { status: 401 });
+  try {
+    return await fetch(`${API_URL}/conversations/speech${request === 'opening' ? '/opening' : ''}`, {
+      method: request === 'opening' ? 'GET' : 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: request === 'opening' ? undefined : JSON.stringify(request),
+      cache: 'no-store',
+      // A sentence takes a few seconds on the server's processor.
+      signal: AbortSignal.timeout(60_000),
+    });
+  } catch {
+    return new Response(null, { status: 503 });
+  }
+}

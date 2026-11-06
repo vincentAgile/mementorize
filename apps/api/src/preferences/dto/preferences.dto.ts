@@ -101,4 +101,9 @@ export class PreferencesDto {
   @IfSent()
   @IsBoolean()
   chatNoticeAccepted?: boolean;
+
+  /** MEM-132: « Lire automatiquement les réponses » of the « Chat IA ». */
+  @IfSent()
+  @IsBoolean()
+  chatAutoRead?: boolean;
 }
