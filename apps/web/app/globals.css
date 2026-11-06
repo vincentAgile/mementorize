@@ -37,7 +37,15 @@ body {
 .page {
   max-width: 960px;
   margin-inline: auto;
-  padding: 2rem;
+  /* Little space under the header's bands: the page starts right under them. */
+  padding: 1.25rem 2rem 2rem;
+}
+
+/* The first title of the page, under the hidden h1, without its top margin:
+   no empty band under the sub-menu. */
+.page > .visually-hidden:first-child + h2,
+.page > .visually-hidden:first-child + * > h2:first-child {
+  margin-top: 0;
 }
 
 .page__subtitle {
@@ -5742,5 +5750,36 @@ a.add-list__choice:focus-visible {
 
   .chat__end {
     scroll-margin-bottom: 13rem;
+  }
+}
+
+/* Settings: each list opposite its label, on a computer, for shorter pages
+   with less scrolling. The labels of a block line up (a column of at least
+   10rem); the status « Enregistré ✓ » stays right of the list. */
+@media (min-width: 640px) {
+  .page--settings .settings__form {
+    margin: 1rem 0 1.25rem;
+  }
+
+  .page--settings .settings__field > label:has(> select) {
+    display: grid;
+    grid-template-columns: minmax(10rem, max-content) auto;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .page--settings .settings__field {
+    align-items: center;
+  }
+
+  /* « Enregistré ✓ » on the line of the list, not on its bottom edge */
+  .page--settings .settings__field > .save-status {
+    padding-bottom: 0;
+  }
+
+  /* A field with its own label (the CSV separator): in the same column. */
+  .page--settings .settings__field > label[for] {
+    flex: 0 0 auto;
+    min-width: calc(10rem + 0.1rem); /* the column of the lists, with its gap of 1rem */
   }
 }
