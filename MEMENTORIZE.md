@@ -135,6 +135,7 @@ Mises à jour de `MEMENTORIZE.md` : Claude peut fusionner la PR (CI verte) et re
 
 - Code en anglais ; échanges, README et interface en français.
 - **Tutoiement partout** dans l'interface, y compris la console d'administration, les messages d'erreur et les e-mails : « Choisis un fichier », « Mementorize te fait réviser… », jamais « vous » ni l'impératif en « -ez ». Mementorize est une application d'apprentissage et de formation : on veut une relation conviviale, directe et informelle avec l'utilisateur, comme avec un partenaire d'entraînement. Les contenus appris (exemples des cartes, citations) ne sont pas concernés.
+- **Valeurs de liste entre guillemets** : dans les textes des Réglages, une valeur de liste déroulante est citée entre guillemets français, tel qu'il apparaît dans la liste. Exemples : `« Guidé » explique chaque étape… ; « Autonome » va droit au but.`, `Le mode « Avancé » ajoute…`. Le lecteur reconnaît ainsi le choix exact à faire dans la liste.
 - Commits : Conventional Commits (`feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `ci`).
 - Avant de pousser : `pnpm format`, `pnpm lint && pnpm test && pnpm build`.
 - Environnement de dev : Windows, PowerShell, VS Code.

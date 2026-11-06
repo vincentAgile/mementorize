@@ -15,8 +15,8 @@ export function MindMapsForm({ enabled }: { enabled: boolean }) {
     <section className="settings">
       <h2>Espace cartes mentales</h2>
       <p className="page__subtitle">
-        Désactivé, l’espace Cartes mentales est masqué : menus, réglages et e-mail de rappel. Tes cartes mentales sont
-        conservées et réapparaissent à l’activation.
+        « Désactivé », l’espace Cartes mentales est masqué : menus, réglages et e-mail de rappel. Tes cartes mentales
+        sont conservées et réapparaissent à l’activation.
       </p>
       <div className="settings__form">
         <AutoSelect<Choice>
