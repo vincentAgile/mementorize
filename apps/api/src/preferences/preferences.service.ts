@@ -22,6 +22,8 @@ export interface Preferences {
   mindMapsEnabled: boolean;
   /** MEM-131: the privacy notice of the « Chat IA », read: not shown again. */
   chatNoticeAccepted: boolean;
+  /** MEM-132: the replies of the « Chat IA » read aloud as they come. */
+  chatAutoRead: boolean;
 }
 
 const SELECT = {
@@ -37,6 +39,7 @@ const SELECT = {
   learningMode: true,
   mindMapsEnabled: true,
   chatNoticeAccepted: true,
+  chatAutoRead: true,
 } as const;
 
 const toPreferences = ({ csvDelimiter, ...rest }: { csvDelimiter: string } & Omit<Preferences, 'csvSeparator'>) => ({
@@ -81,6 +84,7 @@ export class PreferencesService {
         learningMode: dto.learningMode,
         mindMapsEnabled: dto.mindMapsEnabled,
         chatNoticeAccepted: dto.chatNoticeAccepted,
+        chatAutoRead: dto.chatAutoRead,
       },
       select: SELECT,
     });

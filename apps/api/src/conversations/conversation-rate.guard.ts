@@ -23,3 +23,10 @@ export class ConversationRateGuard implements CanActivate {
     return true;
   }
 }
+
+/**
+ * MEM-132: the same limit, 3 per second, for the sentences read aloud, but
+ * counted apart: reading a reply never prevents sending the next message.
+ */
+@Injectable()
+export class ConversationSpeechRateGuard extends ConversationRateGuard {}

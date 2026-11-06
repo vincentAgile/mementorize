@@ -2,14 +2,27 @@
 
 import { useState } from 'react';
 import { correctedParts, type Evaluation } from '../../../lib/chat';
+import type { ChatVoice } from '../../../lib/chat-voice';
+import { ChatSpeakButton } from './chat-speak-button';
 
 /**
  * MEM-131: the evaluation of a message, under it, in English: the corrected
  * version (its changes underlined and in bold, not by colour only), the
  * corrections « before → after » with their type and explanation, or
- * « Great, no corrections needed. ».
+ * « Great, no corrections needed. ». MEM-132: never read by itself; a
+ * loudspeaker reads the corrected version on demand.
  */
-export function Feedback({ written, evaluation }: { written: string; evaluation: Evaluation }) {
+export function Feedback({
+  written,
+  evaluation,
+  voice,
+  readingKey,
+}: {
+  written: string;
+  evaluation: Evaluation;
+  voice?: ChatVoice;
+  readingKey?: string;
+}) {
   const [copied, setCopied] = useState(false);
   const correct = evaluation.corrections.length === 0;
 
@@ -29,7 +42,17 @@ export function Feedback({ written, evaluation }: { written: string; evaluation:
         <p className="chat-feedback__ok">Great, no corrections needed.</p>
       ) : (
         <>
-          <h4 className="chat-feedback__label">Corrected version</h4>
+          <div className="chat-feedback__label-row">
+            <h4 className="chat-feedback__label">Corrected version</h4>
+            {voice && (
+              <ChatSpeakButton
+                voice={voice}
+                readingKey={`corrected-${readingKey ?? written}`}
+                text={evaluation.corrected}
+                title="Écouter la version corrigée"
+              />
+            )}
+          </div>
           <p className="chat-feedback__corrected">
             {correctedParts(written, evaluation.corrected).map((part, index) =>
               part.changed ? (

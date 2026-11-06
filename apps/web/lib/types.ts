@@ -227,6 +227,8 @@ export interface Preferences {
   mindMapsEnabled?: boolean;
   /** MEM-131: the privacy notice of the « Chat IA », read. Missing while the API doesn't send it yet. */
   chatNoticeAccepted?: boolean;
+  /** MEM-132: « Lire automatiquement les réponses » of the « Chat IA ». Missing while the API doesn't send it yet: on. */
+  chatAutoRead?: boolean;
 }
 
 /** The modes of use (MEM-110): Standard by default, or Advanced. */

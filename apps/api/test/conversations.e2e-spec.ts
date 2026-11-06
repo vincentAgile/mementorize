@@ -6,7 +6,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
 import { ConfigService } from '@nestjs/config';
 import { ConversationAccess } from '../src/conversations/conversation-access.js';
-import { ConversationRateGuard } from '../src/conversations/conversation-rate.guard.js';
+import { ConversationRateGuard, ConversationSpeechRateGuard } from '../src/conversations/conversation-rate.guard.js';
+import { KokoroClient } from '../src/pronunciation/kokoro.client.js';
 import { ConversationsService } from '../src/conversations/conversations.service.js';
 import { CONVERSATION_MODEL, type ConversationModel } from '../src/conversations/model/conversation-model.js';
 import { FakeConversationModel } from '../src/conversations/model/fake-conversation-model.js';
@@ -15,12 +16,32 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 /** The accounts the conversations are open to, as CONVERSATION_ALLOWED_EMAILS would say. */
 const accessFor = (value: string) => new ConversationAccess({ get: () => value } as unknown as ConfigService);
 
+/** MEM-132: a Kokoro without Kokoro: the « audio » is the text read, and every text is kept. */
+const kokoro = {
+  enabled: true,
+  voice: 'af_heart',
+  failing: false,
+  texts: [] as string[],
+  async speak(text: string) {
+    this.texts.push(text);
+    if (this.failing) throw new Error('Kokoro down');
+    return { audio: new TextEncoder().encode(`mp3:${text}`), mimeType: 'audio/mpeg' };
+  },
+};
+
 async function start(model: ConversationModel | null | undefined, { rateLimit = false, allowed = '*' } = {}) {
   let builder = Test.createTestingModule({ imports: [AppModule] });
   builder = builder.overrideProvider(ConversationAccess).useValue(accessFor(allowed));
+  builder = builder.overrideProvider(KokoroClient).useValue(kokoro);
   if (model !== undefined) builder = builder.overrideProvider(CONVERSATION_MODEL).useValue(model);
   // 3 requests per second would slow the scenarios down: tested on its own.
-  if (!rateLimit) builder = builder.overrideGuard(ConversationRateGuard).useValue({ canActivate: () => true });
+  if (!rateLimit) {
+    builder = builder
+      .overrideGuard(ConversationRateGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(ConversationSpeechRateGuard)
+      .useValue({ canActivate: () => true });
+  }
   const app = (await builder.compile()).createNestApplication<NestExpressApplication>();
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.init();
@@ -320,6 +341,56 @@ describe('Conversations with the AI (e2e, MEM-130)', () => {
     await send(auth, conversation.id, 'Hello there.').expect(200); // tried again: it works
   });
 
+  it('reads a sentence aloud with Kokoro, neither kept nor too long (MEM-132)', async () => {
+    const { auth } = await register('speech');
+    kokoro.texts.length = 0;
+    const res = await http()
+      .post('/conversations/speech')
+      .set(auth)
+      .send({ text: '  Nice!\n What did you see?  ' })
+      .buffer(true)
+      .parse((response, callback) => {
+        const chunks: Buffer[] = [];
+        response.on('data', (chunk: Buffer) => chunks.push(chunk));
+        response.on('end', () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+    expect(res.headers['content-type']).toBe('audio/mpeg');
+    expect(res.headers['cache-control']).toBe('no-store');
+    expect((res.body as Buffer).toString()).toBe('mp3:Nice! What did you see?');
+    expect(kokoro.texts).toEqual(['Nice! What did you see?']);
+
+    await http().post('/conversations/speech').set(auth).send({ text: '   ' }).expect(400);
+    await http()
+      .post('/conversations/speech')
+      .set(auth)
+      .send({ text: 'a'.repeat(501) })
+      .expect(400);
+    await http().post('/conversations/speech').set(auth).send({}).expect(400);
+    await http().post('/conversations/speech').send({ text: 'Hi' }).expect(401);
+    expect(kokoro.texts).toHaveLength(1);
+
+    kokoro.failing = true;
+    await http().post('/conversations/speech').set(auth).send({ text: 'Hello.' }).expect(502);
+    kokoro.failing = false;
+    kokoro.enabled = false;
+    await http().post('/conversations/speech').set(auth).send({ text: 'Hello.' }).expect(503);
+    kokoro.enabled = true;
+  });
+
+  it('reads the opening question once, in advance (MEM-132)', async () => {
+    const { auth } = await register('opening');
+    kokoro.texts.length = 0;
+    for (let i = 0; i < 2; i++) {
+      const res = await http().get('/conversations/speech/opening').set(auth).expect(200);
+      expect(res.headers['content-type']).toBe('audio/mpeg');
+    }
+    // Already read at the first request (or at the start of the API): never twice.
+    expect(kokoro.texts.filter((text) => text === 'What do you want to talk about today?').length).toBeLessThanOrEqual(
+      1,
+    );
+  });
+
   it('deletes the conversations of more than 90 days, every night', async () => {
     const { auth } = await register('purge');
     const old = (await http().post('/conversations').set(auth).expect(201)).body;
@@ -370,6 +441,8 @@ describe('Conversations open to some accounts only (e2e, MEM-130)', () => {
     await http().get(`/conversations/${conversation.id}`).set(other).expect(403);
     await http().delete(`/conversations/${conversation.id}`).set(other).expect(403);
     await http().post(`/conversations/${conversation.id}/messages`).set(other).send({ text: 'Hi' }).expect(403);
+    await http().post('/conversations/speech').set(other).send({ text: 'Hi' }).expect(403);
+    await http().get('/conversations/speech/opening').set(other).expect(403);
   });
 
   it('is open to nobody when the setting is empty', () => {
@@ -398,6 +471,11 @@ describe('Conversations: at most 3 requests per second (e2e, MEM-130)', () => {
     const statuses: number[] = [];
     for (let i = 0; i < 4; i++) statuses.push((await http().post('/conversations').set(auth)).status);
     expect(statuses).toEqual([201, 201, 201, 429]);
+    // MEM-132: the sentences read aloud have their own 3 per second.
+    const speech: number[] = [];
+    for (let i = 0; i < 4; i++)
+      speech.push((await http().post('/conversations/speech').set(auth).send({ text: 'Hi.' })).status);
+    expect(speech).toEqual([200, 200, 200, 429]);
     // The readings are not counted: the status (every page, for the menu), the list, a conversation.
     await http().get('/conversations/status').set(auth).expect(200);
     await http().get('/conversations').set(auth).expect(200);

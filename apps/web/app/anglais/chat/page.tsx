@@ -39,6 +39,8 @@ export default async function ChatPage({ searchParams }: { searchParams: Promise
       missing={Boolean(c) && !conversation}
       conversations={conversations}
       noticeAccepted={preferences.chatNoticeAccepted === true}
+      // MEM-132: on while the API doesn't send it yet.
+      autoRead={preferences.chatAutoRead !== false}
     />
   );
 }

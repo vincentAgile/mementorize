@@ -115,6 +115,30 @@ export function subscribeToVoices(onChange: () => void): () => void {
   return () => speech.removeEventListener('voiceschanged', listener);
 }
 
+/**
+ * MEM-132: says one sentence with the browser's English voice, for the
+ * « Chat IA » when Kokoro doesn't answer. Resolves when it is over (or cut,
+ * or impossible: no English voice).
+ */
+export function sayWithBrowser(text: string): Promise<void> {
+  const speech = synthesis();
+  const voice = englishVoice();
+  if (!speech || !voice) return Promise.resolve();
+  return new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    speech.speak(utterance);
+  });
+}
+
+/** MEM-132: cuts the browser's voice, whoever started it. */
+export function silenceBrowser(): void {
+  synthesis()?.cancel();
+}
+
 // --- Both --------------------------------------------------------------------
 
 /** MEM-92: told when the reference is read, so that the user's own recording stops. */
