@@ -33,6 +33,9 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       { source: '/anglais/import-export', destination: '/anglais/ajouter-liste/fichier', permanent: true },
+      // Settings: the tab Révision joined Général, « Saisie et fichiers » became « Import / export ».
+      { source: '/reglages/revision', destination: '/reglages', permanent: true },
+      { source: '/reglages/saisie', destination: '/reglages/import-export', permanent: true },
     ];
   },
 };

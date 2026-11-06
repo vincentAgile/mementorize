@@ -250,7 +250,7 @@ export function ImportSection({ type, separator }: { type: ListType; separator: 
                   </button>
                 </span>
               ))}{' '}
-              (ou <Link href="/reglages/saisie#csv">choisir un autre séparateur dans les Réglages</Link>).
+              (ou <Link href="/reglages/import-export#csv">choisir un autre séparateur dans les Réglages</Link>).
             </>
           )}
         </Problem>

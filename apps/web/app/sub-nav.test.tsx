@@ -132,9 +132,8 @@ describe('SubNav and HeaderTitle: the tabs of « Mes statistiques » (MEM-113)',
       label: 'Réglages',
       tabs: [
         ['Général', '/reglages', null],
-        ['Révision', '/reglages/revision', null],
         ['Rappels', '/reglages/rappels', null],
-        ['Saisie et fichiers', '/reglages/saisie', null],
+        ['Import / export', '/reglages/import-export', null],
         ['Avancé', '/reglages/avance', 'page'],
       ],
     });

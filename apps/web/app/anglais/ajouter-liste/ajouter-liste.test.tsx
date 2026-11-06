@@ -55,7 +55,7 @@ describe('The pages under « Ajouter une liste » (MEM-123)', () => {
     const html = renderToStaticMarkup(await ImportFilePage());
     expect(html).toContain('<a href="/anglais/ajouter-liste">← Retour au choix</a>');
     expect(html).toContain('<section data-import=";"></section>');
-    expect(html).toContain('<a href="/reglages/saisie#csv">Changer dans les Réglages</a>');
+    expect(html).toContain('<a href="/reglages/import-export#csv">Changer dans les Réglages</a>');
     expect(text(html)).toContain('Pour exporter tes cartes, va dans Ma liste .');
     expect(html).toContain('<a href="/anglais/liste">Ma liste</a>');
     expect(html).not.toContain('Exporter en CSV');

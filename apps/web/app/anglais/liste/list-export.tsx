@@ -17,7 +17,8 @@ export function ListExport({ count, separator }: { count: number; separator: str
       </a>
       <span className="list-export__info">
         {count > 1 ? `${all}, quel que soit leur état` : 'Exporte la carte, quel que soit son état'} · séparateur{' '}
-        <strong>{separatorName(separator)}</strong> · <Link href="/reglages/saisie#csv">Changer dans les Réglages</Link>
+        <strong>{separatorName(separator)}</strong> ·{' '}
+        <Link href="/reglages/import-export#csv">Changer dans les Réglages</Link>
       </span>
     </div>
   );
