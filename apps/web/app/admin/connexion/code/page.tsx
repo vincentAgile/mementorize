@@ -14,7 +14,7 @@ export default async function AdminCodePage() {
       <AdminBanner />
       <main className="admin__main admin__main--narrow">
         <h1>Code de vérification</h1>
-        <p>Saisissez le code à 6 chiffres affiché par votre application d’authentification.</p>
+        <p>Saisis le code à 6 chiffres affiché par ton application d’authentification.</p>
         <CodeForm />
       </main>
     </>

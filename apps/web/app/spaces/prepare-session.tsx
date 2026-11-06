@@ -119,7 +119,7 @@ export function PrepareSession({ type, candidates, noun, cancelHref, initialList
 
         {list.length === 0 ? (
           <p className="prepare__empty">
-            Aucun{noun.feminine ? 'e' : ''} {noun.one} dans cette session : ajoutez-en avec{' '}
+            Aucun{noun.feminine ? 'e' : ''} {noun.one} dans cette session : ajoutes-en avec{' '}
             {pickHref ? 'le bouton « Ajouter »' : 'la recherche ci-dessous'}.
           </p>
         ) : (
@@ -200,7 +200,7 @@ export function PrepareSession({ type, candidates, noun, cancelHref, initialList
 
         {full && (
           <p id={fullId} className="prepare__full">
-            {MAX_SESSION_SIZE} {noun.many} au plus par session : retirez-en {noun.feminine ? 'une' : 'un'} pour en
+            {MAX_SESSION_SIZE} {noun.many} au plus par session : retires-en {noun.feminine ? 'une' : 'un'} pour en
             ajouter {noun.feminine ? 'une autre' : 'un autre'}.
           </p>
         )}
@@ -243,7 +243,7 @@ export function PrepareSession({ type, candidates, noun, cancelHref, initialList
                 {results.length > MAX_RESULTS && (
                   <p className="prepare__more">
                     {results.length - MAX_RESULTS} autre{results.length - MAX_RESULTS > 1 ? 's' : ''} résultat
-                    {results.length - MAX_RESULTS > 1 ? 's' : ''} : précisez la recherche.
+                    {results.length - MAX_RESULTS > 1 ? 's' : ''} : précise la recherche.
                   </p>
                 )}
               </>

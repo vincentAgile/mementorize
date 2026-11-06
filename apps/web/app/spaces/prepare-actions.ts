@@ -29,7 +29,7 @@ export async function startSessionAction(type: ListType, ids: string[]): Promise
   const kept = [...new Set(ids)].filter((id) => status.get(id) === 'ToLearn' || status.get(id) === 'Waiting');
   if (kept.length === 0) {
     return {
-      error: `Ces ${type === 'Quote' ? 'citations' : 'cartes'} ne sont plus à apprendre : rechargez la page.`,
+      error: `Ces ${type === 'Quote' ? 'citations' : 'cartes'} ne sont plus à apprendre : recharge la page.`,
     };
   }
   const waiting = kept.filter((id) => status.get(id) === 'Waiting');

@@ -16,8 +16,8 @@ export default async function AdminLoginPage({
       <AdminBanner />
       <main className="admin__main admin__main--narrow">
         <h1>Connexion</h1>
-        {expiree && <p className="notice">La session a expiré : reconnectez-vous.</p>}
-        {etape && <p className="notice">L’étape du code a expiré : saisissez de nouveau votre mot de passe.</p>}
+        {expiree && <p className="notice">La session a expiré : reconnecte-toi.</p>}
+        {etape && <p className="notice">L’étape du code a expiré : saisis de nouveau ton mot de passe.</p>}
         <AdminLoginForm />
       </main>
     </>

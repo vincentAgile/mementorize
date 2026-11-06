@@ -63,7 +63,7 @@ export default async function CatalogListPage({ params }: Props) {
         <h2 id="entry-add-title">Ajouter un mot</h2>
         {full ? (
           <p className="notice">
-            La liste compte {MAX_ENTRIES}&nbsp;mots, le maximum : supprimez-en pour en ajouter d’autres.
+            La liste compte {MAX_ENTRIES}&nbsp;mots, le maximum : supprimes-en pour en ajouter d’autres.
           </p>
         ) : (
           <EntryForm listId={list.id} topics={topics} idPrefix="entry-add" />

@@ -50,10 +50,10 @@ export function weakSounds(word: PronunciationResult['words'][number]): { phonem
 export function failureMessage(status: number, message?: string): string {
   if (status === 429) {
     return /daily/i.test(message ?? '')
-      ? 'Limite quotidienne d’évaluations atteinte : réessayez demain.'
-      : 'Beaucoup d’essais d’affilée : réessayez dans une minute.';
+      ? 'Limite quotidienne d’évaluations atteinte : réessaie demain.'
+      : 'Beaucoup d’essais d’affilée : réessaie dans une minute.';
   }
-  if (status === 400) return 'Enregistrement trop court ou illisible : réessayez en parlant juste après avoir cliqué.';
+  if (status === 400) return 'Enregistrement trop court ou illisible : réessaie en parlant juste après avoir cliqué.';
   if (status === 413) return 'Enregistrement trop long : 10 secondes au plus.';
-  return 'Évaluation indisponible pour le moment : réessayez plus tard.';
+  return 'Évaluation indisponible pour le moment : réessaie plus tard.';
 }

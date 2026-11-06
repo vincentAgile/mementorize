@@ -260,8 +260,8 @@ describe('entryErrors (MEM-117): the checks of the « Ajouter » tab', () => {
   it('both expressions required, and the same lengths as the API', () => {
     expect(entryErrors(values)).toEqual({});
     expect(entryErrors({ ...values, word: '', translation: '' })).toEqual({
-      word: 'Saisissez le mot, l’expression ou la phrase en anglais.',
-      translation: 'Saisissez la traduction en français.',
+      word: 'Saisis le mot, l’expression ou la phrase en anglais.',
+      translation: 'Saisis la traduction en français.',
     });
     expect(entryErrors({ ...values, topic: 'x'.repeat(51), example: 'x'.repeat(501) })).toEqual({
       topic: '50 caractères au plus.',

@@ -131,7 +131,7 @@ export async function resetOptimizationAction(type: ItemType): Promise<Optimizat
     return { space: await resetOptimization(type) };
   } catch (error) {
     if (!(error instanceof ApiError)) throw error;
-    if (error.status === 409) return { error: 'Une optimisation est en cours : attendez qu’elle se termine.' };
+    if (error.status === 409) return { error: 'Une optimisation est en cours : attends qu’elle se termine.' };
     return { error: 'Le retour aux valeurs par défaut a échoué.' };
   }
 }

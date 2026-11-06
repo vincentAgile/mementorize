@@ -368,8 +368,8 @@ export function PracticePanel({ practice }: { practice: PronunciationPractice })
       {state.name === 'consent' && (
         <div className="practice__consent" role="dialog" aria-labelledby="practice-consent">
           <p id="practice-consent">
-            Votre voix est envoyée au service d’évaluation de la prononciation de Microsoft Azure (hébergé en Europe),
-            puis effacée : elle n’est pas conservée.
+            Ta voix est envoyée au service d’évaluation de la prononciation de Microsoft Azure (hébergé en Europe), puis
+            effacée : elle n’est pas conservée.
           </p>
           <p className="practice__buttons">
             <button type="button" className="practice__primary" onClick={practice.accept} autoFocus>
@@ -383,8 +383,8 @@ export function PracticePanel({ practice }: { practice: PronunciationPractice })
       )}
       {practice.denied && (
         <p className="practice__message" role="alert">
-          L’accès au micro est refusé. Autorisez-le dans les réglages du site (l’icône à gauche de l’adresse), puis
-          réessayez. Vous pouvez aussi continuer sans vous enregistrer.
+          L’accès au micro est refusé. Autorise-le dans les réglages du site (l’icône à gauche de l’adresse), puis
+          réessaie. Tu peux aussi continuer sans t’enregistrer.
         </p>
       )}
       <div aria-live="polite">
@@ -392,14 +392,14 @@ export function PracticePanel({ practice }: { practice: PronunciationPractice })
           <p className="practice__recording">
             <span className="practice__dot" aria-hidden="true" />
             Enregistrement… <span className="practice__time">{mmss(practice.elapsed)}</span>
-            <span className="practice__hint"> · dites l’expression, puis arrêtez (R)</span>
+            <span className="practice__hint"> · dis l’expression, puis arrête (R)</span>
           </p>
         )}
         {state.name === 'assessing' && <p className="practice__message">Évaluation…</p>}
         {state.name === 'failed' && <p className="practice__message practice__message--error">{state.message}</p>}
         {state.name === 'result' && state.result.nothingHeard && (
           <p className="practice__message practice__message--error">
-            Je n’ai rien entendu : rapprochez-vous du micro et réessayez.
+            Je n’ai rien entendu : rapproche-toi du micro et réessaie.
           </p>
         )}
         {state.name === 'result' && !state.result.nothingHeard && (

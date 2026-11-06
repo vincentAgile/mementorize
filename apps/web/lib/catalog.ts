@@ -29,10 +29,10 @@ export type CatalogField = 'title' | 'level' | 'description' | 'published';
 /** The errors of the form, under their field, before anything is sent. */
 export function catalogErrors(values: CatalogValues): Partial<Record<CatalogField, string>> {
   const errors: Partial<Record<CatalogField, string>> = {};
-  if (!values.title.trim()) errors.title = 'Saisissez le titre de la liste.';
+  if (!values.title.trim()) errors.title = 'Saisis le titre de la liste.';
   else if (values.title.trim().length > CATALOG_MAX.title)
     errors.title = `Le titre fait ${CATALOG_MAX.title} caractères au plus.`;
-  if (!isLevel(values.level)) errors.level = 'Choisissez le niveau de la liste.';
+  if (!isLevel(values.level)) errors.level = 'Choisis le niveau de la liste.';
   if (values.description.trim().length > CATALOG_MAX.description)
     errors.description = `La description fait ${CATALOG_MAX.description} caractères au plus.`;
   return errors;
@@ -42,11 +42,11 @@ export function catalogErrors(values: CatalogValues): Partial<Record<CatalogFiel
 export const API_MESSAGES: Record<string, { field: CatalogField; message: string }> = {
   'Une liste de ce niveau porte déjà ce titre': {
     field: 'title',
-    message: 'Une liste de ce niveau porte déjà ce titre : changez le titre ou le niveau.',
+    message: 'Une liste de ce niveau porte déjà ce titre : change le titre ou le niveau.',
   },
   'Une liste vide ne peut pas être publiée': {
     field: 'published',
-    message: 'Une liste vide ne peut pas être publiée : ajoutez-lui des mots d’abord.',
+    message: 'Une liste vide ne peut pas être publiée : ajoute-lui des mots d’abord.',
   },
 };
 
@@ -73,8 +73,8 @@ const ENTRY_MAX: Record<EntryField, number> = {
 /** The errors of the form of a word, under their field, before anything is sent: as the « Ajouter » tab. */
 export function entryErrors(values: Record<EntryField, string>): Partial<Record<EntryField, string>> {
   const errors: Partial<Record<EntryField, string>> = {};
-  if (!values.word) errors.word = 'Saisissez le mot, l’expression ou la phrase en anglais.';
-  if (!values.translation) errors.translation = 'Saisissez la traduction en français.';
+  if (!values.word) errors.word = 'Saisis le mot, l’expression ou la phrase en anglais.';
+  if (!values.translation) errors.translation = 'Saisis la traduction en français.';
   for (const field of Object.keys(ENTRY_MAX) as EntryField[]) {
     if (!errors[field] && values[field].length > ENTRY_MAX[field])
       errors[field] = `${ENTRY_MAX[field]}\u00a0caractères au plus.`;
@@ -86,13 +86,13 @@ export function entryErrors(values: Record<EntryField, string>): Partial<Record<
 export const ENTRY_MESSAGES: Record<string, { field?: EntryField; message: string }> = {
   'Ce mot est déjà dans la liste': { field: 'word', message: 'Cette expression anglaise est déjà dans la liste.' },
   [`Une liste compte ${MAX_ENTRIES} mots au plus`]: {
-    message: `La liste compte déjà ${MAX_ENTRIES}\u00a0mots, le maximum : supprimez-en pour en ajouter d’autres.`,
+    message: `La liste compte déjà ${MAX_ENTRIES}\u00a0mots, le maximum : supprimes-en pour en ajouter d’autres.`,
   },
   'Une liste publiée ne peut pas être vidée': {
-    message: 'Une liste publiée garde au moins un mot : dépubliez-la d’abord pour supprimer tous ses mots.',
+    message: 'Une liste publiée garde au moins un mot : dépublie-la d’abord pour supprimer tous ses mots.',
   },
   'Le dernier mot d’une liste publiée ne peut pas être supprimé': {
-    message: 'C’est le dernier mot de cette liste publiée : dépubliez-la d’abord pour le supprimer.',
+    message: 'C’est le dernier mot de cette liste publiée : dépublie-la d’abord pour le supprimer.',
   },
 };
 

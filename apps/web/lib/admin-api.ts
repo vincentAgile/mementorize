@@ -73,10 +73,10 @@ export interface Enrollment {
   otpauthUri: string;
 }
 
-const UNREACHABLE = 'Le serveur ne répond pas. Réessayez dans un instant.';
-const TOO_MANY = 'Trop de tentatives échouées : réessayez dans quelques minutes.';
+const UNREACHABLE = 'Le serveur ne répond pas. Réessaie dans un instant.';
+const TOO_MANY = 'Trop de tentatives échouées : réessaie dans quelques minutes.';
 const OFF = 'La console d’administration n’est pas activée sur ce serveur.';
-export const STEP_EXPIRED = 'L’étape de connexion a expiré : saisissez de nouveau votre mot de passe.';
+export const STEP_EXPIRED = 'L’étape de connexion a expiré : saisis de nouveau ton mot de passe.';
 
 /** A public route of the login; `client`: the address of the browser, for the limit on failures. */
 async function post(path: string, body: unknown, client?: string | null): Promise<Response | null> {
@@ -142,7 +142,7 @@ export async function adminCode(
         ok: false,
         message:
           kind === 'activate'
-            ? 'Code incorrect : vérifiez l’heure du téléphone, puis saisissez le code affiché maintenant.'
+            ? 'Code incorrect : vérifie l’heure du téléphone, puis saisis le code affiché maintenant.'
             : 'Code incorrect ou déjà utilisé.',
       };
     case 410:
@@ -228,7 +228,7 @@ function twoFactorError(res: Response | null, wrong: string): { ok: false; messa
   if (!res) return { ok: false, message: UNREACHABLE };
   if (res.status === 401 || res.status === 400) return { ok: false, message: wrong };
   if (res.status === 429) return { ok: false, message: TOO_MANY };
-  if (res.status === 409) return { ok: false, message: 'Le réglage a déjà changé : rechargez la page.' };
+  if (res.status === 409) return { ok: false, message: 'Le réglage a déjà changé : recharge la page.' };
   return { ok: false, message: `Erreur inattendue du serveur (${res.status}).` };
 }
 
