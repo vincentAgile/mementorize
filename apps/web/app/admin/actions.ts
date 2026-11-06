@@ -74,7 +74,7 @@ async function submitCode(
   const challenge = await getAdminStep();
   if (!challenge) return { state: { expired: true, error: STEP_EXPIRED } };
   const code = String(formData.get('code') ?? '').trim();
-  if (!code) return { state: { error: 'Saisissez le code.' } };
+  if (!code) return { state: { error: 'Saisis le code.' } };
 
   const result = await adminCode(kind, challenge, code, await clientAddress());
   if (!result.ok) {

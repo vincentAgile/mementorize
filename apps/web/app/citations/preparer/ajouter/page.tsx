@@ -31,7 +31,7 @@ export default async function QuotePickPage({ searchParams }: { searchParams: Pr
         <h2 className="prepare__title">Ajouter des citations à la session</h2>
         <p>
           {room <= 0
-            ? `${MAX_SESSION_SIZE} citations au plus par session : retirez-en une pour en ajouter une autre.`
+            ? `${MAX_SESSION_SIZE} citations au plus par session : retires-en une pour en ajouter une autre.`
             : 'Toutes les citations à apprendre ou en attente sont déjà dans la session.'}
         </p>
         <Link href={withList(PREPARE, list)} className="prepare__cancel">

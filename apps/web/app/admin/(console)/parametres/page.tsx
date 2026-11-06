@@ -26,8 +26,8 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
         </p>
         <p className="settings__hint">
           {enabled
-            ? 'À chaque connexion, après le mot de passe, la console demande le code de votre application d’authentification.'
-            : 'Votre compte n’est protégé que par votre mot de passe.'}
+            ? 'À chaque connexion, après le mot de passe, la console demande le code de ton application d’authentification.'
+            : 'Ton compte n’est protégé que par ton mot de passe.'}
         </p>
         {params['2fa'] === 'desactivee' && !enabled && (
           <p role="status" className="notice">

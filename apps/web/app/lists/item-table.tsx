@@ -212,7 +212,7 @@ export function ItemTable<Row extends ListRow>({
       </p>
       {withQueue && filter.status === 'ToLearn' && !queueView && shown.length > 0 && (
         <p className="queue-hint">
-          Pour réordonner la file, affichez-la en entier, triée par N°, sans recherche
+          Pour réordonner la file, affiche-la en entier, triée par N°, sans recherche
           {topics ? ' ni filtre de thématique' : ''}.{' '}
           <button
             type="button"

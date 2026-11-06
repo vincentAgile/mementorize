@@ -129,10 +129,10 @@ export type CatalogPreviewResult = { analysis: CatalogImportAnalysis } | { error
 /** MEM-117: what importing the chosen file into the list would do, line by line. Nothing is saved. */
 export async function previewCatalogImportAction(listId: string, formData: FormData): Promise<CatalogPreviewResult> {
   check(listId);
-  const content = await readCsvFile(formData, false);
+  const content = await readCsvFile(formData);
   if (typeof content !== 'string') return content;
   const analysis = await previewCatalogImport(listId, content);
-  return analysis ? { analysis } : { error: 'Impossible d’analyser ce fichier pour le moment. Réessayez.' };
+  return analysis ? { analysis } : { error: 'Impossible d’analyser ce fichier pour le moment. Réessaie.' };
 }
 
 export type CatalogImportActionResult = { result: CatalogImportResult } | { error: string };
@@ -140,16 +140,16 @@ export type CatalogImportActionResult = { result: CatalogImportResult } | { erro
 /** MEM-117: once confirmed, the lines "to import", analysed again by the API and saved all at once, or none. */
 export async function importCatalogAction(listId: string, formData: FormData): Promise<CatalogImportActionResult> {
   check(listId);
-  const content = await readCsvFile(formData, false);
+  const content = await readCsvFile(formData);
   if (typeof content !== 'string') return content;
   const result = await importCatalogCsv(listId, content);
-  if (!result) return { error: 'L’import a échoué : rien n’a été enregistré. Réessayez.' };
+  if (!result) return { error: 'L’import a échoué : rien n’a été enregistré. Réessaie.' };
   if (result.ok) refresh(listId);
   return { result };
 }
 
 function failure(status: number | null, otherwise: string): string {
-  if (status === null) return 'Le serveur ne répond pas. Réessayez dans un instant.';
-  if (status === 404) return 'Ce mot ou cette liste n’existe plus : rechargez la page.';
+  if (status === null) return 'Le serveur ne répond pas. Réessaie dans un instant.';
+  if (status === 404) return 'Ce mot ou cette liste n’existe plus : recharge la page.';
   return otherwise;
 }

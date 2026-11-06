@@ -15,9 +15,7 @@ export function TwoFactorSettings({ enabled }: { enabled: boolean }) {
   if (!enabled) {
     return (
       <form action={enable} className="admin-settings__form">
-        <p>
-          Pour l’activer de nouveau, confirmez votre mot de passe ; la console affichera ensuite le QR code à scanner.
-        </p>
+        <p>Pour l’activer de nouveau, confirme ton mot de passe ; la console affichera ensuite le QR code à scanner.</p>
         <label>
           Mot de passe
           <input name="password" type="password" autoComplete="current-password" required />
@@ -46,11 +44,11 @@ export function TwoFactorSettings({ enabled }: { enabled: boolean }) {
       <dialog ref={dialog} className="dialog" aria-labelledby="disable-2fa-title">
         <h3 id="disable-2fa-title">Désactiver la double authentification ?</h3>
         <p role="note" className="admin-settings__warning">
-          Votre compte ne sera plus protégé que par votre mot de passe.
+          Ton compte ne sera plus protégé que par ton mot de passe.
         </p>
         <p className="dialog__hint">
-          Pour confirmer, saisissez votre mot de passe et un code de votre application (ou un code de secours). Vos
-          codes de secours seront supprimés.
+          Pour confirmer, saisis ton mot de passe et un code de ton application (ou un code de secours). Tes codes de
+          secours seront supprimés.
         </p>
         <form action={disable} className="dialog__form">
           <label>

@@ -17,9 +17,9 @@ describe('catalogue (MEM-116)', () => {
   it('checks the form before sending it: title, level, description', () => {
     const ok = { title: 'Voyage', level: 'A2', description: '', published: false };
     expect(catalogErrors(ok)).toEqual({});
-    expect(catalogErrors({ ...ok, title: '   ' })).toEqual({ title: 'Saisissez le titre de la liste.' });
+    expect(catalogErrors({ ...ok, title: '   ' })).toEqual({ title: 'Saisis le titre de la liste.' });
     expect(catalogErrors({ ...ok, title: 'x'.repeat(201) }).title).toContain('200 caractères');
-    expect(catalogErrors({ ...ok, level: '' })).toEqual({ level: 'Choisissez le niveau de la liste.' });
+    expect(catalogErrors({ ...ok, level: '' })).toEqual({ level: 'Choisis le niveau de la liste.' });
     expect(catalogErrors({ ...ok, level: 'D1' }).level).toBeDefined();
     expect(catalogErrors({ ...ok, description: 'y'.repeat(501) }).description).toContain('500 caractères');
   });

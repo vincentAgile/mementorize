@@ -47,7 +47,7 @@ export function CatalogImport({ listId }: { listId: string }) {
     setFilter('all');
     setDone(null);
     if (chosen.size > MAX_FILE_BYTES) {
-      setResult({ error: 'Ce fichier dépasse 1 Mo : découpez-le en plusieurs fichiers.' });
+      setResult({ error: 'Ce fichier dépasse 1 Mo : découpe-le en plusieurs fichiers.' });
       return;
     }
     const data = new FormData();
@@ -138,7 +138,7 @@ export function CatalogImport({ listId }: { listId: string }) {
 
       {!result && !imported && !(done && !imported) && (
         <label htmlFor={inputId} className="drop-zone">
-          <span className="drop-zone__text">{pending ? 'Analyse du fichier…' : 'Choisissez un fichier CSV'}</span>
+          <span className="drop-zone__text">{pending ? 'Analyse du fichier…' : 'Choisis un fichier CSV'}</span>
           {!pending && <span className="button-link drop-zone__button">Choisir un fichier</span>}
           <input
             ref={input}
@@ -186,20 +186,20 @@ export function CatalogImport({ listId }: { listId: string }) {
 const tooMany = (count: number, room: number) =>
   `Import impossible : ce fichier ajouterait ${wordCount(count)}, ${
     room === 0 ? 'et la liste n’a plus aucune place' : `et il ne reste que ${plural(room, 'place')} dans la liste`
-  } (500${NBSP}mots au plus). Retirez des lignes du fichier, ou supprimez des mots de la liste.`;
+  } (500${NBSP}mots au plus). Retire des lignes du fichier, ou supprime des mots de la liste.`;
 
 function problemText(analysis: Extract<CatalogImportAnalysis, { ok: false }>) {
   switch (analysis.problem) {
     case 'empty':
       return 'Ce fichier ne contient aucune ligne à importer : sa première ligne, celle des en-têtes, est ignorée.';
     case 'tooManyLines':
-      return 'Ce fichier dépasse 2 000 lignes : découpez-le en plusieurs fichiers.';
+      return 'Ce fichier dépasse 2 000 lignes : découpe-le en plusieurs fichiers.';
     case 'syntax':
       return `Fichier illisible : le guillemet ouvert ligne ${analysis.line} n’est jamais refermé.`;
     case 'wrongSeparator': {
       const found = analysis.candidates.map(theSeparator);
       const listed = found.length > 1 ? `${found.slice(0, -1).join(', ')} ou ${found.at(-1)}` : found[0];
-      return `Ce fichier semble utiliser ${listed} comme séparateur, alors que les listes du catalogue utilisent ${theSeparator(SEPARATOR)}. Enregistrez-le avec des points-virgules (dans Excel : « CSV UTF-8 »), puis choisissez-le à nouveau.`;
+      return `Ce fichier semble utiliser ${listed} comme séparateur, alors que les listes du catalogue utilisent ${theSeparator(SEPARATOR)}. Enregistre-le avec des points-virgules (dans Excel : « CSV UTF-8 »), puis choisis-le à nouveau.`;
     }
   }
 }

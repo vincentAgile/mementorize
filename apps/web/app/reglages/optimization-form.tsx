@@ -43,7 +43,7 @@ export function OptimizationForm({ spaces, types }: { spaces: SpaceOptimization[
     <section className="settings">
       <h2>Optimisation</h2>
       <p className="page__subtitle">
-        Mementorize peut ajuster son algorithme de révision (FSRS) à votre mémoire, à partir de l’historique de vos
+        Mementorize peut ajuster son algorithme de révision (FSRS) à ta mémoire, à partir de l’historique de tes
         révisions dans chaque espace. Il faut au moins {count(spaces[0]?.minReviews ?? 1000)} révisions pour que
         l’optimisation soit fiable ; d’ici là, les valeurs par défaut s’appliquent. Les nouveaux réglages s’appliquent à
         la prochaine révision de chaque carte.
@@ -84,7 +84,7 @@ function SpaceRow({ space, onChange }: { space: SpaceOptimization; onChange: (sp
       try {
         result = await action(space.type);
       } catch {
-        result = { error: 'La demande a échoué : vérifiez la connexion et réessayez.' };
+        result = { error: 'La demande a échoué : vérifie la connexion et réessaie.' };
       }
       if ('error' in result) {
         setMessage({ text: result.error, error: true });

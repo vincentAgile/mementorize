@@ -176,7 +176,7 @@ export function ImportSection({ type, separator }: { type: ListType; separator: 
       <p>
         {typeof kind.format === 'function' ? kind.format(separator) : kind.format} Séparateur :{' '}
         {separatorName(separator)}. La première ligne, celle des en-têtes, est ignorée. Les {kind.noun.many}{' '}
-        {agree('importé', kind.noun, 2)} seront « En attente » : vous les ajouterez à la file d’apprentissage depuis{' '}
+        {agree('importé', kind.noun, 2)} seront « En attente » : tu les ajouteras à la file d’apprentissage depuis{' '}
         {kind.list}.
       </p>
 
@@ -452,7 +452,7 @@ function Imported({
             ? `${countOf(result.imported, noun)} ${agree('importé', noun, result.imported)}`
             : `${noun.feminine ? 'Aucune' : 'Aucun'} ${noun.one} ${agree('importé', noun, 1)}`}
         </strong>
-        {result.imported > 0 && `, en attente. Ajoutez-les à la file d’apprentissage depuis ${list}`}.
+        {result.imported > 0 && `, en attente. Ajoute-les à la file d’apprentissage depuis ${list}`}.
         {result.duplicate + result.error > 0 &&
           ` ${plural(result.duplicate, 'doublon')} et ${plural(result.error, 'ligne')} en erreur laissés de côté.`}
       </p>

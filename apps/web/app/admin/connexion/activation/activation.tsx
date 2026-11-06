@@ -32,13 +32,13 @@ export function Activation({ enrollment }: { enrollment: Key | null }) {
   return (
     <>
       <p>
-        La double authentification est obligatoire pour la console. Ajoutez ce compte dans votre application
-        d’authentification (Google Authenticator, Microsoft Authenticator, 1Password, Bitwarden…), puis saisissez le
-        code qu’elle affiche.
+        La double authentification est obligatoire pour la console. Ajoute ce compte dans ton application
+        d’authentification (Google Authenticator, Microsoft Authenticator, 1Password, Bitwarden…), puis saisis le code
+        qu’elle affiche.
       </p>
       <ol className="admin-activation__steps">
         <li>
-          Scannez ce QR code avec l’application :
+          Scanne ce QR code avec l’application :
           <div
             className="admin-activation__qr"
             role="img"
@@ -48,7 +48,7 @@ export function Activation({ enrollment }: { enrollment: Key | null }) {
           />
         </li>
         <li>
-          Ou saisissez la clé à la main :<code className="admin-activation__secret">{grouped(enrollment.secret)}</code>
+          Ou saisis la clé à la main :<code className="admin-activation__secret">{grouped(enrollment.secret)}</code>
         </li>
       </ol>
       <form action={formAction} className="auth-form">
@@ -102,10 +102,10 @@ function RecoveryCodes({ codes }: { codes: string[] }) {
   return (
     <section className="admin-recovery" aria-labelledby="recovery-title">
       <p className="notice">La double authentification est active.</p>
-      <h2 id="recovery-title">Vos codes de secours</h2>
+      <h2 id="recovery-title">Tes codes de secours</h2>
       <p role="alert" className="admin-recovery__warning">
-        Notez-les maintenant, dans un endroit sûr : ils ne seront plus jamais affichés. Chacun permet une seule
-        connexion si vous n’avez plus votre téléphone.
+        Note-les maintenant, dans un endroit sûr : ils ne seront plus jamais affichés. Chacun permet une seule connexion
+        si tu n’as plus ton téléphone.
       </p>
       <ol className="admin-recovery__codes">
         {codes.map((code) => (

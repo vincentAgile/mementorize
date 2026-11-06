@@ -49,9 +49,9 @@ export async function saveCatalogListAction(
       values,
       error:
         result.status === null
-          ? 'Le serveur ne répond pas. Réessayez dans un instant.'
+          ? 'Le serveur ne répond pas. Réessaie dans un instant.'
           : result.status === 404
-            ? 'Cette liste n’existe plus : rechargez la page.'
+            ? 'Cette liste n’existe plus : recharge la page.'
             : 'Impossible d’enregistrer la liste.',
     };
   }

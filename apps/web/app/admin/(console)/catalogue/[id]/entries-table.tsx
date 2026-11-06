@@ -28,7 +28,7 @@ export function EntriesTable({
   if (entries.length === 0) {
     return (
       <p className="admin__empty">
-        Aucun mot pour le moment : ajoutez-en avec le formulaire ci-dessus, ou importez un fichier CSV.
+        Aucun mot pour le moment : ajoutes-en avec le formulaire ci-dessus, ou importe un fichier CSV.
       </p>
     );
   }

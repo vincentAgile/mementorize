@@ -25,7 +25,7 @@ export function CatalogTable({ lists }: { lists: CatalogList[] }) {
         <NewList />
       </div>
       {lists.length === 0 ? (
-        <p className="admin__empty">Aucune liste pour le moment : créez la première avec « Nouvelle liste ».</p>
+        <p className="admin__empty">Aucune liste pour le moment : crée la première avec « Nouvelle liste ».</p>
       ) : (
         <div className="item-list__scroll">
           <table className="item-list__table catalog__table">

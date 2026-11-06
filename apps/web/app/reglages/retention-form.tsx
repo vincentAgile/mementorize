@@ -25,9 +25,8 @@ export function RetentionForm({ retentions, types }: { retentions: Record<ItemTy
     <section className="settings">
       <h2>Rétention cible</h2>
       <p className="page__subtitle">
-        Mementorize vous fait réviser une carte quand la probabilité de vous en souvenir descend à ce niveau. Un
-        changement s’applique à la prochaine révision de chaque carte : les dates déjà programmées ne sont pas
-        recalculées.
+        Mementorize te fait réviser une carte quand la probabilité de t’en souvenir descend à ce niveau. Un changement
+        s’applique à la prochaine révision de chaque carte : les dates déjà programmées ne sont pas recalculées.
       </p>
       <div className="settings__form">
         {ORDER.filter((type) => types.includes(type)).map((type) => {
