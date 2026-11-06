@@ -18,7 +18,7 @@ export function LearningModeForm({ learningMode }: { learningMode: LearningMode 
     <section className="settings">
       <h2>Mode d’apprentissage</h2>
       <p className="page__subtitle">
-        Guidé explique chaque étape de l’apprentissage et pose la question ; Autonome va droit au but.
+        « Guidé » explique chaque étape de l’apprentissage et pose la question ; « Autonome » va droit au but.
       </p>
       <div className="settings__form">
         <AutoSelect

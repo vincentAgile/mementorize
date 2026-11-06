@@ -17,7 +17,7 @@ export function UsageModeForm({ usageMode }: { usageMode: UsageMode }) {
     <section className="settings">
       <h2>Mode d’utilisation</h2>
       <p className="page__subtitle">
-        Le mode Avancé ajoute des actions qui modifient l’apprentissage, comme la réinitialisation d’une carte.
+        Le mode « Avancé » ajoute des actions qui modifient l’apprentissage, comme la réinitialisation d’une carte.
       </p>
       <div className="settings__form">
         <AutoSelect

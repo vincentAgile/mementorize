@@ -35,7 +35,7 @@ describe('UsageModeForm (MEM-110)', () => {
       ['Advanced', 'Avancé'],
     ]);
     expect(container.textContent).toContain(
-      'Le mode Avancé ajoute des actions qui modifient l’apprentissage, comme la réinitialisation d’une carte.',
+      'Le mode « Avancé » ajoute des actions qui modifient l’apprentissage, comme la réinitialisation d’une carte.',
     );
     expect(saveUsageModeAction).not.toHaveBeenCalled();
   });

@@ -38,7 +38,7 @@ describe('LearningModeForm (MEM-125)', () => {
       ['Autonomous', 'Autonome'],
     ]);
     expect(container.textContent).toContain(
-      'Guidé explique chaque étape de l’apprentissage et pose la question ; Autonome va droit au but.',
+      '« Guidé » explique chaque étape de l’apprentissage et pose la question ; « Autonome » va droit au but.',
     );
     expect(saveLearningModeAction).not.toHaveBeenCalled();
   });
