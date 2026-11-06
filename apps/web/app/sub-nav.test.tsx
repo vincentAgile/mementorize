@@ -126,4 +126,17 @@ describe('SubNav and HeaderTitle: the tabs of « Mes statistiques » (MEM-113)',
     mount(<SubNav chat />);
     expect(container.querySelector('nav a.is-active')?.textContent).toBe('Chat IA');
   });
+
+  it('the tabs of the Settings, « Avancé » last', () => {
+    expect(render('/reglages/avance')).toEqual({
+      label: 'Réglages',
+      tabs: [
+        ['Général', '/reglages', null],
+        ['Révision', '/reglages/revision', null],
+        ['Rappels', '/reglages/rappels', null],
+        ['Saisie et fichiers', '/reglages/saisie', null],
+        ['Avancé', '/reglages/avance', 'page'],
+      ],
+    });
+  });
 });

@@ -9,6 +9,8 @@ export const SETTINGS_TABS: SpaceTab[] = [
   { href: '/reglages/revision', label: 'Révision' },
   { href: '/reglages/rappels', label: 'Rappels' },
   { href: '/reglages/saisie', label: 'Saisie et fichiers' },
+  // Mode d'utilisation, Rétention cible and Optimisation: for those who know.
+  { href: '/reglages/avance', label: 'Avancé' },
 ];
 
 /** The Settings, or one of their tabs. */
