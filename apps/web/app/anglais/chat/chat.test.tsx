@@ -244,7 +244,8 @@ describe('« Chat IA »: the conversation (MEM-131)', () => {
   it('stops at the limits, with when to come back', async () => {
     mount(
       <Chat
-        status={{ ...status, usedToday: 30 }}
+        // The next midnight is always to come: one hour from now, whatever the day of the test.
+        status={{ ...status, usedToday: 30, resetAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() }}
         conversation={null}
         missing={false}
         conversations={[]}
