@@ -42,7 +42,7 @@ describe('« Exporter en CSV » in « Ma liste » (MEM-122)', () => {
     );
     expect(text(html)).toContain('Exporte les 3 cartes, quel que soit leur état · séparateur');
     expect(html).toContain(`<strong>${separatorName(';')}</strong>`);
-    expect(html).toContain('<a href="/reglages/saisie#csv">Changer dans les Réglages</a>');
+    expect(html).toContain('<a href="/reglages/import-export#csv">Changer dans les Réglages</a>');
   });
 
   it('a single card: said so', async () => {

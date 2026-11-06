@@ -20,7 +20,7 @@ export default async function ImportFilePage() {
       <BackToChoice />
       <p className="import-export__separator">
         Séparateur des fichiers CSV : <strong>{separatorName(csvSeparator)}</strong>.{' '}
-        <Link href="/reglages/saisie#csv">Changer dans les Réglages</Link>
+        <Link href="/reglages/import-export#csv">Changer dans les Réglages</Link>
       </p>
       <ImportSection type="Vocabulary" separator={csvSeparator} />
       <p className="add-list__export">

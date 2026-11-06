@@ -11,7 +11,7 @@ import { AutoCheckbox } from './auto-save';
 export function ReviewForm({ showReviewDelays }: { showReviewDelays: boolean }) {
   return (
     <section className="settings">
-      <h2>Révision</h2>
+      <h2>Révision - Affichage délais sur boutons</h2>
       <p className="page__subtitle">
         Sous « À revoir », « Difficile » et « Bien », le délai avant que la carte revienne avec cette réponse.
       </p>

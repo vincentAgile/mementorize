@@ -11,7 +11,7 @@ import { activeSpace, highlightedTab } from '../lib/spaces';
 /**
  * The second band of the header (MEM-29): the sub-menu of the active space,
  * as tabs (in the Anglais space: Apprendre · Réviser, Liste, Ajouter, MEM-24),
- * or of the Settings (Général, Révision, Rappels, Saisie et fichiers, MEM-78),
+ * or of the Settings (Général, Rappels, Import / export, Avancé, MEM-78),
  * or of « Mes statistiques » (Anglais, Citations, MEM-113).
  * The tabs are links, each one a page with its own URL: bookmarks and the
  * browser's Back button work. The band is there on every page, empty when

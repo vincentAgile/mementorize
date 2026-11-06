@@ -13,7 +13,7 @@ import { AutoSelect } from './auto-save';
 export function TranslatorForm({ translator }: { translator: Translator }) {
   return (
     <section className="settings">
-      <h2>Traduction</h2>
+      <h2>Outils de traduction</h2>
       <p className="page__subtitle">
         Le service qu’ouvrent les boutons « Traduire », en face des champs du vocabulaire, avec le texte déjà saisi.
       </p>

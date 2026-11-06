@@ -6,10 +6,9 @@ import type { SpaceTab } from './spaces';
  */
 export const SETTINGS_TABS: SpaceTab[] = [
   { href: '/reglages', label: 'Général' },
-  { href: '/reglages/revision', label: 'Révision' },
   { href: '/reglages/rappels', label: 'Rappels' },
-  { href: '/reglages/saisie', label: 'Saisie et fichiers' },
-  // Mode d'utilisation, Rétention cible and Optimisation: for those who know.
+  { href: '/reglages/import-export', label: 'Import / export' },
+  // Mode d'utilisation, Espace cartes mentales, Rétention cible, Optimisation: for those who know.
   { href: '/reglages/avance', label: 'Avancé' },
 ];
 

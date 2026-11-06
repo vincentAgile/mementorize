@@ -1,9 +1,9 @@
 import { AppHeader } from '../app-header';
 
 /**
- * The Settings in tabs (MEM-78): Général (/reglages), Révision
- * (/reglages/revision), Rappels (/reglages/rappels), Saisie et fichiers
- * (/reglages/saisie) and Avancé (/reglages/avance), each at its own address.
+ * The Settings in tabs (MEM-78): Général (/reglages), Rappels
+ * (/reglages/rappels), Import / export (/reglages/import-export) and Avancé
+ * (/reglages/avance), each at its own address.
  * The tabs are in the header's second band (SubNav), under the gear, which
  * joins it on a computer. On a computer, the settings take the whole width
  * of the page's column, as the header.
