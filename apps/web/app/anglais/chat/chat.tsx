@@ -1,7 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { type FormEvent, type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { ChatVoice, OPENING_AUDIO_HREF, sentenceSplitter } from '../../../lib/chat-voice';
 import {
   CHAT_HREF,
@@ -24,6 +32,11 @@ import { ChatSpeakButton } from './chat-speak-button';
 import { ConversationList } from './conversation-list';
 import { Feedback } from './feedback';
 import { PrivacyNotice } from './privacy-notice';
+import { MicButton, useVoiceInput, type VoiceInputDeps } from './voice-input';
+
+/** Whether the browser can record the microphone (unknown on the server). */
+const canRecord = () => typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
+const noSubscription = () => () => {};
 
 type OpenStatus = Extract<ChatStatus, { enabled: true }>;
 
@@ -57,6 +70,10 @@ const OPENING: Bubble = { key: 'opening', role: 'Assistant', text: OPENING_QUEST
  * while it is written, when « Lire automatiquement les réponses » is on.
  * Each one has its loudspeaker. Sending a message or leaving the page stops
  * the reading; the evaluation is never read by itself.
+ *
+ * MEM-133: the microphone, next to « Envoyer », when Azure is configured: the
+ * text appears in the input while the user speaks; said exactly as
+ * recognized, the message carries its pronunciation.
  */
 export function Chat({
   status,
@@ -66,6 +83,7 @@ export function Chat({
   noticeAccepted,
   autoRead: initialAutoRead = true,
   voice: givenVoice,
+  voiceDeps,
 }: {
   status: OpenStatus;
   conversation: Conversation | null;
@@ -75,6 +93,8 @@ export function Chat({
   autoRead?: boolean;
   /** For the tests: the reader of the page. */
   voice?: ChatVoice;
+  /** For the tests: the recognition of the voice. */
+  voiceDeps?: VoiceInputDeps;
 }) {
   const [voice] = useState(() => givenVoice ?? new ChatVoice());
   const [autoRead, setAutoRead] = useState(initialAutoRead);
@@ -98,6 +118,11 @@ export function Chat({
   const [list, setList] = useState(conversations);
   const end = useRef<HTMLLIElement>(null);
   const busy = phase !== 'idle';
+  const textarea = useRef<HTMLTextAreaElement>(null);
+  const micSupported = useSyncExternalStore(noSubscription, canRecord, () => false);
+  const stopReading = useCallback(() => voice.stop(), [voice]);
+  const microphone = useVoiceInput({ textarea, input, setInput, onStart: stopReading, deps: voiceDeps });
+  const recording = microphone.phase !== 'idle';
 
   // On arrival, the opening question, read in advance on the server; the reading stops when the page is left.
   const opening = bubbles.length === 1 ? bubbles[0] : null;
@@ -129,7 +154,7 @@ export function Chat({
   }, [bubbles, streaming, phase]);
 
   async function send(text: string) {
-    if (!text || busy || limit || notice) return;
+    if (!text || busy || limit || notice || recording) return;
     voice.stop(); // a message sent: the reading in progress stops
     setListenHint(false);
     const key = `pending-${Date.now()}`;
@@ -151,7 +176,8 @@ export function Chat({
       response = await fetch(CHAT_SEND_HREF, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId, text }),
+        // MEM-133: said aloud and not changed, the message carries its pronunciation.
+        body: JSON.stringify({ conversationId, text, pronunciation: microphone.pronunciationFor(text) ?? undefined }),
       });
     } catch {
       return giveBack(SOMETHING_WENT_WRONG, true);
@@ -209,6 +235,7 @@ export function Chat({
             setStreaming(null);
             setBubbles((list) => [...list, toBubble(saved)]);
             setPhase('idle');
+            microphone.reset();
             const openId = id ?? conversationId ?? '';
             setList((summaries) => {
               const known = summaries.find((summary) => summary.id === openId);
@@ -357,7 +384,11 @@ export function Chat({
             maxLength={max}
             value={input}
             placeholder="Write your message in English…"
-            onChange={(event) => setInput(event.target.value)}
+            ref={textarea}
+            onChange={(event) => {
+              setInput(event.target.value);
+              microphone.typed();
+            }}
             onKeyDown={keyDown}
             // Read-only, not disabled, while waiting: the focus stays in it.
             readOnly={busy}
@@ -365,10 +396,37 @@ export function Chat({
             disabled={locked}
             aria-describedby={input.length > COUNTER_FROM ? 'chat-counter' : undefined}
           />
-          <button type="submit" className="chat__send" disabled={busy || locked || !input.trim()}>
+          {status.voiceInput && micSupported && (
+            <MicButton
+              phase={microphone.phase}
+              disabled={busy || locked}
+              onClick={() => void (microphone.phase === 'listening' ? microphone.stop() : microphone.start())}
+            />
+          )}
+          <button type="submit" className="chat__send" disabled={busy || locked || recording || !input.trim()}>
             Envoyer
           </button>
         </div>
+        <p className="chat__listening" role="status">
+          {microphone.phase === 'listening' && (
+            <>
+              <span className="chat__level" aria-hidden="true">
+                <span style={{ transform: `scaleX(${Math.max(0.04, microphone.level)})` }} />
+              </span>
+              Je t’écoute…
+            </>
+          )}
+        </p>
+        {microphone.error && (
+          <p className="form-error chat__error" role="alert">
+            {microphone.error.message}{' '}
+            {microphone.error.resume && (
+              <button type="button" className="link-button" onClick={() => void microphone.start()}>
+                Reprendre
+              </button>
+            )}
+          </p>
+        )}
         {input.length > COUNTER_FROM && (
           <p id="chat-counter" className="chat__counter">
             {input.length} / {max} caractères

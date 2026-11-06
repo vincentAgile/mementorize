@@ -2,10 +2,12 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module.js';
 import { PronunciationModule } from '../pronunciation/pronunciation.module.js';
+import { PronunciationAssessmentModule } from '../pronunciation-assessment/pronunciation-assessment.module.js';
 import { ConversationAccess, ConversationAccessGuard } from './conversation-access.js';
 import { ConversationLimitsService } from './conversation-limits.js';
 import { ConversationRateGuard, ConversationSpeechRateGuard } from './conversation-rate.guard.js';
 import { ConversationSpeech } from './conversation-speech.js';
+import { ConversationVoiceInput } from './conversation-voice-input.js';
 import { ConversationsController } from './conversations.controller.js';
 import { ConversationsService } from './conversations.service.js';
 import { AnthropicConversationModel, type Effort } from './model/anthropic-conversation-model.js';
@@ -21,7 +23,7 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
  * accounts of CONVERSATION_ALLOWED_EMAILS (`*`: everyone).
  */
 @Module({
-  imports: [AuthModule, PronunciationModule],
+  imports: [AuthModule, PronunciationModule, PronunciationAssessmentModule],
   controllers: [ConversationsController],
   providers: [
     ConversationsService,
@@ -29,6 +31,7 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
     ConversationRateGuard,
     ConversationSpeechRateGuard,
     ConversationSpeech,
+    ConversationVoiceInput,
     ConversationAccess,
     ConversationAccessGuard,
     {

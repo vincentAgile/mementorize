@@ -9,5 +9,7 @@ import { PronunciationAssessmentService } from './pronunciation-assessment.servi
   imports: [AuthModule, VoiceModule],
   controllers: [PronunciationAssessmentController],
   providers: [PronunciationAssessmentService],
+  // MEM-133: its limits also hold the recordings of the « Chat IA ».
+  exports: [PronunciationAssessmentService, VoiceModule],
 })
 export class PronunciationAssessmentModule {}

@@ -1,3 +1,5 @@
+import type { SpokenPronunciation } from './voice-input';
+
 /**
  * MEM-131: the « Chat IA » of the Anglais space, what the page and the
  * server share: the types of the API (MEM-130), the reading of the stream of
@@ -27,6 +29,8 @@ export interface Evaluation {
   corrected: string;
   corrections: Correction[];
   praise: string | null;
+  /** MEM-133: the message was said aloud: its pronunciation, measured by Azure. */
+  pronunciation?: SpokenPronunciation;
 }
 
 export interface ChatMessage {
@@ -60,7 +64,10 @@ export interface ChatLimits {
   maxLength: number;
 }
 
-export type ChatStatus = { enabled: false } | { enabled: true; limits: ChatLimits; usedToday: number; resetAt: string };
+export type ChatStatus =
+  | { enabled: false }
+  /** voiceInput (MEM-133): the microphone is offered (Azure configured). */
+  | { enabled: true; limits: ChatLimits; usedToday: number; resetAt: string; voiceInput?: boolean };
 
 /** The conversation opened on arrival: the most recent one, if it was used in the last 24 hours. */
 export function recentConversation(list: ConversationSummary[], now = Date.now()): ConversationSummary | null {

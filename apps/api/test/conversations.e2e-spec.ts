@@ -8,6 +8,8 @@ import { ConfigService } from '@nestjs/config';
 import { ConversationAccess } from '../src/conversations/conversation-access.js';
 import { ConversationRateGuard, ConversationSpeechRateGuard } from '../src/conversations/conversation-rate.guard.js';
 import { KokoroClient } from '../src/pronunciation/kokoro.client.js';
+import { VoiceUnavailableError } from '../src/voice/pronunciation-assessor.js';
+import { SPEECH_TOKEN_ISSUER, type SpeechTokenIssuer } from '../src/voice/speech-token.js';
 import { ConversationsService } from '../src/conversations/conversations.service.js';
 import { CONVERSATION_MODEL, type ConversationModel } from '../src/conversations/model/conversation-model.js';
 import { FakeConversationModel } from '../src/conversations/model/fake-conversation-model.js';
@@ -29,10 +31,33 @@ const kokoro = {
   },
 };
 
-async function start(model: ConversationModel | null | undefined, { rateLimit = false, allowed = '*' } = {}) {
+/** MEM-133: Azure's token service, without Azure. */
+const tokens = {
+  failing: false,
+  issued: 0,
+  async issue() {
+    if (this.failing) throw new VoiceUnavailableError('Azure down');
+    this.issued++;
+    return {
+      token: `token-${this.issued}`,
+      region: 'westeurope',
+      expiresAt: new Date(Date.now() + 540_000).toISOString(),
+    };
+  },
+};
+
+async function start(
+  model: ConversationModel | null | undefined,
+  {
+    rateLimit = false,
+    allowed = '*',
+    issuer = tokens as SpeechTokenIssuer | null,
+  }: { rateLimit?: boolean; allowed?: string; issuer?: SpeechTokenIssuer | null } = {},
+) {
   let builder = Test.createTestingModule({ imports: [AppModule] });
   builder = builder.overrideProvider(ConversationAccess).useValue(accessFor(allowed));
   builder = builder.overrideProvider(KokoroClient).useValue(kokoro);
+  builder = builder.overrideProvider(SPEECH_TOKEN_ISSUER).useValue(issuer);
   if (model !== undefined) builder = builder.overrideProvider(CONVERSATION_MODEL).useValue(model);
   // 3 requests per second would slow the scenarios down: tested on its own.
   if (!rateLimit) {
@@ -113,6 +138,7 @@ describe('Conversations with the AI (e2e, MEM-130)', () => {
       limits: { messagesPerDay: 30, messagesPerConversation: 20, maxLength: 1000 },
       usedToday: 0,
       resetAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT/),
+      voiceInput: true, // MEM-133: Azure configured
     });
     const res = await http().post('/conversations').set(auth).expect(201);
     expect(res.body).toMatchObject({
@@ -391,6 +417,65 @@ describe('Conversations with the AI (e2e, MEM-130)', () => {
     );
   });
 
+  it('gives a short token for the microphone, within the limits of the pronunciation assessment (MEM-133)', async () => {
+    const { auth } = await register('token');
+    const res = await http().post('/conversations/voice-token').set(auth).expect(200);
+    expect(res.body).toEqual({
+      token: expect.stringMatching(/^token-/),
+      region: 'westeurope',
+      expiresAt: expect.any(String),
+    });
+    expect(new Date(res.body.expiresAt).getTime() - Date.now()).toBeLessThanOrEqual(10 * 60 * 1000);
+    await http().post('/conversations/voice-token').expect(401);
+
+    tokens.failing = true;
+    await http().post('/conversations/voice-token').set(auth).expect(503);
+    tokens.failing = false;
+    // 10 per minute, shared with the assessment of the cards: the failed one counted too.
+    const statuses: number[] = [];
+    for (let i = 0; i < 9; i++) statuses.push((await http().post('/conversations/voice-token').set(auth)).status);
+    expect(statuses.slice(0, 8).every((status) => status === 200)).toBe(true);
+    expect(statuses[8]).toBe(429);
+  });
+
+  it('keeps the pronunciation of a message said aloud with its evaluation (MEM-133)', async () => {
+    const { auth } = await register('spoken');
+    const { body: conversation } = await http().post('/conversations').set(auth).expect(201);
+    const res = await http()
+      .post(`/conversations/${conversation.id}/messages`)
+      .set(auth)
+      .send({
+        text: 'I like hiking.',
+        pronunciation: { score: 87.44, accuracy: 120, fluency: 80, completeness: 'x', words: ['hiking', 'hiking', 7] },
+      })
+      .buffer(true)
+      .parse((response, callback) => {
+        let data = '';
+        response.setEncoding('utf8');
+        response.on('data', (chunk: string) => (data += chunk));
+        response.on('end', () => callback(null, data));
+      })
+      .expect(200);
+    const expected = { score: 87.4, accuracy: 100, fluency: 80, completeness: null, words: ['hiking'] };
+    expect(parseSse(res.body as string)[0].data.message).toMatchObject({ evaluation: { pronunciation: expected } });
+    const saved = await http().get(`/conversations/${conversation.id}`).set(auth).expect(200);
+    expect(saved.body.messages[1].evaluation.pronunciation).toEqual(expected);
+
+    // Without scores, or typed: no pronunciation.
+    await prisma.conversationMessage.updateMany({
+      where: { conversationId: conversation.id },
+      data: { createdAt: new Date(0) },
+    });
+    await send(auth, conversation.id, 'Typed.').expect(200);
+    const typed = await http().get(`/conversations/${conversation.id}`).set(auth).expect(200);
+    expect(typed.body.messages[3].evaluation).not.toHaveProperty('pronunciation');
+    await http()
+      .post(`/conversations/${conversation.id}/messages`)
+      .set(auth)
+      .send({ text: 'Hi.', pronunciation: 'great' })
+      .expect(400);
+  });
+
   it('deletes the conversations of more than 90 days, every night', async () => {
     const { auth } = await register('purge');
     const old = (await http().post('/conversations').set(auth).expect(201)).body;
@@ -422,7 +507,10 @@ describe('Conversations open to some accounts only (e2e, MEM-130)', () => {
   };
 
   beforeAll(async () => {
-    app = await start(new FakeConversationModel(), { allowed: ` ${allowedEmail.toUpperCase()} , someone@else.test` });
+    app = await start(new FakeConversationModel(), {
+      allowed: ` ${allowedEmail.toUpperCase()} , someone@else.test`,
+      issuer: null, // and no Azure: no microphone (MEM-133)
+    });
   });
   afterAll(async () => {
     await app?.close();
@@ -432,7 +520,12 @@ describe('Conversations open to some accounts only (e2e, MEM-130)', () => {
     const allowed = await login(allowedEmail);
     const other = await login(`chat-closed-${unique}@e2e.test`);
     const { body: conversation } = await http().post('/conversations').set(allowed).expect(201);
-    expect((await http().get('/conversations/status').set(allowed).expect(200)).body.enabled).toBe(true);
+    expect((await http().get('/conversations/status').set(allowed).expect(200)).body).toMatchObject({
+      enabled: true,
+      voiceInput: false,
+    });
+    await http().post('/conversations/voice-token').set(allowed).expect(503);
+    await http().post('/conversations/voice-token').set(other).expect(403);
 
     expect((await http().get('/conversations/status').set(other).expect(200)).body).toEqual({ enabled: false });
     const closed = await http().post('/conversations').set(other).expect(403);

@@ -5839,3 +5839,88 @@ a.add-list__choice:focus-visible {
 .chat-feedback__label-row .chat__speak {
   margin-top: 0.35rem;
 }
+
+/* --- MEM-133: the microphone of the « Chat IA » ---------------------------------- */
+.chat__mic {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 2.9rem;
+  min-height: 2.9rem;
+  padding: 0 0.7rem;
+  border: 1px solid #147d80;
+  border-radius: 6px;
+  background: #fff;
+  color: #147d80;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat__mic:hover:not(:disabled) {
+  background: #e6f2f2;
+}
+
+.chat__mic:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.chat__mic--on {
+  border-color: #b3261e;
+  background: #b3261e;
+  color: #fff;
+}
+
+.chat__mic--on:hover:not(:disabled) {
+  background: #8c1d18;
+}
+
+.chat__listening {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 0;
+  margin: 0;
+  color: #4a5a5b;
+  font-size: 0.9rem;
+}
+
+.chat__listening:empty {
+  display: none;
+}
+
+/* The level of the voice: a bar that follows it */
+.chat__level {
+  display: inline-block;
+  overflow: hidden;
+  width: 5rem;
+  height: 0.45rem;
+  border-radius: 99px;
+  background: #e3e8e8;
+}
+
+.chat__level span {
+  display: block;
+  height: 100%;
+  background: #147d80;
+  transform-origin: left;
+  transition: transform 80ms linear;
+}
+
+.chat-feedback__pronunciation {
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid #e6eeee;
+}
+
+.chat-feedback__pronunciation .chat-feedback__label {
+  margin-top: 0;
+}
+
+.chat-feedback__scores,
+.chat-feedback__words {
+  margin: 0;
+}

@@ -647,6 +647,7 @@ export async function deleteConversation(id: string): Promise<void> {
 export async function sendChatMessage(
   conversationId: string | null,
   text: string,
+  pronunciation?: unknown,
 ): Promise<{ response: Response; conversationId: string | null }> {
   const token = await getSessionToken();
   if (!token) return { response: Response.json({ message: 'Not logged in' }, { status: 401 }), conversationId };
@@ -666,7 +667,7 @@ export async function sendChatMessage(
     const response = await fetch(`${API_URL}/conversations/${encodeURIComponent(id)}/messages`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, pronunciation }),
       cache: 'no-store',
       // The reply comes in a stream: the time to write it, not the usual 15 s.
       signal: AbortSignal.timeout(120_000),
@@ -694,6 +695,26 @@ export async function chatSpeech(request: { text: string } | 'opening'): Promise
       cache: 'no-store',
       // A sentence takes a few seconds on the server's processor.
       signal: AbortSignal.timeout(60_000),
+    });
+  } catch {
+    return new Response(null, { status: 503 });
+  }
+}
+
+/**
+ * MEM-133: a token of a few minutes for the speech recognition in the
+ * browser, for app/anglais/chat/micro/jeton/route.ts. The answer of the API
+ * as it is (the token, or 403, 429, 503).
+ */
+export async function chatVoiceToken(): Promise<Response> {
+  const token = await getSessionToken();
+  if (!token) return new Response(null, { status: 401 });
+  try {
+    return await fetch(`${API_URL}/conversations/voice-token`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
   } catch {
     return new Response(null, { status: 503 });
