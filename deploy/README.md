@@ -423,6 +423,45 @@ Ensuite, dans Uptime Kuma :
 
 Pour vérifier l'alerte, arrêter le site un instant : depuis `~/mementorize`, `docker compose stop web`, attendre l'e-mail d'Uptime Kuma (1 à 2 minutes), puis `docker compose up -d web`. Un second e-mail annonce le retour.
 
+### Umami : la performance vue du navigateur (MEM-137)
+
+Les journaux de Traefik et du serveur ne voient pas le réseau de l'utilisateur : une page servie en 50 ms peut mettre 2 s à s'afficher derrière un mauvais Wi-Fi. [Umami](https://umami.is) mesure depuis le navigateur. Il est hébergé sur le VPS, dans [`umami/`](./umami/compose.yml) (version 3.4.1, au moins 3.1.0 pour l'onglet Performance), derrière Traefik, avec sa propre base PostgreSQL.
+
+**Ce qu'il mesure** :
+
+- l'onglet **Performance** : les chargements complets de page (TTFB, FCP, LCP), la réactivité des clics qui figent la page (INP) et la stabilité de l'affichage (CLS), par page et par navigateur ;
+- l'onglet **Événements**, mesuré par l'application ([`apps/web/lib/measure.ts`](../apps/web/lib/measure.ts)) : `navigation`, le temps entre le clic sur un lien et l'affichage de la page suivante, et `action`, la durée d'une action serveur (une note en révision, un réglage). Chacun porte la page (`page`, identifiants remplacés), la durée (`ms`) et une tranche (`band` : moins de 0,3 s, 0,3 à 1 s, 1 à 3 s, plus de 3 s).
+
+Pourquoi ces événements : Umami ne voit pas les navigations internes de Next.js ni les actions serveur. Pendant l'attente du serveur, la page ne bouge pas : ni LCP, ni INP. C'est ce qu'a montré la vérification préalable de MEM-137, avec un réseau ralenti à 1,5 s : rien dans l'onglet Performance, 1,5 s dans les événements.
+
+**Installer** : une entrée DNS de plus, type **A**, sous-domaine `stats`, cible `IP_DU_VPS`. Relever la mémoire avant (`free -h`), puis :
+
+```bash
+cd ~/mementorize/deploy/umami
+cp .env.example .env
+nano .env       # STATS_DOMAIN, et trois secrets (commandes dans le fichier)
+docker compose up -d
+docker compose ps          # umami et db : healthy (une minute au premier démarrage)
+free -h                    # comparer : le swap ne doit pas augmenter
+```
+
+**Tout de suite après**, ouvrir `https://stats.mondomaine.fr` : le compte par défaut est `admin` / `umami`. Dans **Paramètres → Profil**, changer le mot de passe pour un mot de passe solide, et activer la double authentification. Ne jamais activer l'**URL de partage** d'un site : le tableau de bord resterait public.
+
+**Brancher l'application** : dans Umami, **Paramètres → Sites → Ajouter un site** (nom `Mementorize`, domaine `mementorize.mondomaine.fr`), puis **Modifier → Code de suivi** : y relever l'identifiant du site (`data-website-id`). Dans `~/mementorize/.env` :
+
+```bash
+UMAMI_SCRIPT_URL="https://stats.mondomaine.fr/script.js"
+UMAMI_WEBSITE_ID="<identifiant du site>"
+```
+
+Ces valeurs sont lues au démarrage du conteneur `web`, jamais écrites dans l'image : elles s'appliquent au prochain déploiement, ou tout de suite avec `docker compose up -d web`. Le suivi n'est chargé qu'en production, après que la page est utilisable. S'il est bloqué (bloqueur de publicités) ou en panne, l'application fonctionne normalement ; il n'y a simplement pas de mesure.
+
+**Sauvegarde : exclue.** La base d'Umami n'est pas dans la sauvegarde quotidienne : elle ne contient que des mesures de performance, utiles sur le moment, sans les données d'apprentissage. Perdre son historique ne coûte rien, et la sauvegarde reste simple et petite. Pour repartir de zéro : `docker compose down -v` puis `up -d` (et refaire le compte et le site).
+
+**Confidentialité** : Umami ne pose pas de cookie et ne garde pas d'adresse IP. Les événements ne contiennent que la page, sans identifiant, et une durée : jamais le contenu des cartes.
+
+**Mettre à jour** : changer l'étiquette de l'image dans `compose.yml`, puis `docker compose up -d` (Umami migre sa base au démarrage).
+
 ### Sauvegarde quotidienne, chiffrée, hors serveur
 
 Chaque nuit à 3 h 30, `deploy/backup.sh` (lancé par un _timer_ systemd) fait un `pg_dump` dans `~/backups/daily` (14 jours gardés), puis en envoie une copie chiffrée sur OVH Object Storage (30 jours gardés). Une sauvegarde qui ne vit que sur le serveur disparaît avec lui : la copie hors serveur est la vraie sauvegarde.

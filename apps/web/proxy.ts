@@ -84,5 +84,6 @@ function withoutSession(response: NextResponse): NextResponse {
 export const config = {
   // Everything except Next.js internals and static files, the icons
   // included (MEM-13): the login page shows them before any session.
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png).*)'],
+  // MEM-137: suivi.js, the loader of the measure, needs no session either.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|suivi.js).*)'],
 };

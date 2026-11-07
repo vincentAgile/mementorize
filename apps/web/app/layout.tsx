@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import Script from 'next/script';
+import { LOADER_HREF } from '../lib/measure';
+import { PerformanceReporter } from './performance-reporter';
 import './globals.css';
 
 // MEM-32: the font of the logo, Outfit 600 (latin), served with the app:
@@ -21,10 +24,24 @@ export const metadata: Metadata = {
 // the bar at the bottom keeps clear of them with env(safe-area-inset-bottom).
 export const viewport: Viewport = { viewportFit: 'cover' };
 
+// MEM-137: the real performance, seen from the browser (Umami, on the VPS),
+// in production only. The tracker is loaded after the page is interactive,
+// through /suivi.js, which reads its settings at run time; blocked or
+// failing, it changes nothing for the app.
+const measured = process.env.NODE_ENV === 'production';
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={outfit.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {measured && (
+          <>
+            <Script src={LOADER_HREF} strategy="afterInteractive" />
+            <PerformanceReporter />
+          </>
+        )}
+      </body>
     </html>
   );
 }

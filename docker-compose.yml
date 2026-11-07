@@ -135,6 +135,10 @@ services:
     restart: unless-stopped
     environment:
       API_URL: http://api:3000 # the service name, resolved by Docker's DNS
+      # MEM-137: Umami (deploy/umami), read at run time by /suivi.js, in
+      # production only. Empty: nothing is measured.
+      UMAMI_SCRIPT_URL: ${UMAMI_SCRIPT_URL:-}
+      UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
     ports:
       - "${WEB_PORT:-3001}:3001"
     depends_on:
