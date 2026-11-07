@@ -1,0 +1,75 @@
+# Umami: the real performance of the app, seen from the users' browsers
+# (MEM-137). Load times of the pages and responsiveness of the clicks (Core
+# Web Vitals: LCP, INP, CLS, plus FCP and TTFB, « Performance » tab), and the
+# events measured by the app itself: navigations inside the app and server
+# actions (« Events » tab, apps/web/lib/measure.ts). The server's logs don't
+# see the network of the user: this does.
+#
+# Behind Traefik, like the app: its own subdomain, its own certificate, its
+# own database (not the app's). From this folder: docker compose up -d
+# (settings: .env, see .env.example). Then, right away, change the default
+# account (admin / umami). Guide: deploy/README.md.
+
+name: umami
+
+services:
+  umami:
+    # Exact version, 3.1.0 at least (the « Performance » tab): an update can
+    # migrate its database, so it's done on purpose (change the tag, up -d).
+    image: ghcr.io/umami-software/umami:3.4.1
+    init: true
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:?UMAMI_DB_PASSWORD is missing - copy .env.example to .env}@db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET:?UMAMI_APP_SECRET is missing - copy .env.example to .env}
+      # Needed for the two-factor authentication of the account.
+      TWO_FACTOR_ENCRYPTION_KEY: ${UMAMI_2FA_KEY:?UMAMI_2FA_KEY is missing - copy .env.example to .env}
+      # No call home: neither telemetry nor update checks.
+      DISABLE_TELEMETRY: 1
+      DISABLE_UPDATES: 1
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/heartbeat || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    # The VPS has ~3.9 GB, ~1 GB of it for Kokoro: Umami is kept small.
+    mem_limit: 512m
+    networks: [proxy, umami]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.umami.rule=Host(`${STATS_DOMAIN:?STATS_DOMAIN is missing - copy .env.example to .env}`)
+      - traefik.http.routers.umami.entrypoints=websecure
+      - traefik.http.routers.umami.tls.certresolver=letsencrypt
+      - traefik.http.services.umami.loadbalancer.server.port=3000
+
+  # Umami's own database, never shared with the app's. Not backed up
+  # (deploy/README.md, « Umami »): measures of the moment, not data to keep.
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD:?UMAMI_DB_PASSWORD is missing - copy .env.example to .env}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 256m
+    networks: [umami] # reachable by Umami only
+
+networks:
+  proxy:
+    external: true # created in phase 8, shared with Traefik
+  umami: {}
+
+volumes:
+  db:
