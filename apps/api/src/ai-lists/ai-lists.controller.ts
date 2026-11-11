@@ -3,28 +3,23 @@ import type { Response } from 'express';
 import type { AuthUser } from '../auth/auth-user.js';
 import { CurrentUser } from '../auth/current-user.decorator.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
-import { ConversationAccess, ConversationAccessGuard } from '../conversations/conversation-access.js';
 import { AiListsService } from './ai-lists.service.js';
 import { GenerateDto } from './dto/generate.dto.js';
 
 /**
  * MEM-139: vocabulary cards proposed by the AI (« Générer avec l'IA »). The
  * same AI as the Chat IA (MEM-130), the same switch: off without a model
- * (status disabled, 503), open to the accounts of CONVERSATION_ALLOWED_EMAILS
- * only (status disabled, 403).
+ * (status disabled, 503). Open to every account: unlike the Chat IA, not
+ * restricted by CONVERSATION_ALLOWED_EMAILS.
  */
 @Controller('ai-lists')
 @UseGuards(JwtAuthGuard)
 export class AiListsController {
-  constructor(
-    private readonly aiLists: AiListsService,
-    private readonly access: ConversationAccess,
-  ) {}
+  constructor(private readonly aiLists: AiListsService) {}
 
   /** GET /ai-lists/status — { enabled, remaining }: available, and the generations left today. */
   @Get('status')
-  async status(@CurrentUser() user: AuthUser) {
-    if (!this.access.allows(user)) return { enabled: false, remaining: 0 };
+  status(@CurrentUser() user: AuthUser) {
     return this.aiLists.status(user.id);
   }
 
@@ -37,7 +32,6 @@ export class AiListsController {
    * 503. Nothing is written.
    */
   @Post('generate')
-  @UseGuards(ConversationAccessGuard)
   async generate(@CurrentUser() user: AuthUser, @Body() body: GenerateDto, @Res() response: Response): Promise<void> {
     const events = await this.aiLists.generate(user.id, body);
     response.status(HttpStatus.OK);

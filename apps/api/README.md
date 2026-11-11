@@ -403,7 +403,7 @@ Le JSON des requêtes peut atteindre 3 Mo (`main.ts`), pour un fichier de 1 Mo.
 
 ## Cartes proposées par l'IA (MEM-139)
 
-`src/ai-lists/` : des cartes de vocabulaire proposées par l'IA selon un niveau, un thème, un nombre et un type, pour les écrans « Générer avec l'IA ». Le même modèle que le Chat IA (`ConversationModel.generateEntries`, sortie structurée JSON lue en flux), la même activation (sans modèle : désactivé, 503 ; réservé aux comptes de `CONVERSATION_ALLOWED_EMAILS` : sinon 403). **Rien n'est écrit en base**, pas de migration.
+`src/ai-lists/` : des cartes de vocabulaire proposées par l'IA selon un niveau, un thème, un nombre et un type, pour les écrans « Générer avec l'IA ». Le même modèle que le Chat IA (`ConversationModel.generateEntries`, sortie structurée JSON lue en flux), la même activation (sans modèle : désactivé, 503) ; ouvert à tous les comptes, sans la restriction `CONVERSATION_ALLOWED_EMAILS` du Chat IA. **Rien n'est écrit en base**, pas de migration.
 
 - `GET /ai-lists/status` : `{ enabled, remaining }` (générations restantes aujourd'hui).
 - `POST /ai-lists/generate { level, theme, count, kind, exclude? }` : `level` A1 à C2, `theme` 1 à 80 caractères une fois débarrassé des espaces de bordure (un des 10 thèmes de `PREDEFINED_THEMES`, ou libre), `count` 5, 10, 15 ou 20, `kind` `Words`, `Expressions` ou `Both`, `exclude` (60 expressions anglaises au plus, déjà proposées). Réponse en flux SSE : un événement `entry` par carte (`english`, `french`, `example`, `frenchExample`, `topic`), puis `done` (`{ proposed, skippedDuplicates }`), ou `error` si le fournisseur échoue en plein flux. Avant le flux : 400, 409 (une génération déjà en cours pour cet utilisateur), 429 (`daily-limit`, `retryAt`), 502 ou 503.

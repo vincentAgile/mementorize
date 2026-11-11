@@ -279,12 +279,13 @@ describe('Cards proposed by the AI, switched off (e2e, MEM-139)', () => {
     expect(res.body.message).toBe('The generation of cards by the AI is off: no AI model is configured');
   });
 
-  it('for an account the AI is not open to: disabled, and 403', async () => {
+  it('is open to every account, even when the Chat IA is restricted', async () => {
     const auth = await login(closed, 'closed');
     expect((await request(closed.getHttpServer()).get('/ai-lists/status').set(auth).expect(200)).body).toEqual({
-      enabled: false,
-      remaining: 0,
+      enabled: true,
+      remaining: 10,
     });
-    await request(closed.getHttpServer()).post('/ai-lists/generate').set(auth).send(body).expect(403);
+    await request(closed.getHttpServer()).post('/ai-lists/generate').set(auth).send(body).expect(200);
+    await request(closed.getHttpServer()).post('/conversations').set(auth).expect(403); // the Chat IA stays restricted
   });
 });
