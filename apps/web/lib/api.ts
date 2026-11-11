@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSessionToken } from './session';
 import type { ApiSession } from './session-cookie';
 import type { ChatStatus, Conversation, ConversationSummary } from './chat';
+import type { AiListRow, AiListStatus } from './ai-lists';
 import type {
   CatalogListDetail,
   CatalogListSummary,
@@ -592,6 +593,62 @@ export function addFromCatalogList(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ entryIds, queue }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// MEM-140/141: « Générer avec l'IA » (the cards proposed by the AI of MEM-139)
+// ---------------------------------------------------------------------------
+
+/** Whether the AI can propose cards, and the generations left today. Off if the API can't say. */
+export async function getAiListStatus(): Promise<AiListStatus> {
+  const token = await getSessionToken();
+  if (!token) return { enabled: false, remaining: 0 };
+  try {
+    const res = await fetch(`${API_URL}/ai-lists/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5_000),
+    });
+    const status = res.ok ? ((await res.json()) as AiListStatus) : null;
+    return status?.enabled === true ? status : { enabled: false, remaining: 0 };
+  } catch {
+    return { enabled: false, remaining: 0 };
+  }
+}
+
+/**
+ * A generation, for app/anglais/ajouter-liste/ia/generer/route.ts: the answer
+ * of the API as it is (the stream of the cards, or the refusal). `signal`:
+ * the browser gave up (« Annuler »).
+ */
+export async function generateAiList(body: unknown, signal?: AbortSignal): Promise<Response> {
+  const token = await getSessionToken();
+  if (!token) return Response.json({ message: 'Not logged in' }, { status: 401 });
+  try {
+    return await fetch(`${API_URL}/ai-lists/generate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+      // The cards come in a stream: 30 s at most on the API's side.
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(60_000)]) : AbortSignal.timeout(60_000),
+    });
+  } catch {
+    return Response.json({ message: 'API unreachable' }, { status: 503 });
+  }
+}
+
+/** Adds the rows of the preview to « Ma liste », all or none: those added, and those already there. */
+export function addAiList(
+  rows: AiListRow[],
+  theme: string,
+  queue: boolean,
+): Promise<{ added: number; skipped: number }> {
+  return authedFetch<{ added: number; skipped: number }>('/ai-lists/add', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rows, theme, queue }),
   });
 }
 

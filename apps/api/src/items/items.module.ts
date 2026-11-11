@@ -26,5 +26,6 @@ import { VocabularyController } from './vocabulary/vocabulary.controller.js';
     CatalogController,
   ],
   providers: [ItemsService, QuotesCsvService, VocabularyCsvService, CatalogService],
+  exports: [ItemsService], // MEM-141: the cards proposed by the AI, added as by hand
 })
 export class ItemsModule {}

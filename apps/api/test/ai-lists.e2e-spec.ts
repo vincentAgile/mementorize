@@ -289,3 +289,171 @@ describe('Cards proposed by the AI, switched off (e2e, MEM-139)', () => {
     await request(closed.getHttpServer()).post('/conversations').set(auth).expect(403); // the Chat IA stays restricted
   });
 });
+
+describe('Cards proposed by the AI, added to « Ma liste » (e2e, MEM-141)', () => {
+  const fake = new FakeConversationModel();
+  let app: NestExpressApplication;
+  const http = () => request(app.getHttpServer());
+
+  async function register(name: string) {
+    const res = await http()
+      .post('/auth/register')
+      .send({ email: `ai-add-${name}-${unique}@e2e.test`, password: 'password123' })
+      .expect(201);
+    return { Authorization: `Bearer ${res.body.accessToken as string}` };
+  }
+  const vocabulary = async (auth: Record<string, string>) =>
+    (
+      (await http().get('/vocabulary').set(auth).expect(200)).body as {
+        word: string;
+        translation: string;
+        example: string | null;
+        frenchExample: string | null;
+        topic: string | null;
+        learningStatus: string;
+        learnPosition: number | null;
+        createdAt: string;
+        cards: unknown[];
+      }[]
+    ).sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const row = (english: string, extra: Record<string, unknown> = {}) => ({
+    english,
+    french: `${english} (fr)`,
+    example: `I like ${english}.`,
+    frenchExample: `J'aime ${english}.`,
+    ...extra,
+  });
+  const add = (auth: Record<string, string>, body: Record<string, unknown>) =>
+    http().post('/ai-lists/add').set(auth).send(body);
+
+  beforeAll(async () => {
+    app = await start(fake);
+  });
+  afterAll(async () => {
+    await app?.close();
+  });
+
+  it('adds the rows as by hand: in order, at the end of the queue, the theme as topic, two cards each', async () => {
+    const auth = await register('order');
+    await http().post('/vocabulary').set(auth).send({ word: 'first', translation: 'premier' }).expect(201);
+    const res = await add(auth, {
+      theme: 'Voyage et transports',
+      rows: [row('a ticket'), row('  a platform  ', { example: '', frenchExample: '  ' }), row('to board')],
+    }).expect(200);
+    expect(res.body).toEqual({ added: 3, skipped: 0 });
+    const words = await vocabulary(auth);
+    expect(words.map((w) => [w.word, w.learningStatus, w.learnPosition, w.topic])).toEqual([
+      ['first', 'ToLearn', 1, null],
+      ['a ticket', 'ToLearn', 2, 'Voyage et transports'],
+      ['a platform', 'ToLearn', 3, 'Voyage et transports'],
+      ['to board', 'ToLearn', 4, 'Voyage et transports'],
+    ]);
+    expect(words[1]).toMatchObject({
+      translation: 'a ticket (fr)',
+      example: 'I like a ticket.',
+      frenchExample: "J'aime a ticket.",
+    });
+    expect(words[2]).toMatchObject({ example: null, frenchExample: null });
+    expect(words[1].cards).toHaveLength(2);
+    // Not counted as a generation.
+    expect((await http().get('/ai-lists/status').set(auth).expect(200)).body.remaining).toBe(10);
+  });
+
+  it('« En attente » without the queue; a free theme cut at 50 characters', async () => {
+    const auth = await register('waiting');
+    const theme = '  négocier un contrat de travail à l’étranger avec un client exigeant ';
+    await add(auth, { theme, queue: false, rows: [row('a deal')] }).expect(200);
+    const [word] = await vocabulary(auth);
+    expect(word).toMatchObject({ learningStatus: 'Waiting', learnPosition: null });
+    expect(word.topic).toBe(theme.trim().slice(0, 50).trim());
+    expect(word.topic!.length).toBeLessThanOrEqual(50);
+  });
+
+  it('skips without an error a word added meanwhile, or twice in the rows', async () => {
+    const auth = await register('meanwhile');
+    await http().post('/vocabulary').set(auth).send({ word: 'A Suitcase ', translation: 'une valise' }).expect(201);
+    const res = await add(auth, {
+      theme: 'Voyage et transports',
+      rows: [row('a suitcase'), row('a passport'), row('A PASSPORT'), row('a visa')],
+    }).expect(200);
+    expect(res.body).toEqual({ added: 2, skipped: 2 });
+    expect((await vocabulary(auth)).map((w) => w.word)).toEqual(['A Suitcase ', 'a passport', 'a visa']);
+  });
+
+  it('checks every row again: one wrong row, nothing added', async () => {
+    const auth = await register('checked');
+    for (const rows of [
+      [row('fine'), row('   ')],
+      [row('fine'), row('no french', { french: ' ' })],
+      [row('fine'), row('x'.repeat(201))],
+      [row('fine'), row('long', { french: 'y'.repeat(201) })],
+      [row('fine'), row('long example', { example: 'z'.repeat(501) })],
+      [row('fine'), row('long french example', { frenchExample: 'z'.repeat(501) })],
+      [row('fine'), { english: 'only english' }],
+      [],
+      Array.from({ length: 21 }, (_, i) => row(`w${i}`)),
+    ]) {
+      await add(auth, { theme: 'Vie quotidienne', rows }).expect(400);
+    }
+    await add(auth, { rows: [row('no theme')] }).expect(400);
+    await add(auth, { theme: 'a'.repeat(81), rows: [row('theme too long')] }).expect(400);
+    expect(await vocabulary(auth)).toEqual([]);
+    const twenty = Array.from({ length: 20 }, (_, i) => row(`w${i}`));
+    expect((await add(auth, { theme: 'Vie quotidienne', rows: twenty }).expect(200)).body).toEqual({
+      added: 20,
+      skipped: 0,
+    });
+    await http()
+      .post('/ai-lists/add')
+      .send({ theme: 'x', rows: [row('anonymous')] })
+      .expect(401);
+  });
+
+  it('« Annuler »: the stream stops, the generation still counts, and another one can start', async () => {
+    const auth = await register('cancel');
+    await app.listen(0);
+    const { port } = app.getHttpServer().address() as { port: number };
+    fake.entryDelay = 150;
+    const abort = new AbortController();
+    const res = await fetch(`http://127.0.0.1:${port}/ai-lists/generate`, {
+      method: 'POST',
+      headers: { ...auth, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ level: 'B1', theme: 'Vie quotidienne', count: 10, kind: 'Both' }),
+      signal: abort.signal,
+    });
+    expect(res.status).toBe(200);
+    const reader = res.body!.getReader();
+    const first = new TextDecoder().decode((await reader.read()).value);
+    expect(first).toMatch(/^event: entry/);
+    abort.abort();
+    await reader.read().catch(() => undefined);
+    // The generation stops at the next card: free again soon, never given back.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    fake.entryDelay = 0;
+    expect((await http().get('/ai-lists/status').set(auth).expect(200)).body.remaining).toBe(9);
+    await http()
+      .post('/ai-lists/generate')
+      .set(auth)
+      .send({ level: 'B1', theme: 'x', count: 5, kind: 'Both' })
+      .expect(200);
+    expect((await http().get('/ai-lists/status').set(auth).expect(200)).body.remaining).toBe(8);
+  });
+
+  it('works even when the AI is off', async () => {
+    const off = await start(null);
+    try {
+      const res = await request(off.getHttpServer())
+        .post('/auth/register')
+        .send({ email: `ai-add-off-${unique}@e2e.test`, password: 'password123' })
+        .expect(201);
+      const auth = { Authorization: `Bearer ${res.body.accessToken as string}` };
+      await request(off.getHttpServer())
+        .post('/ai-lists/add')
+        .set(auth)
+        .send({ theme: 'Vie quotidienne', rows: [row('kept')] })
+        .expect(200);
+    } finally {
+      await off.close();
+    }
+  });
+});

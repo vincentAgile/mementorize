@@ -6,7 +6,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 const getCatalogLists = vi.fn();
 const getPreferences = vi.fn();
-vi.mock('../../../lib/api', () => ({ getCatalogLists, getPreferences }));
+const getAiListStatus = vi.fn(async () => ({ enabled: true, remaining: 7 }));
+vi.mock('../../../lib/api', () => ({ getCatalogLists, getPreferences, getAiListStatus }));
 vi.mock('../../csv/import-section', () => ({
   ImportSection: ({ separator }: { separator: string }) => <section data-import={separator} />,
 }));
@@ -26,13 +27,18 @@ const text = (html: string) =>
     .trim();
 const list = { id: 'l1', title: 'Voyage', description: null, level: 'A2', entries: 3, owned: 0 };
 
-describe('« Ajouter une liste »: the two choices (MEM-123)', () => {
-  it('two links, each read with its explanation', async () => {
+describe('« Ajouter une liste »: the three choices (MEM-123, MEM-140)', () => {
+  it('three links in this order, the AI first, each read with its explanation', async () => {
     getCatalogLists.mockResolvedValue([list]);
     const html = renderToStaticMarkup(await AddListPage());
     const links = [...html.matchAll(/<a class="add-list__choice" aria-describedby="([^"]+)" href="([^"]+)">/g)];
-    expect(links.map((m) => m[2])).toEqual(['/anglais/ajouter-liste/predefinies', '/anglais/ajouter-liste/fichier']);
+    expect(links.map((m) => m[2])).toEqual([
+      '/anglais/ajouter-liste/ia',
+      '/anglais/ajouter-liste/predefinies',
+      '/anglais/ajouter-liste/fichier',
+    ]);
     for (const [, id] of links) expect(html).toContain(`id="${id}"`);
+    expect(text(html)).toContain('Générer avec l’IA Choisis un niveau et un thème, l’IA te propose des cartes.');
     expect(text(html)).toContain('Liste prédéfinie Choisis une liste par niveau (A1 à C2) proposée par Mementorize.');
     expect(text(html)).toContain(
       'Importer un fichier Charge un fichier CSV de cartes, par exemple exporté depuis Ma liste.',
@@ -46,6 +52,22 @@ describe('« Ajouter une liste »: the two choices (MEM-123)', () => {
     expect(text(html)).toContain('Aucune liste disponible pour le moment.');
     expect(html).not.toContain('href="/anglais/ajouter-liste/predefinies"');
     expect(html).toContain('href="/anglais/ajouter-liste/fichier"');
+  });
+
+  it('no AI configured: the first choice stays, greyed, and says so', async () => {
+    getCatalogLists.mockResolvedValue([list]);
+    getAiListStatus.mockResolvedValueOnce({ enabled: false, remaining: 0 });
+    const html = renderToStaticMarkup(await AddListPage());
+    expect(html).toMatch(/<div class="add-list__choice is-disabled" aria-disabled="true"[^>]*>.*Générer avec l’IA/);
+    expect(text(html)).toContain('L’IA n’est pas disponible pour le moment.');
+    expect(html).not.toContain('href="/anglais/ajouter-liste/ia"');
+  });
+
+  it('the quota reached: the choice stays a link (the settings say why « Générer » is off)', async () => {
+    getCatalogLists.mockResolvedValue([list]);
+    getAiListStatus.mockResolvedValueOnce({ enabled: true, remaining: 0 });
+    const html = renderToStaticMarkup(await AddListPage());
+    expect(html).toContain('href="/anglais/ajouter-liste/ia"');
   });
 });
 
