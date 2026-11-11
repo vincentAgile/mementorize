@@ -1,5 +1,6 @@
 import {
   type ChatTurn,
+  type GenerationRequest,
   type ConversationModel,
   ConversationModelError,
   type Evaluation,
@@ -16,7 +17,14 @@ export class FakeConversationModel implements ConversationModel {
   readonly name = 'fake';
   /** Every history received, for the tests. */
   readonly calls: { kind: 'evaluate' | 'reply'; history: ChatTurn[] }[] = [];
-  failure: { kind: 'busy' | 'failed'; during: 'evaluate' | 'reply' | 'stream' } | null = null;
+  failure: { kind: 'busy' | 'failed'; during: 'evaluate' | 'reply' | 'stream' | 'generate' } | null = null;
+  /** MEM-139: every generation asked, and the entries to give next (else made up from the request). */
+  readonly generations: GenerationRequest[] = [];
+  nextEntries: unknown[] | null = null;
+  /** MEM-139: a pause before each entry, to test what happens meanwhile (ms). */
+  entryDelay = 0;
+  /** MEM-139: with failure « generate », how many entries are given before it fails. */
+  failAfter = 0;
 
   async evaluate(history: ChatTurn[]): Promise<{ evaluation: Evaluation; usage: ModelUsage }> {
     this.calls.push({ kind: 'evaluate', history });
@@ -51,5 +59,32 @@ export class FakeConversationModel implements ConversationModel {
       yield index === 0 ? word : ` ${word}`;
     }
     return { inputTokens: 10 * history.length, outputTokens: words.length };
+  }
+
+  /**
+   * MEM-139: `count` entries « <theme> <level> <n> », or `nextEntries`
+   * when a test sets them (taken once).
+   */
+  async *generateEntries(request: GenerationRequest): AsyncGenerator<unknown, ModelUsage, void> {
+    this.generations.push(request);
+    const entries =
+      this.nextEntries ??
+      Array.from({ length: request.count }, (_, i) => ({
+        english: `${request.theme} ${request.level.toLowerCase()} ${request.kind === 'Expressions' ? 'phrase' : 'word'} ${i + 1}`,
+        french: `${request.theme} ${i + 1} (fr)`,
+        example: `An example with ${request.theme} ${i + 1}.`,
+        frenchExample: `Un exemple avec ${request.theme} ${i + 1}.`,
+        topic: request.theme.slice(0, 30),
+      }));
+    this.nextEntries = null;
+    for (const [index, entry] of entries.entries()) {
+      if (this.entryDelay) await new Promise((resolve) => setTimeout(resolve, this.entryDelay));
+      if (this.failure?.during === 'generate' && index === this.failAfter) {
+        throw new ConversationModelError(this.failure.kind, 'Fake failure');
+      }
+      yield entry;
+    }
+    if (entries.length === 0) throw new ConversationModelError('failed', 'No entry');
+    return { inputTokens: 100, outputTokens: 40 * entries.length };
   }
 }
