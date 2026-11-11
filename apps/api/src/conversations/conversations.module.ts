@@ -57,5 +57,7 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
       },
     },
   ],
+  // MEM-139: the same model for the cards proposed by the AI.
+  exports: [CONVERSATION_MODEL],
 })
 export class ConversationsModule {}

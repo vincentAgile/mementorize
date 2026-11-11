@@ -484,6 +484,8 @@ model ConversationMessage {
 /// MEM-130: how many messages the user sent to the AI, per local day (the
 /// daily cap). Kept apart from the messages: deleting a conversation gives
 /// none back.
+/// MEM-139: also the generations of cards by the AI, under days prefixed
+/// « ai-lists: » (« ai-lists:2026-11-11 »), apart from the messages.
 model ConversationUsage {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

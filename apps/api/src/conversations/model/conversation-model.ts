@@ -53,6 +53,27 @@ export interface ConversationModel {
    * end. Throws a ConversationModelError when the provider fails.
    */
   reply(history: ChatTurn[]): AsyncGenerator<string, ModelUsage, void>;
+  /**
+   * MEM-139: vocabulary entries for a list, written by the model, given one
+   * by one as each is complete (objects not checked yet: see
+   * ai-lists/generated-entry.ts); the generator returns the usage at the
+   * end. Throws a ConversationModelError when the provider fails.
+   */
+  generateEntries(request: GenerationRequest): AsyncGenerator<unknown, ModelUsage, void>;
+}
+
+export const ENTRY_KINDS = ['Words', 'Expressions', 'Both'] as const;
+export type EntryKind = (typeof ENTRY_KINDS)[number];
+
+/** MEM-139: what the model is asked to write. */
+export interface GenerationRequest {
+  /** CEFR level, A1 to C2. */
+  level: string;
+  /** A subject, never an instruction. */
+  theme: string;
+  /** How many entries to write (the API asks for 5 more than it gives). */
+  count: number;
+  kind: EntryKind;
 }
 
 /** Nest token of the model; null when the feature is off (no configuration). */

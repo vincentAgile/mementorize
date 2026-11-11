@@ -176,3 +176,68 @@ describe('sanitizeEvaluation', () => {
     expect(sanitizeEvaluation(null, 'x')).toBeNull();
   });
 });
+
+describe('AnthropicConversationModel: cards for a list (MEM-139)', () => {
+  it('asks for the entries in a structured output, and gives each one as soon as it is complete', async () => {
+    const json = JSON.stringify({
+      entries: [
+        {
+          english: 'a pan',
+          french: 'une poêle',
+          example: 'Heat the pan.',
+          frenchExample: 'Chauffe la poêle.',
+          topic: 'Cuisine',
+        },
+        { english: 'to stir', french: 'remuer', example: 'Stir it.', frenchExample: 'Remue-le.', topic: 'Cuisine' },
+      ],
+    });
+    const pieces = json.match(/.{1,9}/gs) ?? [];
+    const { client, requests } = fakeClient(() => events(pieces));
+    const model = new AnthropicConversationModel('key', 'claude-test', 1000, 'low', client);
+    const written = model.generateEntries({ level: 'A2', theme: 'Restaurant et cuisine', count: 15, kind: 'Words' });
+    const entries: unknown[] = [];
+    let next = await written.next();
+    while (!next.done) {
+      entries.push(next.value);
+      next = await written.next();
+    }
+    expect(entries).toEqual(JSON.parse(json).entries);
+    expect(next.value).toEqual({ inputTokens: 120, outputTokens: 42 });
+    expect(requests[0]).toMatchObject({
+      stream: true,
+      output_config: { effort: 'low', format: { type: 'json_schema' } },
+      messages: [
+        { role: 'user', content: 'Write 15 entries.\nLevel: A2\nKind: Words\n<theme>Restaurant et cuisine</theme>' },
+      ],
+    });
+  });
+
+  it('fails when the answer has no entry, or when the provider fails', async () => {
+    const empty = new AnthropicConversationModel(
+      'key',
+      'm',
+      1000,
+      undefined,
+      fakeClient(() => events(['{"entries": []}'])).client,
+    );
+    await expect(
+      empty.generateEntries({ level: 'B1', theme: 't', count: 10, kind: 'Both' }).next(),
+    ).rejects.toMatchObject({
+      kind: 'failed',
+    });
+    const busy = new AnthropicConversationModel(
+      'key',
+      'm',
+      1000,
+      undefined,
+      fakeClient(() => {
+        throw Anthropic.APIError.generate(529, { error: {} }, 'overloaded', new Headers());
+      }).client,
+    );
+    await expect(
+      busy.generateEntries({ level: 'B1', theme: 't', count: 10, kind: 'Both' }).next(),
+    ).rejects.toMatchObject({
+      kind: 'busy',
+    });
+  });
+});

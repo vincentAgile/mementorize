@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
+import { AiListsModule } from './ai-lists/ai-lists.module.js';
 import { ConversationsModule } from './conversations/conversations.module.js';
 import { validateEnv } from './config/env.validation.js';
 import { HealthController } from './health/health.controller.js';
@@ -35,6 +36,7 @@ import { ReviewsModule } from './reviews/reviews.module.js';
     AdminModule,
     PronunciationAssessmentModule,
     ConversationsModule,
+    AiListsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

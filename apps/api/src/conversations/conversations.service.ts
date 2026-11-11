@@ -340,7 +340,10 @@ export class ConversationsService {
     const before = new Date(now.getTime() - KEPT_DAYS * 24 * 60 * 60 * 1000);
     const { count } = await this.prisma.conversation.deleteMany({ where: { createdAt: { lt: before } } });
     const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    await this.prisma.conversationUsage.deleteMany({ where: { day: { lt: lastWeek } } });
+    await this.prisma.conversationUsage.deleteMany({
+      // The days of the cards proposed by the AI are prefixed (MEM-139): « ai-lists:2026-11-01 ».
+      where: { OR: [{ day: { lt: lastWeek } }, { day: { startsWith: 'ai-lists:', lt: `ai-lists:${lastWeek}` } }] },
+    });
     if (count > 0) this.logger.log(`${count} conversations of more than ${KEPT_DAYS} days purged`);
     return count;
   }

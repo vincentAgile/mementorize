@@ -2,13 +2,22 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { MessageParam, OutputConfig } from '@anthropic-ai/sdk/resources/messages/messages';
 import {
   type ChatTurn,
+  type GenerationRequest,
   type ConversationModel,
   ConversationModelError,
   type Evaluation,
   type ModelUsage,
   sanitizeEvaluation,
 } from './conversation-model.js';
-import { EVALUATION_SCHEMA, EVALUATION_SYSTEM_PROMPT, REPLY_SYSTEM_PROMPT } from './prompts.js';
+import {
+  EVALUATION_SCHEMA,
+  EVALUATION_SYSTEM_PROMPT,
+  GENERATION_SCHEMA,
+  GENERATION_SYSTEM_PROMPT,
+  generationMessage,
+  REPLY_SYSTEM_PROMPT,
+} from './prompts.js';
+import { arrayObjectReader } from './json-objects.js';
 
 /**
  * Upper bounds, thinking included: recent models think before they answer
@@ -17,6 +26,8 @@ import { EVALUATION_SCHEMA, EVALUATION_SYSTEM_PROMPT, REPLY_SYSTEM_PROMPT } from
  */
 const REPLY_MAX_TOKENS = 4000;
 const EVALUATION_MAX_TOKENS = 6000;
+/** 25 entries with their examples are about 2 500 tokens; thinking included. */
+const GENERATION_MAX_TOKENS = 12000;
 
 export type Effort = 'low' | 'medium' | 'high';
 
@@ -134,6 +145,37 @@ export class AnthropicConversationModel implements ConversationModel {
       throw toModelError(error);
     }
     if (!written) throw new ConversationModelError('failed', 'Empty reply');
+    return usage;
+  }
+
+  /** MEM-139: the entries in a structured output, streamed: each one given as soon as it is complete. */
+  async *generateEntries(request: GenerationRequest): AsyncGenerator<unknown, ModelUsage, void> {
+    const usage: ModelUsage = { inputTokens: 0, outputTokens: 0 };
+    const reader = arrayObjectReader();
+    let given = 0;
+    try {
+      const stream = await this.client.messages.create({
+        model: this.name,
+        max_tokens: GENERATION_MAX_TOKENS,
+        system: GENERATION_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: generationMessage(request) }],
+        ...this.outputConfig({ type: 'json_schema', schema: GENERATION_SCHEMA }),
+        stream: true,
+      });
+      for await (const event of stream) {
+        if (event.type === 'message_start') usage.inputTokens = event.message.usage.input_tokens;
+        else if (event.type === 'message_delta') usage.outputTokens = event.usage.output_tokens;
+        else if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          for (const entry of reader.push(event.delta.text)) {
+            given++;
+            yield entry;
+          }
+        }
+      }
+    } catch (error) {
+      throw toModelError(error);
+    }
+    if (given === 0) throw new ConversationModelError('failed', 'No entry');
     return usage;
   }
 }
