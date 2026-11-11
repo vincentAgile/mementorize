@@ -138,6 +138,11 @@ jobs:
       LABELS: |
         org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
         org.opencontainers.image.revision=${{ github.sha }}
+      # No build record sent to GitHub's artifacts after each image: when
+      # that service fails, the job hung in its post step, after the images
+      # were pushed, and the deployment never came (#190). The summary of
+      # the build stays in the job's page.
+      DOCKER_BUILD_RECORD_UPLOAD: false
     steps:
       - uses: actions/checkout@v7
 
