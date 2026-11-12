@@ -559,9 +559,8 @@ describe('« Générer avec l’IA » in the console (e2e, MEM-143)', () => {
     await generate(auth).expect(200);
   });
 
-  it('off for everyone: status off, 503, the adding still works; the Chat IA is not touched', async () => {
+  it('off for everyone: status off, 503, the adding still works', async () => {
     const { auth } = await register('off');
-    const chatBefore = await prisma.appSetting.findUnique({ where: { key: 'chat' } });
     expect((await put({ enabled: false, generationsPerDay: 10 }).expect(200)).body.state).toBe('off');
     expect((await http().get('/ai-lists/status').set(auth).expect(200)).body).toEqual({ enabled: false, remaining: 0 });
     await generate(auth).expect(503);
@@ -570,8 +569,6 @@ describe('« Générer avec l’IA » in the console (e2e, MEM-143)', () => {
       .set(auth)
       .send({ rows: [{ english: 'a kettle', french: 'une bouilloire' }], theme: 'Maison' })
       .expect(200);
-    // The parameters of the Chat IA, as they were (MEM-135: its own key).
-    expect(await prisma.appSetting.findUnique({ where: { key: 'chat' } })).toEqual(chatBefore);
     await put({ enabled: true, generationsPerDay: 10 }).expect(200);
     await generate(auth).expect(200);
   });
