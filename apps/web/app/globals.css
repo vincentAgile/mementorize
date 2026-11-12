@@ -3988,12 +3988,13 @@ div.review-card__reveal-row {
 }
 
 /* MEM-135: as the users' Réglages, on a computer, each field opposite its
-   label; the labels of a block line up (a column of at least 10rem), the
-   help and the error under the field. */
+   label; the labels of a block line up (a column of at least 10rem). The
+   range of a number on the right of its field, to save height; the error
+   under the field. */
 @media (min-width: 640px) {
   .admin-settings__form {
     display: grid;
-    grid-template-columns: minmax(10rem, max-content) minmax(0, 1fr);
+    grid-template-columns: minmax(10rem, max-content) auto minmax(0, 1fr);
     align-items: center;
     gap: 0.75rem 1rem;
   }
@@ -4003,12 +4004,16 @@ div.review-card__reveal-row {
   }
 
   .admin-settings__form > label > input {
+    grid-column: 2;
     justify-self: start;
   }
 
-  .admin-settings__form > label > .settings__hint,
+  .admin-settings__form > label > .settings__hint {
+    grid-column: 3;
+  }
+
   .admin-settings__form > label > .field-error {
-    grid-column: 2;
+    grid-column: 2 / -1;
     margin-top: -0.5rem;
   }
 
