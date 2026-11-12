@@ -14,19 +14,27 @@ const links = (at: string) => {
 };
 
 describe('AdminNav (MEM-116)', () => {
-  it('« Catalogue » between « Utilisateurs » and « Paramètres »', () => {
-    expect(links('/admin').map(([label]) => label)).toEqual(['Utilisateurs', 'Catalogue', 'Paramètres']);
+  it('« Catalogue » and « Consommation IA » (MEM-143) between « Utilisateurs » and « Paramètres »', () => {
+    expect(links('/admin').map(([label]) => label)).toEqual([
+      'Utilisateurs',
+      'Catalogue',
+      'Consommation IA',
+      'Paramètres',
+    ]);
+    expect(links('/admin/consommation')[2]).toEqual(['Consommation IA', 'page']);
   });
 
   it('the catalogue and its lists highlight « Catalogue » only', () => {
     expect(links('/admin/catalogue')).toEqual([
       ['Utilisateurs', null],
       ['Catalogue', 'page'],
+      ['Consommation IA', null],
       ['Paramètres', null],
     ]);
     expect(links('/admin/catalogue/abc')).toEqual([
       ['Utilisateurs', null],
       ['Catalogue', 'true'],
+      ['Consommation IA', null],
       ['Paramètres', null],
     ]);
   });

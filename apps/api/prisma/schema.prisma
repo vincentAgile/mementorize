@@ -29,6 +29,8 @@ model User {
   /// The written conversations with the AI (MEM-130), and how many messages per day.
   conversations     Conversation[]
   conversationUsage ConversationUsage[]
+  /// What the user's generations of cards by the AI cost, per day (MEM-143).
+  aiListUsage       AiListUsage[]
 
   /// E-mail reminder of the due reviews (phase 11), once a day at most.
   /// Off until the user turns it on in the settings.
@@ -495,4 +497,36 @@ model ConversationUsage {
 
   @@id([userId, day])
   @@map("conversation_usage")
+}
+
+/// MEM-143: the parameters of the app set in the console (Console ›
+/// Paramètres), by key: a JSON value, checked by the service that reads it;
+/// none until set (the defaults apply).
+model AppSetting {
+  /// « ai-lists »: { enabled, generationsPerDay }.
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
+/// MEM-143: the counters of the generations of cards by the AI, per user and
+/// per day, for the console: numbers only, never a theme or a card. Kept 13
+/// months.
+model AiListUsage {
+  userId       String
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// YYYY-MM-DD, in Europe/Paris (the console's days).
+  day          String
+  generations  Int    @default(0)
+  /// Cards proposed, and cards added to « Ma liste » from the preview.
+  proposed     Int    @default(0)
+  added        Int    @default(0)
+  inputTokens  Int    @default(0)
+  outputTokens Int    @default(0)
+
+  @@id([userId, day])
+  @@index([day])
+  @@map("ai_list_usage")
 }

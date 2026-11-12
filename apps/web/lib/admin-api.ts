@@ -1,6 +1,7 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
 import { getAdminToken } from './admin-session';
+import type { AdminAiListSettings, AiListUsageReport } from './admin-ai-lists';
 import type { ImportAnalysis, ImportRow, LanguageLevel } from './types';
 
 // MEM-82: the calls of the administration console to the API, with the
@@ -187,7 +188,7 @@ async function adminPost(path: string, body: unknown, client: string | null): Pr
 
 /** The same, with any method (MEM-116: PATCH, DELETE). */
 async function adminSend(
-  method: 'POST' | 'PATCH' | 'DELETE',
+  method: 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   path: string,
   body?: unknown,
   client: string | null = null,
@@ -408,4 +409,28 @@ export async function exportCatalogCsv(
     body: res.body,
     disposition: res.headers.get('content-disposition') ?? 'attachment; filename="mementorize-liste.csv"',
   };
+}
+
+// --- MEM-143: « Générer avec l'IA » ---------------------------------------------
+
+/** Its parameters, and whether it is active, off or without an AI on the server. */
+export function getAiListSettings(): Promise<AdminAiListSettings> {
+  return adminFetch<AdminAiListSettings>('/admin/ai-lists/settings');
+}
+
+export type AiListSettingsChange = { ok: true; settings: AdminAiListSettings } | { ok: false; status: number | null };
+
+export async function saveAiListSettings(input: {
+  enabled: boolean;
+  generationsPerDay: number;
+}): Promise<AiListSettingsChange> {
+  const res = await adminSend('PUT', '/admin/ai-lists/settings', input);
+  if (!res) return { ok: false, status: null };
+  if (!res.ok) return { ok: false, status: res.status };
+  return { ok: true, settings: (await res.json()) as AdminAiListSettings };
+}
+
+/** The last 30 days and the 10 biggest users of the month: numbers only. */
+export function getAiListUsage(): Promise<AiListUsageReport> {
+  return adminFetch<AiListUsageReport>('/admin/ai-lists/usage');
 }

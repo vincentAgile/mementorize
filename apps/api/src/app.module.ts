@@ -5,6 +5,7 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { AuthModule } from './auth/auth.module.js';
 import { AiListsModule } from './ai-lists/ai-lists.module.js';
+import { AppSettingsModule } from './app-settings/app-settings.module.js';
 import { ConversationsModule } from './conversations/conversations.module.js';
 import { validateEnv } from './config/env.validation.js';
 import { HealthController } from './health/health.controller.js';
@@ -23,6 +24,7 @@ import { ReviewsModule } from './reviews/reviews.module.js';
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     PrismaModule,
+    AppSettingsModule,
     AuthModule,
     ItemsModule,
     ReviewsModule,
