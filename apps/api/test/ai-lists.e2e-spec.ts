@@ -1,5 +1,4 @@
 import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -7,20 +6,15 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { run } from '../src/admin/admin-cli.js';
 import { AiListUsageService } from '../src/ai-lists/ai-list-usage.service.js';
 import { AppModule } from '../src/app.module.js';
-import { ConversationAccess } from '../src/conversations/conversation-access.js';
 import { CONVERSATION_MODEL } from '../src/conversations/model/conversation-model.js';
 import { FakeConversationModel } from '../src/conversations/model/fake-conversation-model.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 
-const accessFor = (value: string) => new ConversationAccess({ get: () => value } as unknown as ConfigService);
-
-async function start(model: FakeConversationModel | null, allowed = '*') {
+async function start(model: FakeConversationModel | null) {
   const app = (
     await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(CONVERSATION_MODEL)
       .useValue(model)
-      .overrideProvider(ConversationAccess)
-      .useValue(accessFor(allowed))
       .compile()
   ).createNestApplication<NestExpressApplication>();
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -237,8 +231,11 @@ describe('Cards proposed by the AI (e2e, MEM-139)', () => {
     const body = JSON.parse(refused.body as string) as { reason: string; message: string; retryAt: string };
     expect(body).toMatchObject({ reason: 'daily-limit', message: 'Daily limit of 10 generations reached' });
     expect(new Date(body.retryAt).getTime()).toBeGreaterThan(Date.now());
-    // Apart from the messages of the Chat IA.
-    expect((await http().get('/conversations/status').set(auth).expect(200)).body.usedToday).toBe(0);
+    // Apart from the messages of the Chat IA: none counted for its days.
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: `ai-quota-${unique}@e2e.test` } });
+    expect(
+      await prisma.conversationUsage.count({ where: { userId: user.id, NOT: { day: { startsWith: 'ai-lists:' } } } }),
+    ).toBe(0);
   });
 
   it('runs one generation at a time per user', async () => {
@@ -261,7 +258,7 @@ describe('Cards proposed by the AI, switched off (e2e, MEM-139)', () => {
 
   beforeAll(async () => {
     off = await start(null);
-    closed = await start(new FakeConversationModel(), 'someone@else.test');
+    closed = await start(new FakeConversationModel()); // the Chat IA granted to nobody (MEM-144)
   });
   afterAll(async () => {
     await off?.close();
@@ -287,7 +284,7 @@ describe('Cards proposed by the AI, switched off (e2e, MEM-139)', () => {
     expect(res.body.message).toBe('The generation of cards by the AI is off: no AI model is configured');
   });
 
-  it('is open to every account, even when the Chat IA is restricted', async () => {
+  it('is open to every account, even without the Chat IA', async () => {
     const auth = await login(closed, 'closed');
     expect((await request(closed.getHttpServer()).get('/ai-lists/status').set(auth).expect(200)).body).toEqual({
       enabled: true,

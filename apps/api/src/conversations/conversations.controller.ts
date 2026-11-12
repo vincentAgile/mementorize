@@ -26,9 +26,8 @@ import { SpeechDto } from './dto/speech.dto.js';
 /**
  * MEM-130: the written conversations with the AI. Off without an AI model:
  * the status says so, the other routes answer 503. Open only to the accounts
- * of CONVERSATION_ALLOWED_EMAILS: for the others, the status says off and
- * the other routes answer 403. Another user's
- * conversation: 404.
+ * the administrator granted it to (MEM-144): for the others, the status says
+ * off and the other routes answer 403. Another user's conversation: 404.
  */
 @Controller('conversations')
 @UseGuards(JwtAuthGuard)
@@ -89,7 +88,7 @@ export class ConversationsController {
    */
   @Get('status')
   async status(@CurrentUser() user: AuthUser) {
-    if (!this.access.allows(user)) return { enabled: false };
+    if (!(await this.access.allows(user))) return { enabled: false };
     const status = await this.conversations.status(user.id);
     // MEM-133: the microphone, when Azure is configured.
     return status.enabled ? { ...status, voiceInput: this.voiceInput.enabled } : status;

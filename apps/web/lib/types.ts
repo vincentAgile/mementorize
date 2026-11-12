@@ -229,6 +229,8 @@ export interface Preferences {
   chatNoticeAccepted?: boolean;
   /** MEM-132: « Lire automatiquement les réponses » of the « Chat IA ». Missing while the API doesn't send it yet: on. */
   chatAutoRead?: boolean;
+  /** MEM-144: the Chat IA active for everyone and granted to the account (read only). */
+  chatAiAvailable?: boolean;
 }
 
 /** The modes of use (MEM-110): Standard by default, or Advanced. */

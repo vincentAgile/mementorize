@@ -1,43 +1,34 @@
 import { type CanActivate, type ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
 import type { AuthUser } from '../auth/auth-user.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 /**
- * MEM-130: who may use the conversations with the AI, while they are tried
- * out. CONVERSATION_ALLOWED_EMAILS: e-mail addresses separated by commas, or
- * `*` for everyone; empty, nobody.
+ * MEM-144: who may use the Chat IA: the accounts the administrator granted
+ * it to, one by one in the console (users.chatAiEnabled, off by default).
+ * Read at each request: a change applies at once. It replaces the list of
+ * addresses of CONVERSATION_ALLOWED_EMAILS (MEM-130), no longer read.
  */
 @Injectable()
 export class ConversationAccess {
-  private readonly everyone: boolean;
-  private readonly emails: Set<string>;
+  constructor(private readonly prisma: PrismaService) {}
 
-  constructor(config: ConfigService) {
-    const value = String(config.get('CONVERSATION_ALLOWED_EMAILS') ?? '').trim();
-    this.everyone = value === '*';
-    this.emails = new Set(
-      value
-        .split(',')
-        .map((email) => email.trim().toLowerCase())
-        .filter((email) => email && email !== '*'),
-    );
-  }
-
-  allows(user: AuthUser | undefined): boolean {
-    return !!user && (this.everyone || this.emails.has(user.email.trim().toLowerCase()));
+  async allows(user: AuthUser | undefined): Promise<boolean> {
+    if (!user) return false;
+    const account = await this.prisma.user.findUnique({ where: { id: user.id }, select: { chatAiEnabled: true } });
+    return account?.chatAiEnabled === true;
   }
 }
 
-/** 403 for an account that may not use the conversations (after JwtAuthGuard). */
+/** 403 for an account the Chat IA is not granted to (after JwtAuthGuard). */
 @Injectable()
 export class ConversationAccessGuard implements CanActivate {
   constructor(private readonly access: ConversationAccess) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const user = context.switchToHttp().getRequest<Request & { user?: AuthUser }>().user;
-    if (!this.access.allows(user)) {
-      throw new ForbiddenException('The conversations with the AI are not open to this account');
+    if (!(await this.access.allows(user))) {
+      throw new ForbiddenException('The Chat IA is not granted to this account');
     }
     return true;
   }

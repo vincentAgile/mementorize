@@ -3460,6 +3460,116 @@ div.review-card__reveal-row {
   margin: 0;
 }
 
+/* MEM-144: the Chat IA of each account */
+.admin-users__chat-off {
+  margin: 0 0 0.75rem;
+}
+
+.admin-users__only-chat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.item-list__filters .admin-users__only-chat input {
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  accent-color: #147d80;
+}
+
+.admin-users__chat {
+  white-space: nowrap;
+}
+
+.chat-switch {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.chat-switch__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2rem; /* a target large enough on a phone */
+  padding: 0.2rem 0.3rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chat-switch__button:focus-visible {
+  outline: 2px solid #147d80;
+  outline-offset: 2px;
+}
+
+.chat-switch__button:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.chat-switch__track {
+  position: relative;
+  flex: none;
+  width: 2.25rem;
+  height: 1.25rem;
+  border-radius: 99px;
+  background: #b9c4c4;
+  transition: background 0.15s;
+}
+
+.chat-switch__thumb {
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s;
+}
+
+.chat-switch__button[aria-checked='true'] .chat-switch__track {
+  background: #147d80;
+}
+
+.chat-switch__button[aria-checked='true'] .chat-switch__thumb {
+  transform: translateX(1rem);
+}
+
+.chat-switch__state {
+  min-width: 5.5em;
+  text-align: left;
+}
+
+.chat-switch__status {
+  font-size: 0.8rem;
+}
+
+.chat-switch__saved {
+  color: #2e7d32;
+}
+
+.chat-switch__failed {
+  color: #b3261e;
+  white-space: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-switch__track,
+  .chat-switch__thumb {
+    transition: none;
+  }
+}
+
 .admin-users__table th[scope='row'] {
   font-weight: normal;
   text-align: left;

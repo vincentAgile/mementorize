@@ -44,6 +44,8 @@ export interface AdminUserRow {
   lastName: string | null;
   createdAt: string;
   lastActiveAt: string | null;
+  /** MEM-144: the Chat IA granted to the account. */
+  chatAiEnabled: boolean;
   counts: SpaceCounts;
 }
 
@@ -455,4 +457,10 @@ export async function saveChatSettings(input: Omit<AdminChatSettings, 'state'>):
 /** The last 30 days and the 10 biggest users of the month: numbers only, never a text. */
 export function getChatUsage(): Promise<ChatUsageReport> {
   return adminFetch<ChatUsageReport>('/admin/chat/usage');
+}
+
+/** MEM-144: grants or withdraws the Chat IA of an account; false when it failed. */
+export async function setUserChatAi(id: string, chatAiEnabled: boolean): Promise<boolean> {
+  const res = await adminSend('PATCH', `/admin/users/${encodeURIComponent(id)}`, { chatAiEnabled });
+  return res?.ok === true;
 }

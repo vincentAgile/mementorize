@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { ItemType, LearningMode, Translator, UsageMode } from '@prisma/client';
+import { ConversationsService } from '../conversations/conversations.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { PreferencesDto } from './dto/preferences.dto.js';
 
@@ -24,6 +25,8 @@ export interface Preferences {
   chatNoticeAccepted: boolean;
   /** MEM-132: the replies of the « Chat IA » read aloud as they come. */
   chatAutoRead: boolean;
+  /** MEM-144: the Chat IA is active for everyone and granted to this account (read only). */
+  chatAiAvailable: boolean;
 }
 
 const SELECT = {
@@ -40,20 +43,26 @@ const SELECT = {
   mindMapsEnabled: true,
   chatNoticeAccepted: true,
   chatAutoRead: true,
+  chatAiEnabled: true, // MEM-144: with the state of the Chat IA, sent as chatAiAvailable
 } as const;
 
-const toPreferences = ({ csvDelimiter, ...rest }: { csvDelimiter: string } & Omit<Preferences, 'csvSeparator'>) => ({
-  ...rest,
-  csvSeparator: csvDelimiter,
-});
+type Row = { csvDelimiter: string; chatAiEnabled: boolean } & Omit<Preferences, 'csvSeparator' | 'chatAiAvailable'>;
 
 /** The user's preferences of the web app (MEM-6, MEM-44, MEM-49, MEM-55, MEM-58, MEM-75, MEM-110, MEM-125), stored on their account. */
 @Injectable()
 export class PreferencesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly chat: ConversationsService,
+  ) {}
 
   async get(userId: string): Promise<Preferences> {
-    return toPreferences(await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: SELECT }));
+    return this.toPreferences(await this.prisma.user.findUniqueOrThrow({ where: { id: userId }, select: SELECT }));
+  }
+
+  private async toPreferences({ csvDelimiter, chatAiEnabled, ...rest }: Row): Promise<Preferences> {
+    const chatAiAvailable = chatAiEnabled && (await this.chat.state()) === 'active';
+    return { ...rest, csvSeparator: csvDelimiter, chatAiAvailable };
   }
 
   /**
@@ -88,6 +97,6 @@ export class PreferencesService {
       },
       select: SELECT,
     });
-    return toPreferences(user);
+    return this.toPreferences(user);
   }
 }
