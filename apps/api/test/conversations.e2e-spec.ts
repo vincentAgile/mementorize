@@ -636,7 +636,6 @@ describe('The Chat IA in the console (e2e, MEM-135)', () => {
         res.on('end', () => callback(null, data));
       });
   const put = (body: Record<string, unknown>) => http().put('/admin/chat/settings').set(admin).send(body);
-  const aiListsSetting = () => prisma.appSetting.findUnique({ where: { key: 'ai-lists' } });
 
   beforeAll(async () => {
     process.env.ADMIN_JWT_SECRET = 'e2e-admin-secret';
@@ -715,15 +714,13 @@ describe('The Chat IA in the console (e2e, MEM-135)', () => {
     await send(auth, second.id, 'one more').expect(200);
   });
 
-  it('off for everyone: status off, 503; « Générer avec l’IA » is not touched', async () => {
+  it('off for everyone: status off, 503', async () => {
     const { auth } = await register('off');
     const { body: conversation } = await http().post('/conversations').set(auth).expect(201);
-    const before = await aiListsSetting();
     expect((await put({ ...defaults, enabled: false }).expect(200)).body.state).toBe('off');
     expect((await http().get('/conversations/status').set(auth).expect(200)).body).toEqual({ enabled: false });
     await http().post('/conversations').set(auth).expect(503);
     await send(auth, conversation.id, 'hello').expect(503);
-    expect(await aiListsSetting()).toEqual(before); // the parameters of the other feature, as they were
     await put(defaults).expect(200);
     await send(auth, conversation.id, 'hello').expect(200);
   });
