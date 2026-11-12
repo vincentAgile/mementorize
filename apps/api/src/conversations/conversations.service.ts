@@ -14,6 +14,7 @@ import { Cron } from '@nestjs/schedule';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { localDate, startOfNextLocalDay } from '../reminders/local-time.js';
+import { ChatUsageService } from './chat-usage.service.js';
 import { ConversationLimitsService } from './conversation-limits.js';
 import { sanitizePronunciation, type SpokenPronunciation } from './conversation-voice-input.js';
 import {
@@ -60,9 +61,15 @@ interface Turn {
   message: SavedMessage;
   day: string;
   history: ChatTurn[];
+  /** MEM-135: the length asked of the reply, in words. */
+  maxReplyWords: number;
 }
 
 const OFF = 'The conversations with the AI are off: no AI model is configured';
+const OFF_BY_ADMIN = 'The conversations with the AI are off';
+
+/** MEM-135: as the console shows it. */
+export type ChatState = 'active' | 'off' | 'unconfigured';
 
 /** The 503 or 502 of a failure of the provider: never an empty reply. */
 function providerException(error: ConversationModelError): HttpException {
@@ -85,6 +92,7 @@ export class ConversationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly limits: ConversationLimitsService,
+    private readonly usage: ChatUsageService,
     @Inject(CONVERSATION_MODEL) private readonly model: ConversationModel | null,
   ) {}
 
@@ -92,8 +100,14 @@ export class ConversationsService {
     return this.model !== null;
   }
 
+  /** MEM-135: active, off in the console, or without an AI model (the environment). */
+  async state(): Promise<ChatState> {
+    if (!this.model) return 'unconfigured';
+    return (await this.limits.settingsNow()).enabled ? 'active' : 'off';
+  }
+
   async status(userId: string, now = new Date()) {
-    if (!this.model) return { enabled: false };
+    if ((await this.state()) !== 'active') return { enabled: false };
     const limits = await this.limits.current();
     const timeZone = await this.timeZoneOf(userId);
     const usage = await this.prisma.conversationUsage.findUnique({
@@ -106,11 +120,12 @@ export class ConversationsService {
   }
 
   async create(userId: string) {
-    this.requireModel();
+    await this.requireOn();
     const conversation = await this.prisma.conversation.create({
       data: { userId, messages: { create: { position: 0, role: 'Assistant', text: OPENING_QUESTION } } },
       select: { id: true },
     });
+    await this.usage.record(userId, { conversations: 1 }); // MEM-135
     return this.get(userId, conversation.id);
   }
 
@@ -155,8 +170,9 @@ export class ConversationsService {
    * saved (or an error, if the provider fails in the middle).
    */
   async send(userId: string, conversationId: string, rawText: unknown, now = new Date(), rawPronunciation?: unknown) {
-    const model = this.requireModel();
+    const model = await this.requireOn();
     const turn = await this.start(userId, conversationId, rawText, now);
+    await this.usage.record(userId, { messages: 1 }, now); // MEM-135, given back on a failure
 
     const evaluationStart = Date.now();
     const evaluation = model.evaluate(turn.history).then(
@@ -170,7 +186,7 @@ export class ConversationsService {
       },
     );
     const replyStart = Date.now();
-    const reply = model.reply(turn.history);
+    const reply = model.reply(turn.history, { maxWords: turn.maxReplyWords });
     const [evaluated, first] = await Promise.allSettled([evaluation, reply.next()]);
 
     if (evaluated.status === 'rejected' || first.status === 'rejected' || first.value.done) {
@@ -287,7 +303,7 @@ export class ConversationsService {
         .reverse()
         .map((m) => ({ role: m.role === 'User' ? ('user' as const) : ('assistant' as const), text: m.text }));
       history.push({ role: 'user', text });
-      return { userId, conversationId, message, day, history };
+      return { userId, conversationId, message, day, history, maxReplyWords: limits.maxReplyWords };
     });
   }
 
@@ -332,6 +348,7 @@ export class ConversationsService {
         data: { count: { decrement: 1 } },
       }),
     ]);
+    await this.usage.record(turn.userId, { messages: -1 });
   }
 
   /** Every night: the conversations of more than 90 days, and the old daily counts. */
@@ -350,6 +367,7 @@ export class ConversationsService {
 
   /** The cost of a call of the model: who, how long, how many tokens; never the text. */
   private logUsage(userId: string, call: 'evaluation' | 'reply', durationMs: number, usage: ModelUsage): void {
+    void this.usage.record(userId, { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens }); // MEM-135
     this.logger.log(
       `model call: model=${this.model?.name} call=${call} user=${userId} durationMs=${durationMs} ` +
         `inputTokens=${usage.inputTokens} outputTokens=${usage.outputTokens}`,
@@ -372,5 +390,12 @@ export class ConversationsService {
   private requireModel(): ConversationModel {
     if (!this.model) throw new ServiceUnavailableException(OFF);
     return this.model;
+  }
+
+  /** MEM-135: to start a conversation or send a message, the Chat IA must not be off in the console either. */
+  private async requireOn(): Promise<ConversationModel> {
+    const model = this.requireModel();
+    if (!(await this.limits.settingsNow()).enabled) throw new ServiceUnavailableException(OFF_BY_ADMIN);
+    return model;
   }
 }

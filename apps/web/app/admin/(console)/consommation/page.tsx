@@ -1,123 +1,92 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import {
-  formatCount,
-  formatDay,
-  formatMonth,
-  STATE_HINTS,
-  STATE_LABELS,
-  totalsOf,
-  userHref,
-} from '../../../../lib/admin-ai-lists';
-import { getAiListSettings, getAiListUsage } from '../../../../lib/admin-api';
+import { type AiListTopUser, type AiListUsageDay, formatCount, STATE_HINTS } from '../../../../lib/admin-ai-lists';
+import { getAiListSettings, getAiListUsage, getChatSettings, getChatUsage } from '../../../../lib/admin-api';
+import { CHAT_STATE_HINTS, type ChatTopUser, type ChatUsageDay } from '../../../../lib/admin-chat';
+import { type UsageColumn, UsageSection } from './usage-section';
 
 export const metadata: Metadata = { title: 'Consommation IA' };
 
-const name = (user: { firstName: string | null; lastName: string | null }) =>
-  [user.firstName, user.lastName].filter(Boolean).join(' ');
+const TOKENS = <T extends { inputTokens: number; outputTokens: number }>(): UsageColumn<T>[] => [
+  { label: 'Jetons d’entrée', value: (row) => row.inputTokens },
+  { label: 'Jetons de sortie', value: (row) => row.outputTokens },
+];
+
+const CHAT_DAYS: UsageColumn<ChatUsageDay>[] = [
+  { label: 'Conversations', value: (day) => day.conversations },
+  { label: 'Messages', value: (day) => day.messages },
+  { label: 'Utilisateurs actifs', value: (day) => day.activeUsers, total: false },
+  ...TOKENS<ChatUsageDay>(),
+];
+const CHAT_TOP: UsageColumn<ChatTopUser>[] = [
+  { label: 'Messages', value: (user) => user.messages },
+  ...TOKENS<ChatTopUser>(),
+];
+
+const AI_LIST_DAYS: UsageColumn<AiListUsageDay>[] = [
+  { label: 'Générations', value: (day) => day.generations },
+  { label: 'Utilisateurs actifs', value: (day) => day.activeUsers, total: false },
+  { label: 'Cartes proposées', value: (day) => day.proposed },
+  { label: 'Cartes ajoutées', value: (day) => day.added },
+  ...TOKENS<AiListUsageDay>(),
+];
+const AI_LIST_TOP: UsageColumn<AiListTopUser>[] = [
+  { label: 'Générations', value: (user) => user.generations },
+  ...TOKENS<AiListTopUser>(),
+];
 
 /**
- * MEM-143: what the generations of cards by the AI cost: per day over the
- * last 30 days (generations, active users, cards proposed and added, tokens)
- * and the 10 biggest users of the month, with a link to their « fiche ».
- * Numbers only: no theme typed, no card.
+ * What the AI costs (MEM-135, MEM-143): the Chat IA and the generations of
+ * cards, each per day over the last 30 days and with the 10 biggest users of
+ * the month. Numbers only: no text of a conversation, no theme, no card.
  */
 export default async function AiUsagePage() {
-  const [settings, report] = await Promise.all([getAiListSettings(), getAiListUsage()]);
-  const totals = totalsOf(report.days);
+  const [chat, chatUsage, aiLists, aiListUsage] = await Promise.all([
+    getChatSettings(),
+    getChatUsage(),
+    getAiListSettings(),
+    getAiListUsage(),
+  ]);
   return (
     <>
       <h1>Consommation IA</h1>
-      <section className="admin-usage" aria-labelledby="ai-lists-usage-title">
-        <h2 id="ai-lists-usage-title">Consommation de la génération de cartes</h2>
-        <p>
-          État :{' '}
-          <strong className={settings.state === 'active' ? 'admin-settings__on' : 'admin-settings__off'}>
-            {STATE_LABELS[settings.state]}
-          </strong>{' '}
-          · {formatCount(settings.generationsPerDay)} générations par utilisateur et par jour ·{' '}
-          <Link href="/admin/parametres#ai-lists-title">Modifier</Link>
-        </p>
-        {settings.state !== 'active' && <p className="settings__hint">{STATE_HINTS[settings.state]}</p>}
-
-        <div className="admin-usage__scroll">
-          <table className="admin-usage__table">
-            <caption>Par jour, sur les 30 derniers jours</caption>
-            <thead>
-              <tr>
-                <th scope="col">Jour</th>
-                <th scope="col">Générations</th>
-                <th scope="col">Utilisateurs actifs</th>
-                <th scope="col">Cartes proposées</th>
-                <th scope="col">Cartes ajoutées</th>
-                <th scope="col">Jetons d’entrée</th>
-                <th scope="col">Jetons de sortie</th>
-              </tr>
-            </thead>
-            <tbody>
-              {report.days.map((day) => (
-                <tr key={day.day} className={day.generations === 0 && day.added === 0 ? 'is-empty' : undefined}>
-                  <th scope="row">
-                    <time dateTime={day.day}>{formatDay(day.day)}</time>
-                  </th>
-                  <td>{formatCount(day.generations)}</td>
-                  <td>{formatCount(day.activeUsers)}</td>
-                  <td>{formatCount(day.proposed)}</td>
-                  <td>{formatCount(day.added)}</td>
-                  <td>{formatCount(day.inputTokens)}</td>
-                  <td>{formatCount(day.outputTokens)}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <th scope="row">30 jours</th>
-                <td>{formatCount(totals.generations)}</td>
-                <td aria-label="Sans objet">—</td>
-                <td>{formatCount(totals.proposed)}</td>
-                <td>{formatCount(totals.added)}</td>
-                <td>{formatCount(totals.inputTokens)}</td>
-                <td>{formatCount(totals.outputTokens)}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        <h3 id="ai-lists-top-title">Les 10 plus gros utilisateurs de {formatMonth(report.month)}</h3>
-        {report.top.length === 0 ? (
-          <p className="settings__hint">Aucune génération ce mois-ci.</p>
-        ) : (
-          <div className="admin-usage__scroll">
-            <table className="admin-usage__table" aria-labelledby="ai-lists-top-title">
-              <thead>
-                <tr>
-                  <th scope="col">Utilisateur</th>
-                  <th scope="col">Générations</th>
-                  <th scope="col">Jetons d’entrée</th>
-                  <th scope="col">Jetons de sortie</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.top.map((user) => (
-                  <tr key={user.id}>
-                    <th scope="row">
-                      <Link href={userHref(user.email)}>{user.email}</Link>
-                      {name(user) && <span className="admin-usage__name">{name(user)}</span>}
-                    </th>
-                    <td>{formatCount(user.generations)}</td>
-                    <td>{formatCount(user.inputTokens)}</td>
-                    <td>{formatCount(user.outputTokens)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <p className="settings__hint">
-          Des compteurs seulement : ni les thèmes saisis ni les cartes ne sont enregistrés pour la console. Conservés 13
-          mois.
-        </p>
-      </section>
+      <UsageSection
+        id="chat"
+        title="Consommation du Chat IA"
+        state={chat.state}
+        limits={
+          <>
+            {formatCount(chat.messagesPerDay)} messages par utilisateur et par jour,{' '}
+            {formatCount(chat.messagesPerConversation)} par conversation, réponses de {formatCount(chat.maxReplyWords)}{' '}
+            mots au plus
+          </>
+        }
+        hint={chat.state === 'active' ? null : CHAT_STATE_HINTS[chat.state]}
+        days={chatUsage.days}
+        dayColumns={CHAT_DAYS}
+        isEmpty={(day) => day.conversations === 0 && day.messages === 0}
+        month={chatUsage.month}
+        top={chatUsage.top}
+        topColumns={CHAT_TOP}
+        noTop="Aucun message ce mois-ci."
+      />
+      <UsageSection
+        id="ai-lists"
+        title="Consommation de la génération de cartes"
+        state={aiLists.state}
+        limits={<>{formatCount(aiLists.generationsPerDay)} générations par utilisateur et par jour</>}
+        hint={aiLists.state === 'active' ? null : STATE_HINTS[aiLists.state]}
+        days={aiListUsage.days}
+        dayColumns={AI_LIST_DAYS}
+        isEmpty={(day) => day.generations === 0 && day.added === 0}
+        month={aiListUsage.month}
+        top={aiListUsage.top}
+        topColumns={AI_LIST_TOP}
+        noTop="Aucune génération ce mois-ci."
+      />
+      <p className="settings__hint">
+        Des compteurs seulement : ni le texte des conversations, ni les thèmes saisis, ni les cartes ne sont enregistrés
+        pour la console. Conservés 13 mois.
+      </p>
     </>
   );
 }

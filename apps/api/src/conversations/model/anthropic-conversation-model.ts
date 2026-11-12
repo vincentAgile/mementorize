@@ -15,14 +15,15 @@ import {
   GENERATION_SCHEMA,
   GENERATION_SYSTEM_PROMPT,
   generationMessage,
-  REPLY_SYSTEM_PROMPT,
+  DEFAULT_REPLY_WORDS,
+  replySystemPrompt,
 } from './prompts.js';
 import { arrayObjectReader } from './json-objects.js';
 
 /**
  * Upper bounds, thinking included: recent models think before they answer
  * (adaptive thinking), and that thinking counts in max_tokens. The length of
- * the reply itself is set by the instructions (120 words).
+ * the reply itself is set by the instructions (120 words by default, MEM-135).
  */
 const REPLY_MAX_TOKENS = 4000;
 const EVALUATION_MAX_TOKENS = 6000;
@@ -121,14 +122,14 @@ export class AnthropicConversationModel implements ConversationModel {
     }
   }
 
-  async *reply(history: ChatTurn[]): AsyncGenerator<string, ModelUsage, void> {
+  async *reply(history: ChatTurn[], options: { maxWords?: number } = {}): AsyncGenerator<string, ModelUsage, void> {
     const usage: ModelUsage = { inputTokens: 0, outputTokens: 0 };
     let written = false;
     try {
       const stream = await this.client.messages.create({
         model: this.name,
         max_tokens: REPLY_MAX_TOKENS,
-        system: REPLY_SYSTEM_PROMPT,
+        system: replySystemPrompt(options.maxWords ?? DEFAULT_REPLY_WORDS),
         messages: toMessages(history),
         ...this.outputConfig(),
         stream: true,

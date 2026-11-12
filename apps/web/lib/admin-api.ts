@@ -2,6 +2,7 @@ import 'server-only';
 import { redirect } from 'next/navigation';
 import { getAdminToken } from './admin-session';
 import type { AdminAiListSettings, AiListUsageReport } from './admin-ai-lists';
+import type { AdminChatSettings, ChatUsageReport } from './admin-chat';
 import type { ImportAnalysis, ImportRow, LanguageLevel } from './types';
 
 // MEM-82: the calls of the administration console to the API, with the
@@ -433,4 +434,25 @@ export async function saveAiListSettings(input: {
 /** The last 30 days and the 10 biggest users of the month: numbers only. */
 export function getAiListUsage(): Promise<AiListUsageReport> {
   return adminFetch<AiListUsageReport>('/admin/ai-lists/usage');
+}
+
+// --- MEM-135: the Chat IA -------------------------------------------------------
+
+/** Its parameters, and whether it is active, off or without an AI on the server. */
+export function getChatSettings(): Promise<AdminChatSettings> {
+  return adminFetch<AdminChatSettings>('/admin/chat/settings');
+}
+
+export type ChatSettingsChange = { ok: true; settings: AdminChatSettings } | { ok: false; status: number | null };
+
+export async function saveChatSettings(input: Omit<AdminChatSettings, 'state'>): Promise<ChatSettingsChange> {
+  const res = await adminSend('PUT', '/admin/chat/settings', input);
+  if (!res) return { ok: false, status: null };
+  if (!res.ok) return { ok: false, status: res.status };
+  return { ok: true, settings: (await res.json()) as AdminChatSettings };
+}
+
+/** The last 30 days and the 10 biggest users of the month: numbers only, never a text. */
+export function getChatUsage(): Promise<ChatUsageReport> {
+  return adminFetch<ChatUsageReport>('/admin/chat/usage');
 }

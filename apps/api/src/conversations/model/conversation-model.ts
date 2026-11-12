@@ -51,8 +51,9 @@ export interface ConversationModel {
    * The reply of the AI to the history (ending with the message of the user),
    * piece by piece as it is written; the generator returns the usage at the
    * end. Throws a ConversationModelError when the provider fails.
+   * `maxWords`: the length asked of the reply (MEM-135; 120 by default).
    */
-  reply(history: ChatTurn[]): AsyncGenerator<string, ModelUsage, void>;
+  reply(history: ChatTurn[], options?: { maxWords?: number }): AsyncGenerator<string, ModelUsage, void>;
   /**
    * MEM-139: vocabulary entries for a list, written by the model, given one
    * by one as each is complete (objects not checked yet: see
