@@ -1,8 +1,23 @@
-import { Body, Controller, Get, Headers, HttpCode, HttpStatus, Ip, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Ip,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminAuthService } from './admin-auth.service.js';
 import { AdminJwtGuard, type AdminRequest } from './admin-jwt.guard.js';
 import { type AdminUserList, AdminUsersService } from './admin-users.service.js';
 import { AdminLoginDto } from './dto/admin-login.dto.js';
+import { AdminUserUpdateDto } from './dto/admin-user.dto.js';
 import { AdminChallengeDto, AdminCodeDto, AdminDisableTwoFactorDto, AdminPasswordDto } from './dto/admin-step.dto.js';
 
 /**
@@ -105,6 +120,17 @@ export class AdminController {
   @UseGuards(AdminJwtGuard)
   listUsers(): Promise<AdminUserList> {
     return this.users.list();
+  }
+
+  /**
+   * PATCH /admin/users/:id { chatAiEnabled } — MEM-144: grants or withdraws
+   * the Chat IA; 400 for a value that is not a boolean, 404 for an unknown
+   * user. Applies at the next request of the user.
+   */
+  @Patch('users/:id')
+  @UseGuards(AdminJwtGuard)
+  updateUser(@Param('id', ParseUUIDPipe) id: string, @Body() dto: AdminUserUpdateDto) {
+    return this.users.update(id, { chatAiEnabled: dto.chatAiEnabled });
   }
 }
 

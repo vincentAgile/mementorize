@@ -12,7 +12,7 @@ import { GenerateDto } from './dto/generate.dto.js';
  * MEM-139: vocabulary cards proposed by the AI (« Générer avec l'IA »). The
  * same AI as the Chat IA (MEM-130), the same switch: off without a model
  * (status disabled, 503). Open to every account: unlike the Chat IA, not
- * restricted by CONVERSATION_ALLOWED_EMAILS.
+ * granted account by account (MEM-144).
  */
 @Controller('ai-lists')
 @UseGuards(JwtAuthGuard)

@@ -8,7 +8,8 @@ import { collator, normalize } from './item-list';
  * state.
  */
 
-export type UserSortKey = 'user' | 'createdAt' | 'lastActiveAt' | 'Vocabulary' | 'Quote' | 'MindMap' | 'total';
+export type UserSortKey =
+  'user' | 'createdAt' | 'lastActiveAt' | 'chatAi' | 'Vocabulary' | 'Quote' | 'MindMap' | 'total';
 
 export interface UserSort {
   key: UserSortKey;
@@ -28,12 +29,17 @@ export function searchUsers(users: AdminUserRow[], search: string): AdminUserRow
   return users.filter((user) => normalize(`${user.email} ${fullName(user)}`).includes(needle));
 }
 
+/** MEM-144: only the accounts the Chat IA is granted to, when asked. */
+export const filterChatAi = (users: AdminUserRow[], only: boolean) =>
+  only ? users.filter((user) => user.chatAiEnabled) : users;
+
 const time = (date: string | null) => (date ? new Date(date).getTime() : null);
 
 const VALUE: Record<UserSortKey, (user: AdminUserRow) => number | string | null> = {
   user: (user) => user.email,
   createdAt: (user) => time(user.createdAt),
   lastActiveAt: (user) => time(user.lastActiveAt),
+  chatAi: (user) => (user.chatAiEnabled ? 1 : 0), // MEM-144: granted first, by default
   Vocabulary: (user) => user.counts.Vocabulary.total,
   Quote: (user) => user.counts.Quote.total,
   MindMap: (user) => user.counts.MindMap.total,

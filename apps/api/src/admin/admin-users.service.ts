@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import type { ItemType, LearningStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -28,6 +28,8 @@ export interface AdminUserRow {
   lastName: string | null;
   createdAt: Date;
   lastActiveAt: Date | null;
+  /** MEM-144: the Chat IA granted to the account. */
+  chatAiEnabled: boolean;
   counts: SpaceCounts;
 }
 
@@ -79,7 +81,15 @@ export class AdminUsersService {
   async list(): Promise<AdminUserList> {
     const [users, rows] = await Promise.all([
       this.prisma.user.findMany({
-        select: { id: true, email: true, firstName: true, lastName: true, createdAt: true, lastActiveAt: true },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          createdAt: true,
+          lastActiveAt: true,
+          chatAiEnabled: true,
+        },
         orderBy: { createdAt: 'asc' },
       }),
       // The branches of a mind map are its cards: in review, or learned (« Appris », MEM-48).
@@ -107,5 +117,12 @@ export class AdminUsersService {
       add(totals, row);
     }
     return { users: [...byUser.values()], totals };
+  }
+
+  /** MEM-144: changes what the console sets on an account (the Chat IA); 404 for an unknown one. */
+  async update(id: string, changes: { chatAiEnabled?: boolean }): Promise<{ id: string; chatAiEnabled: boolean }> {
+    const { count } = await this.prisma.user.updateMany({ where: { id }, data: changes });
+    if (count === 0) throw new NotFoundException('User not found');
+    return this.prisma.user.findUniqueOrThrow({ where: { id }, select: { id: true, chatAiEnabled: true } });
   }
 }

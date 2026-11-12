@@ -77,6 +77,8 @@ model User {
   chatNoticeAccepted Boolean @default(false)
   /// MEM-132: the replies of the « Chat IA » are read aloud as they come (« Lire automatiquement les réponses »).
   chatAutoRead       Boolean @default(true)
+  /// MEM-144: the Chat IA granted to this account by the administrator (off by default).
+  chatAiEnabled      Boolean @default(false)
 
   @@map("users")
 }

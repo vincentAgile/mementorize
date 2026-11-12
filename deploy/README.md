@@ -610,11 +610,9 @@ ANTHROPIC_MODEL="claude-sonnet-5-5"
 ANTHROPIC_TIMEOUT_MS=30000
 # facultatif, conseillé : réflexion courte avant de répondre, plus rapide pour une conversation
 ANTHROPIC_EFFORT=low
-# les comptes qui y ont accès : adresses séparées par des virgules, * pour tous ; vide, personne
-CONVERSATION_ALLOWED_EMAILS="vcarpentier33@gmail.com"
 ```
 
-puis `docker compose up -d api`. Pour ouvrir à tout le monde plus tard : `CONVERSATION_ALLOWED_EMAILS="*"`, puis `docker compose up -d api`. Une erreur de configuration (modèle sans clé, nom de modèle invalide) empêche l'API de démarrer, avec un message clair.
+puis `docker compose up -d api`. Les comptes qui y ont accès s'activent un par un dans la console (page « Utilisateurs », colonne « Chat IA », MEM-144) : désactivé par défaut pour tous, y compris le compte de l'administrateur. `CONVERSATION_ALLOWED_EMAILS` n'est plus lue et peut être retirée du `.env`. Une erreur de configuration (modèle sans clé, nom de modèle invalide) empêche l'API de démarrer, avec un message clair.
 
 **Confidentialité** :
 

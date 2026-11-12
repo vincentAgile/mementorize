@@ -22,6 +22,7 @@ const STANDARD = {
   mindMapsEnabled: false,
   chatNoticeAccepted: false,
   chatAutoRead: true,
+  chatAiAvailable: false, // MEM-144: not granted by default
 };
 
 describe('API (e2e)', () => {

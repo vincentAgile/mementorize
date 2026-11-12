@@ -18,6 +18,7 @@ vi.mock('../../../lib/admin-api', () => ({
   saveChatSettings,
   getChatSettings,
   getChatUsage,
+  setUserChatAi: vi.fn(),
 }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('next/link', () => ({
@@ -276,6 +277,7 @@ describe('The « fiche » of a user (MEM-143)', () => {
       lastName: null,
       createdAt: '2026-11-01T10:00:00Z',
       lastActiveAt: null,
+      chatAiEnabled: false,
       counts: space,
     });
     const html = renderToStaticMarkup(

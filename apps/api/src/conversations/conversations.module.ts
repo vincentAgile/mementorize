@@ -21,7 +21,7 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
  * MEM-130: the conversations with the AI. Claude when ANTHROPIC_API_KEY and
  * ANTHROPIC_MODEL are set; the fake model when CONVERSATION_AI_FAKE=true
  * (local work only); otherwise null: the feature is off. Open only to the
- * accounts of CONVERSATION_ALLOWED_EMAILS (`*`: everyone).
+ * accounts the administrator granted it to (MEM-144).
  */
 @Module({
   imports: [AuthModule, PronunciationModule, PronunciationAssessmentModule],
@@ -60,6 +60,6 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
     },
   ],
   // MEM-139: the same model for the cards proposed by the AI; MEM-135: the console.
-  exports: [CONVERSATION_MODEL, ConversationsService, ConversationLimitsService, ChatUsageService],
+  exports: [CONVERSATION_MODEL, ConversationsService, ConversationLimitsService, ChatUsageService, ConversationAccess],
 })
 export class ConversationsModule {}

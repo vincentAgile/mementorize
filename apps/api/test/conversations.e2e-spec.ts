@@ -4,8 +4,6 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../src/app.module.js';
-import { ConfigService } from '@nestjs/config';
-import { ConversationAccess } from '../src/conversations/conversation-access.js';
 import { ConversationRateGuard, ConversationSpeechRateGuard } from '../src/conversations/conversation-rate.guard.js';
 import { KokoroClient } from '../src/pronunciation/kokoro.client.js';
 import { VoiceUnavailableError } from '../src/voice/pronunciation-assessor.js';
@@ -17,8 +15,10 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 import { run } from '../src/admin/admin-cli.js';
 import { ChatUsageService } from '../src/conversations/chat-usage.service.js';
 
-/** The accounts the conversations are open to, as CONVERSATION_ALLOWED_EMAILS would say. */
-const accessFor = (value: string) => new ConversationAccess({ get: () => value } as unknown as ConfigService);
+/** MEM-144: the Chat IA granted to this account, as the console does. */
+async function grant(app: NestExpressApplication, email: string, granted = true) {
+  await app.get(PrismaService).user.update({ where: { email }, data: { chatAiEnabled: granted } });
+}
 
 /** MEM-132: a Kokoro without Kokoro: the « audio » is the text read, and every text is kept. */
 const kokoro = {
@@ -52,12 +52,10 @@ async function start(
   model: ConversationModel | null | undefined,
   {
     rateLimit = false,
-    allowed = '*',
     issuer = tokens as SpeechTokenIssuer | null,
-  }: { rateLimit?: boolean; allowed?: string; issuer?: SpeechTokenIssuer | null } = {},
+  }: { rateLimit?: boolean; issuer?: SpeechTokenIssuer | null } = {},
 ) {
   let builder = Test.createTestingModule({ imports: [AppModule] });
-  builder = builder.overrideProvider(ConversationAccess).useValue(accessFor(allowed));
   builder = builder.overrideProvider(KokoroClient).useValue(kokoro);
   builder = builder.overrideProvider(SPEECH_TOKEN_ISSUER).useValue(issuer);
   if (model !== undefined) builder = builder.overrideProvider(CONVERSATION_MODEL).useValue(model);
@@ -103,6 +101,7 @@ describe('Conversations with the AI (e2e, MEM-130)', () => {
   async function register(name: string) {
     const email = `chat-${name}-${unique}@e2e.test`;
     const res = await http().post('/auth/register').send({ email, password: 'password123' }).expect(201);
+    await grant(app, email);
     const user = await prisma.user.findUniqueOrThrow({ where: { email }, select: { id: true } });
     return { auth: { Authorization: `Bearer ${res.body.accessToken as string}` }, userId: user.id };
   }
@@ -501,8 +500,8 @@ describe('Conversations with the AI (e2e, MEM-130)', () => {
   });
 });
 
-describe('Conversations open to some accounts only (e2e, MEM-130)', () => {
-  const allowedEmail = `chat-Allowed-${unique}@e2e.test`;
+describe('The Chat IA granted account by account (e2e, MEM-144)', () => {
+  const allowedEmail = `chat-allowed-${unique}@e2e.test`;
   let app: NestExpressApplication;
   const http = () => request(app.getHttpServer());
   const login = async (email: string) => {
@@ -512,7 +511,6 @@ describe('Conversations open to some accounts only (e2e, MEM-130)', () => {
 
   beforeAll(async () => {
     app = await start(new FakeConversationModel(), {
-      allowed: ` ${allowedEmail.toUpperCase()} , someone@else.test`,
       issuer: null, // and no Azure: no microphone (MEM-133)
     });
   });
@@ -520,8 +518,17 @@ describe('Conversations open to some accounts only (e2e, MEM-130)', () => {
     await app?.close();
   });
 
+  it('off by default, for every new account', async () => {
+    await login(`chat-new-${unique}@e2e.test`);
+    const user = await app.get(PrismaService).user.findUniqueOrThrow({
+      where: { email: `chat-new-${unique}@e2e.test` },
+    });
+    expect(user.chatAiEnabled).toBe(false);
+  });
+
   it('is off for the other accounts: the status says so, the other routes answer 403', async () => {
     const allowed = await login(allowedEmail);
+    await grant(app, allowedEmail);
     const other = await login(`chat-closed-${unique}@e2e.test`);
     const { body: conversation } = await http().post('/conversations').set(allowed).expect(201);
     expect((await http().get('/conversations/status').set(allowed).expect(200)).body).toMatchObject({
@@ -533,7 +540,7 @@ describe('Conversations open to some accounts only (e2e, MEM-130)', () => {
 
     expect((await http().get('/conversations/status').set(other).expect(200)).body).toEqual({ enabled: false });
     const closed = await http().post('/conversations').set(other).expect(403);
-    expect(closed.body.message).toBe('The conversations with the AI are not open to this account');
+    expect(closed.body.message).toBe('The Chat IA is not granted to this account');
     await http().get('/conversations').set(other).expect(403);
     await http().get(`/conversations/${conversation.id}`).set(other).expect(403);
     await http().delete(`/conversations/${conversation.id}`).set(other).expect(403);
@@ -542,9 +549,16 @@ describe('Conversations open to some accounts only (e2e, MEM-130)', () => {
     await http().get('/conversations/speech/opening').set(other).expect(403);
   });
 
-  it('is open to nobody when the setting is empty', () => {
-    expect(accessFor('').allows({ id: 'u', email: allowedEmail })).toBe(false);
-    expect(accessFor('*').allows({ id: 'u', email: 'anyone@e2e.test' })).toBe(true);
+  it('withdrawn, then given back: at once, and the conversations kept', async () => {
+    const email = `chat-withdrawn-${unique}@e2e.test`;
+    const auth = await login(email);
+    await grant(app, email);
+    const { body: conversation } = await http().post('/conversations').set(auth).expect(201);
+    await grant(app, email, false);
+    await http().get(`/conversations/${conversation.id}`).set(auth).expect(403);
+    expect((await http().get('/conversations/status').set(auth).expect(200)).body).toEqual({ enabled: false });
+    await grant(app, email);
+    expect((await http().get(`/conversations/${conversation.id}`).set(auth).expect(200)).body.id).toBe(conversation.id);
   });
 });
 
@@ -564,6 +578,7 @@ describe('Conversations: at most 3 requests per second (e2e, MEM-130)', () => {
       .post('/auth/register')
       .send({ email: `chat-rate-${unique}@e2e.test`, password: 'password123' })
       .expect(201);
+    await grant(app, `chat-rate-${unique}@e2e.test`);
     const auth = { Authorization: `Bearer ${res.body.accessToken as string}` };
     const statuses: number[] = [];
     for (let i = 0; i < 4; i++) statuses.push((await http().post('/conversations').set(auth)).status);
@@ -595,6 +610,7 @@ describe('Conversations without AI model (e2e, MEM-130)', () => {
       .post('/auth/register')
       .send({ email: `chat-off-${unique}@e2e.test`, password: 'password123' })
       .expect(201);
+    await grant(app, `chat-off-${unique}@e2e.test`);
     const auth = { Authorization: `Bearer ${res.body.accessToken as string}` };
     expect((await http().get('/conversations/status').set(auth).expect(200)).body).toEqual({ enabled: false });
     const off = await http().post('/conversations').set(auth).expect(503);
@@ -620,6 +636,7 @@ describe('The Chat IA in the console (e2e, MEM-135)', () => {
   async function register(name: string) {
     const email = `chat-console-${name}-${unique}@e2e.test`;
     const res = await http().post('/auth/register').send({ email, password: 'password123' }).expect(201);
+    await grant(app, email);
     const user = await prisma.user.findUniqueOrThrow({ where: { email }, select: { id: true } });
     return { auth: { Authorization: `Bearer ${res.body.accessToken as string}` }, userId: user.id, email };
   }
@@ -793,5 +810,91 @@ describe('The Chat IA in the console (e2e, MEM-135)', () => {
     } finally {
       await none.close();
     }
+  });
+});
+
+describe('The Chat IA granted in the console (e2e, MEM-144)', () => {
+  let app: NestExpressApplication;
+  let prisma: PrismaService;
+  let admin: { Authorization: string };
+  const http = () => request(app.getHttpServer());
+  const adminEmail = `chat-grant-admin-${unique}@e2e.test`;
+  const password = 'a long admin password';
+
+  beforeAll(async () => {
+    process.env.ADMIN_JWT_SECRET = 'e2e-admin-secret';
+    process.env.ADMIN_TOTP_ENCRYPTION_KEY = 'e2e0'.repeat(16);
+    app = await start(new FakeConversationModel());
+    prisma = app.get(PrismaService);
+    await run(['create', adminEmail], prisma, async () => password);
+    await prisma.adminAccount.update({ where: { email: adminEmail }, data: { totpDisabledAt: new Date() } });
+    const login = await http().post('/admin/auth/login').send({ email: adminEmail, password }).expect(200);
+    admin = { Authorization: `Bearer ${login.body.session.accessToken as string}` };
+  });
+  afterAll(async () => {
+    await prisma?.adminAccount.deleteMany({ where: { email: adminEmail } });
+    await app?.close();
+  });
+
+  it('the list says it, PATCH grants and withdraws it; the user sees it at once', async () => {
+    const email = `chat-grant-${unique}@e2e.test`;
+    const res = await http().post('/auth/register').send({ email, password: 'password123' }).expect(201);
+    const auth = { Authorization: `Bearer ${res.body.accessToken as string}` };
+    const row = () =>
+      http()
+        .get('/admin/users')
+        .set(admin)
+        .expect(200)
+        .then((list) => list.body.users.find((user: { email: string }) => user.email === email));
+    const { id } = await row();
+    expect((await row()).chatAiEnabled).toBe(false);
+    expect((await http().get('/preferences').set(auth).expect(200)).body.chatAiAvailable).toBe(false);
+    await http().post('/conversations').set(auth).expect(403);
+
+    expect(
+      (await http().patch(`/admin/users/${id}`).set(admin).send({ chatAiEnabled: true }).expect(200)).body,
+    ).toEqual({ id, chatAiEnabled: true });
+    expect((await row()).chatAiEnabled).toBe(true);
+    expect((await http().get('/preferences').set(auth).expect(200)).body.chatAiAvailable).toBe(true);
+    expect((await http().get('/conversations/status').set(auth).expect(200)).body.enabled).toBe(true);
+    await http().post('/conversations').set(auth).expect(201);
+
+    // The Chat IA off for everyone (MEM-135): not available, even granted.
+    const settings = { enabled: false, messagesPerDay: 30, messagesPerConversation: 20, maxReplyWords: 120 };
+    await http().put('/admin/chat/settings').set(admin).send(settings).expect(200);
+    try {
+      expect((await http().get('/preferences').set(auth).expect(200)).body.chatAiAvailable).toBe(false);
+      expect((await http().get('/conversations/status').set(auth).expect(200)).body).toEqual({ enabled: false });
+    } finally {
+      await http()
+        .put('/admin/chat/settings')
+        .set(admin)
+        .send({ ...settings, enabled: true })
+        .expect(200);
+    }
+
+    await http().patch(`/admin/users/${id}`).set(admin).send({ chatAiEnabled: false }).expect(200);
+    expect((await http().get('/preferences').set(auth).expect(200)).body.chatAiAvailable).toBe(false);
+    await http().post('/conversations').set(auth).expect(403);
+  });
+
+  it('checks the value and the user; nothing with a user token', async () => {
+    const email = `chat-grant-checks-${unique}@e2e.test`;
+    const res = await http().post('/auth/register').send({ email, password: 'password123' }).expect(201);
+    const auth = { Authorization: `Bearer ${res.body.accessToken as string}` };
+    const { id } = await prisma.user.findUniqueOrThrow({ where: { email } });
+    for (const chatAiEnabled of ['yes', 1, null]) {
+      await http().patch(`/admin/users/${id}`).set(admin).send({ chatAiEnabled }).expect(400);
+    }
+    await http().patch(`/admin/users/${id}`).set(admin).send({}).expect(200);
+    await http()
+      .patch('/admin/users/00000000-0000-4000-8000-000000000000')
+      .set(admin)
+      .send({ chatAiEnabled: true })
+      .expect(404);
+    await http().patch('/admin/users/not-an-id').set(admin).send({ chatAiEnabled: true }).expect(400);
+    await http().patch(`/admin/users/${id}`).set(auth).send({ chatAiEnabled: true }).expect(401);
+    await http().patch(`/admin/users/${id}`).send({ chatAiEnabled: true }).expect(401);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id } })).chatAiEnabled).toBe(false);
   });
 });

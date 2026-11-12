@@ -295,6 +295,7 @@ describe('Administration console (e2e)', () => {
       lastName: 'Lecture',
       createdAt: expect.any(String),
       lastActiveAt: expect.any(String),
+      chatAiEnabled: false, // MEM-144: off by default
       counts: {
         Vocabulary: { Waiting: 0, ToLearn: 1, Learning: 1, Learned: 1, total: 3 },
         Quote: { Waiting: 0, ToLearn: 1, Learning: 0, Learned: 0, total: 1 },

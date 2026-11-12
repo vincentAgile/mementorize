@@ -4,6 +4,7 @@ import { Fragment, useId, useMemo, useState } from 'react';
 import type { AdminUserRow, SpaceCounts, StatusCounts } from '../../../lib/admin-api';
 import {
   DEFAULT_USER_SORT,
+  filterChatAi,
   fullDate,
   fullName,
   lastActivity,
@@ -17,6 +18,7 @@ import {
 import { NBSP } from '../../../lib/format';
 import { PAGE_SIZES } from '../../../lib/item-list';
 import { Pagination } from '../../lists/pagination';
+import { ChatAiSwitch } from './chat-ai-switch';
 
 const USER_NOUN = { one: 'utilisateur', many: 'utilisateurs', feminine: false };
 
@@ -24,6 +26,7 @@ const COLUMNS: { key: UserSortKey; label: string; numeric?: boolean }[] = [
   { key: 'user', label: 'Utilisateur' },
   { key: 'createdAt', label: 'Inscrit le' },
   { key: 'lastActiveAt', label: 'Dernière activité' },
+  { key: 'chatAi', label: 'Chat IA' }, // MEM-144
   { key: 'Vocabulary', label: 'Anglais', numeric: true },
   { key: 'Quote', label: 'Citations', numeric: true },
   { key: 'MindMap', label: 'Cartes mentales', numeric: true },
@@ -98,12 +101,15 @@ export function UsersTable({
   totals,
   now,
   initialSearch = '',
+  chatOff = false,
 }: {
   users: AdminUserRow[];
   totals: SpaceCounts;
   now: string;
   /** MEM-143: a user's « fiche »: the table searched on their e-mail, their detail open. */
   initialSearch?: string;
+  /** MEM-144: the Chat IA off for everyone: the switches change nothing for now. */
+  chatOff?: boolean;
 }) {
   const [search, setSearch] = useState(initialSearch);
   const [sort, setSort] = useState<UserSort>(DEFAULT_USER_SORT);
@@ -115,8 +121,18 @@ export function UsersTable({
   });
   const searchId = useId();
   const date = useMemo(() => new Date(now), [now]);
+  // MEM-144: the Chat IA as saved by the switches, for the sort and the filter.
+  const [chatAi, setChatAi] = useState<Record<string, boolean>>({});
+  const [onlyChat, setOnlyChat] = useState(false);
+  const rows = useMemo(
+    () => users.map((user) => (user.id in chatAi ? { ...user, chatAiEnabled: chatAi[user.id] } : user)),
+    [users, chatAi],
+  );
 
-  const shown = useMemo(() => sortUsers(searchUsers(users, search), sort), [users, search, sort]);
+  const shown = useMemo(
+    () => sortUsers(filterChatAi(searchUsers(rows, search), onlyChat), sort),
+    [rows, search, onlyChat, sort],
+  );
   const pageCount = Math.max(1, Math.ceil(shown.length / pageSize));
   const current = Math.min(page, pageCount);
   const pageRows = shown.slice((current - 1) * pageSize, current * pageSize);
@@ -131,6 +147,11 @@ export function UsersTable({
 
   return (
     <section className="item-list admin-users" aria-label="Utilisateurs">
+      {chatOff && (
+        <p className="notice admin-users__chat-off">
+          Le Chat IA est coupé pour tous : les réglages ci-dessous sont sans effet pour le moment.
+        </p>
+      )}
       <div className="admin-users__bar">
         <div className="item-list__filters">
           <label htmlFor={searchId} className="visually-hidden">
@@ -146,9 +167,20 @@ export function UsersTable({
               setPage(1);
             }}
           />
+          <label className="admin-users__only-chat">
+            <input
+              type="checkbox"
+              checked={onlyChat}
+              onChange={(event) => {
+                setOnlyChat(event.target.checked);
+                setPage(1);
+              }}
+            />
+            Chat IA activé
+          </label>
         </div>
         <p className="item-list__count" aria-live="polite">
-          {search.trim()
+          {search.trim() || onlyChat
             ? `${count(shown.length)} sur ${plural(users.length, 'utilisateur', 'utilisateurs')}`
             : plural(users.length, 'utilisateur', 'utilisateurs')}
         </p>
@@ -191,7 +223,9 @@ export function UsersTable({
             {pageRows.length === 0 && (
               <tr>
                 <td colSpan={COLUMNS.length + 1} className="item-list__none">
-                  Aucun utilisateur ne correspond à la recherche.
+                  {onlyChat && !search.trim()
+                    ? 'Le Chat IA n’est activé pour aucun utilisateur.'
+                    : 'Aucun utilisateur ne correspond à la recherche.'}
                 </td>
               </tr>
             )}
@@ -219,6 +253,14 @@ export function UsersTable({
                       ) : (
                         <span className="admin-users__ago">jamais</span>
                       )}
+                    </td>
+                    <td className="admin-users__chat">
+                      <ChatAiSwitch
+                        userId={user.id}
+                        label={name || user.email}
+                        enabled={user.chatAiEnabled}
+                        onChange={(enabled) => setChatAi((before) => ({ ...before, [user.id]: enabled }))}
+                      />
                     </td>
                     <td className="admin-users__number">{count(user.counts.Vocabulary.total)}</td>
                     <td className="admin-users__number">{count(user.counts.Quote.total)}</td>
@@ -250,6 +292,10 @@ export function UsersTable({
               <th scope="row" colSpan={3}>
                 Tous les utilisateurs
               </th>
+              <td className="admin-users__chat">
+                {count(rows.filter((user) => user.chatAiEnabled).length)}
+                {NBSP}activé{rows.filter((user) => user.chatAiEnabled).length > 1 ? 's' : ''}
+              </td>
               <td className="admin-users__number">{count(totals.Vocabulary.total)}</td>
               <td className="admin-users__number">{count(totals.Quote.total)}</td>
               <td className="admin-users__number">{count(totals.MindMap.total)}</td>
