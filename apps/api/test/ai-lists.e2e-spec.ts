@@ -4,6 +4,8 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { run } from '../src/admin/admin-cli.js';
+import { AiListUsageService } from '../src/ai-lists/ai-list-usage.service.js';
 import { AppModule } from '../src/app.module.js';
 import { ConversationAccess } from '../src/conversations/conversation-access.js';
 import { CONVERSATION_MODEL } from '../src/conversations/model/conversation-model.js';
@@ -82,6 +84,8 @@ describe('Cards proposed by the AI (e2e, MEM-139)', () => {
   beforeAll(async () => {
     app = await start(fake);
     prisma = app.get(PrismaService);
+    // The parameters of the console (MEM-143): the defaults, whatever an earlier run left.
+    await prisma.appSetting.deleteMany({ where: { key: 'ai-lists' } });
   });
   beforeEach(() => {
     fake.failure = null;
@@ -458,6 +462,210 @@ describe('Cards proposed by the AI, added to « Ma liste » (e2e, MEM-141)', () 
         .expect(200);
     } finally {
       await off.close();
+    }
+  });
+});
+
+describe('« Générer avec l’IA » in the console (e2e, MEM-143)', () => {
+  const fake = new FakeConversationModel();
+  let app: NestExpressApplication;
+  let prisma: PrismaService;
+  let admin: { Authorization: string };
+  const http = () => request(app.getHttpServer());
+  const adminEmail = `ai-admin-${unique}@e2e.test`;
+  const password = 'a long admin password';
+
+  async function register(name: string) {
+    const res = await http()
+      .post('/auth/register')
+      .send({ email: `ai-console-${name}-${unique}@e2e.test`, password: 'password123' })
+      .expect(201);
+    return { auth: { Authorization: `Bearer ${res.body.accessToken as string}` } };
+  }
+  const generate = (auth: Record<string, string>, theme = 'Vie quotidienne') =>
+    http()
+      .post('/ai-lists/generate')
+      .set(auth)
+      .send({ level: 'B1', theme, count: 5, kind: 'Both' })
+      .buffer(true)
+      .parse((res, callback) => {
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk: string) => (data += chunk));
+        res.on('end', () => callback(null, data));
+      });
+  const put = (body: Record<string, unknown>) => http().put('/admin/ai-lists/settings').set(admin).send(body);
+
+  beforeAll(async () => {
+    process.env.ADMIN_JWT_SECRET = 'e2e-admin-secret';
+    process.env.ADMIN_TOTP_ENCRYPTION_KEY = 'e2e0'.repeat(16);
+    app = await start(fake);
+    prisma = app.get(PrismaService);
+    await prisma.appSetting.deleteMany({ where: { key: 'ai-lists' } });
+    await run(['create', adminEmail], prisma, async () => password);
+    await prisma.adminAccount.update({ where: { email: adminEmail }, data: { totpDisabledAt: new Date() } });
+    const login = await http().post('/admin/auth/login').send({ email: adminEmail, password }).expect(200);
+    admin = { Authorization: `Bearer ${login.body.session.accessToken as string}` };
+  });
+  beforeEach(() => {
+    fake.failure = null;
+    fake.nextEntries = null;
+  });
+  afterAll(async () => {
+    await prisma?.appSetting.deleteMany({ where: { key: 'ai-lists' } });
+    await prisma?.adminAccount.deleteMany({ where: { email: adminEmail } });
+    await app?.close();
+  });
+
+  it('reads and sets the parameters: the defaults, the bounds; nothing with a user token', async () => {
+    expect((await http().get('/admin/ai-lists/settings').set(admin).expect(200)).body).toEqual({
+      enabled: true,
+      generationsPerDay: 10,
+      state: 'active',
+    });
+    for (const body of [
+      { enabled: true, generationsPerDay: 0 },
+      { enabled: true, generationsPerDay: 201 },
+      { enabled: true, generationsPerDay: 2.5 },
+      { enabled: true, generationsPerDay: '10' },
+      { enabled: 'yes', generationsPerDay: 10 },
+      { generationsPerDay: 10 },
+    ]) {
+      await put(body).expect(400);
+    }
+    expect((await put({ enabled: true, generationsPerDay: 200 }).expect(200)).body).toEqual({
+      enabled: true,
+      generationsPerDay: 200,
+      state: 'active',
+    });
+    expect((await put({ enabled: true, generationsPerDay: 1 }).expect(200)).body.generationsPerDay).toBe(1);
+
+    const { auth } = await register('token');
+    await http().get('/admin/ai-lists/settings').set(auth).expect(401);
+    await http().put('/admin/ai-lists/settings').set(auth).send({ enabled: true, generationsPerDay: 50 }).expect(401);
+    await http().get('/admin/ai-lists/usage').set(auth).expect(401);
+    await http().get('/admin/ai-lists/usage').expect(401);
+  });
+
+  it('the quota applies at once', async () => {
+    await put({ enabled: true, generationsPerDay: 2 }).expect(200);
+    const { auth } = await register('quota');
+    expect((await http().get('/ai-lists/status').set(auth).expect(200)).body).toEqual({ enabled: true, remaining: 2 });
+    await generate(auth).expect(200);
+    await generate(auth).expect(200);
+    expect(JSON.parse((await generate(auth).expect(429)).body as string)).toMatchObject({ reason: 'daily-limit' });
+    await put({ enabled: true, generationsPerDay: 3 }).expect(200);
+    expect((await http().get('/ai-lists/status').set(auth).expect(200)).body).toEqual({ enabled: true, remaining: 1 });
+    await generate(auth).expect(200);
+  });
+
+  it('off for everyone: status off, 503, the adding still works; the Chat IA is not touched', async () => {
+    const { auth } = await register('off');
+    expect((await put({ enabled: false, generationsPerDay: 10 }).expect(200)).body.state).toBe('off');
+    expect((await http().get('/ai-lists/status').set(auth).expect(200)).body).toEqual({ enabled: false, remaining: 0 });
+    await generate(auth).expect(503);
+    await http()
+      .post('/ai-lists/add')
+      .set(auth)
+      .send({ rows: [{ english: 'a kettle', french: 'une bouilloire' }], theme: 'Maison' })
+      .expect(200);
+    expect((await http().get('/conversations/status').set(auth).expect(200)).body.enabled).toBe(true);
+    await put({ enabled: true, generationsPerDay: 10 }).expect(200);
+    await generate(auth).expect(200);
+  });
+
+  it('counts each day: generations, active users, cards proposed and added, tokens; the top users; never a theme', async () => {
+    await put({ enabled: true, generationsPerDay: 10 }).expect(200);
+    const first = await register('usage-a');
+    const second = await register('usage-b');
+    const before = (await http().get('/admin/ai-lists/usage').set(admin).expect(200)).body;
+    const today = before.days[0];
+
+    await generate(first.auth, 'un thème secret').expect(200); // 5 cards
+    await generate(first.auth).expect(200);
+    await generate(second.auth).expect(200);
+    fake.failure = { kind: 'failed', during: 'generate' };
+    await generate(second.auth).expect(502); // given back: not counted
+    fake.failure = null;
+    await http()
+      .post('/ai-lists/add')
+      .set(first.auth)
+      .send({
+        rows: [
+          { english: 'a pot', french: 'une casserole' },
+          { english: 'a pan', french: 'une poêle' },
+        ],
+        theme: 'x',
+      })
+      .expect(200);
+    await new Promise((resolve) => setTimeout(resolve, 100)); // the counters are written beside the calls
+
+    const report = (await http().get('/admin/ai-lists/usage').set(admin).expect(200)).body;
+    expect(report.days).toHaveLength(30);
+    expect(report.days[0].day).toBe(today.day);
+    expect(report.days[0].day > report.days[29].day).toBe(true);
+    expect(report.days[0]).toMatchObject({
+      generations: today.generations + 3,
+      activeUsers: today.activeUsers + 2,
+      proposed: today.proposed + 15,
+      added: today.added + 2,
+    });
+    expect(report.days[0].inputTokens).toBeGreaterThan(today.inputTokens);
+    expect(report.days[0].outputTokens).toBeGreaterThan(today.outputTokens);
+    expect(report.month).toBe(today.day.slice(0, 7));
+
+    // The top users of the month: the user with the most generations first (others ran before).
+    const email = `ai-console-usage-a-${unique}@e2e.test`;
+    const user = await prisma.user.findFirstOrThrow({ where: { email } });
+    await prisma.aiListUsage.update({
+      where: { userId_day: { userId: user.id, day: today.day } },
+      data: { generations: { increment: 100_000 } },
+    });
+    const top = (await http().get('/admin/ai-lists/usage').set(admin).expect(200)).body.top;
+    expect(top[0]).toMatchObject({ id: user.id, email, generations: 100_002, firstName: null, lastName: null });
+    expect(top[0].inputTokens).toBeGreaterThan(0);
+    expect(top.length).toBeLessThanOrEqual(10);
+    await prisma.aiListUsage.update({
+      where: { userId_day: { userId: user.id, day: today.day } },
+      data: { generations: { decrement: 100_000 } },
+    });
+    expect(JSON.stringify(report)).not.toContain('secret');
+    expect(JSON.stringify(report)).not.toContain('casserole');
+  });
+
+  it('keeps the counters 13 months', async () => {
+    const { auth } = await register('purge');
+    await generate(auth).expect(200);
+    const user = await prisma.user.findFirstOrThrow({ where: { email: `ai-console-purge-${unique}@e2e.test` } });
+    await prisma.aiListUsage.create({ data: { userId: user.id, day: '2020-01-01', generations: 4 } });
+    await app.get(AiListUsageService).purge();
+    expect(await prisma.aiListUsage.count({ where: { userId: user.id, day: '2020-01-01' } })).toBe(0);
+    expect(await prisma.aiListUsage.count({ where: { userId: user.id } })).toBe(1);
+  });
+});
+
+describe('« Générer avec l’IA » in the console, without an AI (e2e, MEM-143)', () => {
+  it('says it is not configured', async () => {
+    process.env.ADMIN_JWT_SECRET = 'e2e-admin-secret';
+    process.env.ADMIN_TOTP_ENCRYPTION_KEY = 'e2e0'.repeat(16);
+    const app = await start(null);
+    const prisma = app.get(PrismaService);
+    const email = `ai-admin-none-${unique}@e2e.test`;
+    try {
+      await run(['create', email], prisma, async () => 'a long admin password');
+      await prisma.adminAccount.update({ where: { email }, data: { totpDisabledAt: new Date() } });
+      const login = await request(app.getHttpServer())
+        .post('/admin/auth/login')
+        .send({ email, password: 'a long admin password' })
+        .expect(200);
+      const res = await request(app.getHttpServer())
+        .get('/admin/ai-lists/settings')
+        .set({ Authorization: `Bearer ${login.body.session.accessToken as string}` })
+        .expect(200);
+      expect(res.body.state).toBe('unconfigured');
+    } finally {
+      await prisma.adminAccount.deleteMany({ where: { email } });
+      await app.close();
     }
   });
 });

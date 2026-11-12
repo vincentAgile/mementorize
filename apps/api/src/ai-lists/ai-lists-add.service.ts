@@ -4,6 +4,7 @@ import { ItemsService } from '../items/items.service.js';
 import { duplicateKey } from '../items/vocabulary/csv/vocabulary-import.js';
 import { PronunciationService } from '../pronunciation/pronunciation.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { AiListUsageService } from './ai-list-usage.service.js';
 import type { AiListRowDto } from './dto/add.dto.js';
 
 /** The topic of the cards: the label of the theme, 50 characters at most (as a word added by hand). */
@@ -24,6 +25,7 @@ export class AiListsAddService {
     private readonly prisma: PrismaService,
     private readonly items: ItemsService,
     private readonly pronunciations: PronunciationService,
+    private readonly usage: AiListUsageService,
   ) {}
 
   async add(
@@ -63,6 +65,7 @@ export class AiListsAddService {
       queue ? 'ToLearn' : 'Waiting',
     );
     for (const item of created) this.pronunciations.request(item.id); // MEM-39, in the background
+    await this.usage.record(userId, { added: created.length }); // MEM-143
     return { added: created.length, skipped: rows.length - created.length };
   }
 

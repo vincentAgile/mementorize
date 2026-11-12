@@ -3962,6 +3962,95 @@ div.review-card__reveal-row {
   background: #b3261e;
 }
 
+/* MEM-143: the block « Générer avec l'IA » under the two-step login */
+.admin-settings + .admin-settings {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.admin-settings__form .admin-settings__check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+}
+
+.admin-settings__check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #147d80;
+}
+
+.admin-settings__form .admin-settings__number {
+  width: 7rem;
+}
+
+/* MEM-143: Console › Consommation IA */
+.admin-usage__scroll {
+  overflow-x: auto;
+  margin: 1rem 0 1.5rem;
+}
+
+.admin-usage__table {
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-usage__table caption {
+  margin-bottom: 0.5rem;
+  color: #666;
+  text-align: left;
+}
+
+.admin-usage__table th,
+.admin-usage__table td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+  white-space: nowrap;
+}
+
+.admin-usage__table thead th {
+  font-weight: 600;
+  text-align: right;
+}
+
+.admin-usage__table thead th:first-child,
+.admin-usage__table tbody th,
+.admin-usage__table tfoot th {
+  text-align: left;
+}
+
+.admin-usage__table tbody th {
+  font-weight: 400;
+}
+
+.admin-usage__table td {
+  text-align: right;
+}
+
+.admin-usage__table tr.is-empty {
+  color: #999;
+}
+
+.admin-usage__table tfoot th,
+.admin-usage__table tfoot td {
+  border-top: 2px solid #ccc;
+  border-bottom: none;
+  font-weight: 600;
+}
+
+.admin-usage a {
+  color: #147d80;
+}
+
+.admin-usage__name {
+  display: block;
+  color: #666;
+  font-size: 0.8rem;
+}
+
 .admin-settings__warning {
   padding: 0.6rem 0.8rem;
   border-left: 4px solid #c1543a;
@@ -3974,6 +4063,14 @@ div.review-card__reveal-row {
     order: 3;
     width: 100%;
     margin-left: 0;
+    /* MEM-143: four entries: they scroll rather than wrap */
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .admin-nav a {
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 }
 

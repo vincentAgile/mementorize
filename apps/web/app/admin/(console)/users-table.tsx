@@ -93,12 +93,26 @@ function Toggle({
  * or 100; each row opens on the detail of its counters, as the row of the
  * totals of all the users.
  */
-export function UsersTable({ users, totals, now }: { users: AdminUserRow[]; totals: SpaceCounts; now: string }) {
-  const [search, setSearch] = useState('');
+export function UsersTable({
+  users,
+  totals,
+  now,
+  initialSearch = '',
+}: {
+  users: AdminUserRow[];
+  totals: SpaceCounts;
+  now: string;
+  /** MEM-143: a user's « fiche »: the table searched on their e-mail, their detail open. */
+  initialSearch?: string;
+}) {
+  const [search, setSearch] = useState(initialSearch);
   const [sort, setSort] = useState<UserSort>(DEFAULT_USER_SORT);
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[0]);
   const [page, setPage] = useState(1);
-  const [open, setOpen] = useState<Set<string>>(new Set());
+  const [open, setOpen] = useState<Set<string>>(() => {
+    const exact = initialSearch && users.find((user) => user.email === initialSearch.trim());
+    return new Set(exact ? [exact.id] : []);
+  });
   const searchId = useId();
   const date = useMemo(() => new Date(now), [now]);
 

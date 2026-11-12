@@ -21,6 +21,7 @@ import { duplicateKey } from '../items/vocabulary/csv/vocabulary-import.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { localDate, startOfNextLocalDay } from '../reminders/local-time.js';
 import { AiListLimitsService } from './ai-list-limits.js';
+import { AiListUsageService } from './ai-list-usage.service.js';
 import { type GeneratedEntry, sanitizeEntry } from './generated-entry.js';
 
 /** The model is asked for 5 more entries than given: room for the duplicates, without a second call. */
@@ -54,6 +55,10 @@ export interface GenerationInput {
 }
 
 const OFF = 'The generation of cards by the AI is off: no AI model is configured';
+const OFF_BY_ADMIN = 'The generation of cards by the AI is off';
+
+/** MEM-143: as the console shows it. */
+export type AiListState = 'active' | 'off' | 'unconfigured';
 
 function providerException(error: unknown): HttpException {
   return error instanceof ConversationModelError && error.kind === 'busy'
@@ -87,6 +92,7 @@ export class AiListsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly limits: AiListLimitsService,
+    private readonly usage: AiListUsageService,
     @Inject(CONVERSATION_MODEL) private readonly model: ConversationModel | null,
   ) {}
 
@@ -94,10 +100,18 @@ export class AiListsService {
     return this.model !== null;
   }
 
-  /** Whether it is available, and how many generations are left today. */
+  /** MEM-143: active, off in the console, or without an AI model (the environment). */
+  async state(): Promise<AiListState> {
+    if (!this.model) return 'unconfigured';
+    return (await this.limits.current()).enabled ? 'active' : 'off';
+  }
+
+  /** Whether it is available (an AI, not off in the console), and how many generations are left today. */
   async status(userId: string, now = new Date()): Promise<{ enabled: boolean; remaining: number }> {
     if (!this.model) return { enabled: false, remaining: 0 };
-    const [perDay, timeZone] = await Promise.all([this.limits.generationsPerDay(), this.timeZoneOf(userId)]);
+    const [settings, timeZone] = await Promise.all([this.limits.current(), this.timeZoneOf(userId)]);
+    if (!settings.enabled) return { enabled: false, remaining: 0 };
+    const perDay = settings.generationsPerDay;
     const usage = await this.prisma.conversationUsage.findUnique({
       where: { userId_day: { userId, day: USAGE_PREFIX + localDate(now, timeZone) } },
       select: { count: true },
@@ -114,6 +128,7 @@ export class AiListsService {
   async generate(userId: string, input: GenerationInput, now = new Date()): Promise<AsyncGenerator<GenerationEvent>> {
     const model = this.model;
     if (!model) throw new ServiceUnavailableException(OFF);
+    if (!(await this.limits.current()).enabled) throw new ServiceUnavailableException(OFF_BY_ADMIN);
     const theme = typeof input.theme === 'string' ? input.theme.trim() : '';
     if (!theme || theme.length > THEME_MAX) {
       throw new BadRequestException(`The theme must have 1 to ${THEME_MAX} characters`);
@@ -145,9 +160,11 @@ export class AiListsService {
     first: IteratorResult<GeneratedEntry, GenerationSummary>,
     entries: AsyncGenerator<GeneratedEntry, GenerationSummary>,
   ): AsyncGenerator<GenerationEvent> {
+    let proposed = 0;
     try {
       let next = first;
       while (!next.done) {
+        proposed++;
         yield { event: 'entry', data: next.value };
         try {
           next = await entries.next();
@@ -161,6 +178,8 @@ export class AiListsService {
       yield { event: 'done', data: next.value };
     } finally {
       this.running.delete(userId);
+      // MEM-143: the cards proposed, sent or not yet (the user cancelled).
+      void this.usage.record(userId, { proposed });
     }
   }
 
@@ -258,6 +277,7 @@ export class AiListsService {
       ON CONFLICT ("userId", "day") DO UPDATE SET "count" = "conversation_usage"."count" + 1
       WHERE "conversation_usage"."count" < ${perDay}
       RETURNING "count"`;
+    if (counted.length > 0) await this.usage.record(userId, { generations: 1 }, now);
     if (counted.length === 0) {
       throw new HttpException(
         {
@@ -278,6 +298,7 @@ export class AiListsService {
       where: { userId, day, count: { gt: 0 } },
       data: { count: { decrement: 1 } },
     });
+    await this.usage.record(userId, { generations: -1 });
   }
 
   private async timeZoneOf(userId: string): Promise<string> {
@@ -287,6 +308,7 @@ export class AiListsService {
 
   /** The cost of a generation: who, how long, how many tokens; never the text. */
   private logUsage(userId: string, model: ConversationModel, durationMs: number, usage: ModelUsage): void {
+    void this.usage.record(userId, { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens });
     this.logger.log(
       `model call: model=${model.name} call=generation user=${userId} durationMs=${durationMs} ` +
         `inputTokens=${usage.inputTokens} outputTokens=${usage.outputTokens}`,

@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 const LINKS = [
   { href: '/admin', label: 'Utilisateurs' },
   { href: '/admin/catalogue', label: 'Catalogue' }, // MEM-116
+  { href: '/admin/consommation', label: 'Consommation IA' }, // MEM-143
   { href: '/admin/parametres', label: 'Paramètres' },
 ];
 
