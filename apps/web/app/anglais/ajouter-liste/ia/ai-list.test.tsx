@@ -135,7 +135,7 @@ afterEach(() => {
 });
 
 describe('« Générer avec l’IA »: the settings (MEM-140)', () => {
-  it('the defaults, the groups announced, the remaining generations and the notice', () => {
+  it('the defaults, the groups announced and the notice; never the count of the day', () => {
     mount();
     expect([...container.querySelectorAll('legend')].map((l) => l.textContent)).toEqual([
       'Niveau',
@@ -159,7 +159,7 @@ describe('« Générer avec l’IA »: the settings (MEM-140)', () => {
       'Expressions',
       'Les deux',
     ]);
-    expect(text()).toContain('7 générations restantes aujourd’hui');
+    expect(text()).not.toMatch(/restante/);
     expect(text()).toContain(
       'L’IA peut se tromper : relis les cartes avant de les ajouter. Ton thème est envoyé à notre prestataire d’IA.',
     );
@@ -331,7 +331,7 @@ describe('« Générer avec l’IA »: the cards proposed (MEM-141)', () => {
   });
 
   it('« Annuler » stops the generation and keeps the rows received; not given back', async () => {
-    mount();
+    mount({ remaining: 1 });
     await generateWith([entry('a ticket'), entry('a train'), done(2)], { holdAfter: 0 });
     click(button('Annuler'));
     await flush();
@@ -339,16 +339,17 @@ describe('« Générer avec l’IA »: the cards proposed (MEM-141)', () => {
     expect(text()).toContain('Génération annulée : les cartes reçues sont gardées.');
     expect(fetchMock.mock.calls[0][1].signal.aborted).toBe(true);
     click(button('Modifier les réglages'));
-    expect(text()).toContain('6 générations restantes aujourd’hui');
+    expect(button('Générer')!.disabled).toBe(true); // the last one was used
+    expect(text()).toContain('Tu as atteint la limite de générations d’aujourd’hui. Réessaie demain.');
   });
 
   it('a failure in the middle: the rows kept, the generation given back', async () => {
-    mount();
+    mount({ remaining: 1 });
     await generateWith([entry('a ticket'), { event: 'error', data: { statusCode: 502, message: 'x' } }]);
     expect(rows().map((r) => r.english)).toEqual(['a ticket']);
     expect(text()).toContain('L’IA s’est interrompue');
     click(button('Modifier les réglages'));
-    expect(text()).toContain('7 générations restantes aujourd’hui');
+    expect(button('Générer')!.disabled).toBe(false); // given back
     expect(button('Revenir aux cartes proposées')).toBeDefined();
   });
 
@@ -449,7 +450,7 @@ describe('« Générer avec l’IA »: the cards proposed (MEM-141)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(rows().map((r) => r.english)).toEqual(['a boat']);
     click(button('Modifier les réglages'));
-    expect(text()).toContain('4 générations restantes aujourd’hui');
+    expect(text()).not.toMatch(/restante/);
   });
 
   it('« Modifier les réglages » keeps the settings', async () => {
@@ -541,5 +542,175 @@ describe('« Générer avec l’IA »: the cards proposed (MEM-141)', () => {
     const after = new Event('beforeunload', { cancelable: true });
     window.dispatchEvent(after);
     expect(after.defaultPrevented).toBe(true);
+  });
+});
+
+describe('« Générer avec l’IA »: « Proposer d’autres » (MEM-142)', () => {
+  async function generateWith(events: { event: string; data: unknown }[]) {
+    fetchMock.mockImplementation(sse(events).fetch);
+    click(button('Générer'));
+    await flush();
+  }
+  const replaceButton = () => button('Proposer d’autres')!;
+  const uncheck = (english: string) => click(container.querySelector(`tbody input[aria-label="${english}"]`));
+  const lastBody = () => JSON.parse(fetchMock.mock.calls.at(-1)![1].body as string);
+
+  it('off until a row is unchecked, and why', async () => {
+    mount();
+    await generateWith([entry('a ticket'), entry('a train'), done(2)]);
+    expect(replaceButton().disabled).toBe(true);
+    expect(text()).toContain('Décoche les cartes à remplacer.');
+    expect(replaceButton().getAttribute('aria-describedby')).toBe('ai-preview-replace-hint');
+    uncheck('a train');
+    expect(replaceButton().disabled).toBe(false);
+    expect(text()).not.toContain('Décoche les cartes à remplacer.');
+  });
+
+  it('keeps the rows checked (corrected too), replaces the unchecked ones in their place; counts a generation', async () => {
+    mount({ remaining: 3 });
+    click(radio('level', 'A2'));
+    click(radio('theme', 'Santé et bien-être'));
+    click(radio('kind', 'Words'));
+    await generateWith([entry('a ticket'), entry('a train'), entry('a plane'), entry('a boat'), done(4)]);
+    click($('.ai-preview__french .ai-cell'));
+    type($<HTMLInputElement>('.ai-preview__french input')!, 'un billet');
+    key($('.ai-preview__french input')!, 'Enter');
+    uncheck('a train');
+    uncheck('a boat');
+
+    const stream = sse([entry('a car'), entry('a bike'), done(2)], { holdAfter: 0 });
+    fetchMock.mockImplementation(stream.fetch);
+    click(replaceButton());
+    await flush();
+    // The same settings, the number of rows to replace, all the English proposed.
+    expect(lastBody()).toEqual({
+      level: 'A2',
+      theme: 'Santé et bien-être',
+      count: 2,
+      kind: 'Words',
+      exclude: ['a ticket', 'a train', 'a plane', 'a boat'],
+    });
+    // As they come: the first one in the place of the first row unchecked.
+    expect(text()).toContain('Génération en cours… 1 / 2');
+    expect(rows().map((r) => r.english)).toEqual(['a ticket', 'a car', 'a plane', 'a boat']);
+    expect(replaceButton().disabled).toBe(true);
+    expect(addButton()!.disabled).toBe(true);
+    await act(async () => stream.release());
+    await flush();
+    expect(rows()).toEqual([
+      { english: 'a ticket', checked: true, disabled: false },
+      { english: 'a car', checked: true, disabled: false },
+      { english: 'a plane', checked: true, disabled: false },
+      { english: 'a bike', checked: true, disabled: false },
+    ]);
+    expect(plain($('tbody tr .ai-preview__french'))).toContain('un billet');
+    expect(text()).toContain('2 cartes remplacées.');
+
+    // Again: what was replaced is not proposed again; the last generation of the day.
+    uncheck('a plane');
+    fetchMock.mockImplementation(sse([entry('a bus'), done(1)]).fetch);
+    click(replaceButton());
+    await flush();
+    expect([...lastBody().exclude].sort()).toEqual(['a bike', 'a boat', 'a car', 'a plane', 'a ticket', 'a train']);
+    expect(text()).toContain('1 carte remplacée.');
+    uncheck('a bus');
+    expect(replaceButton().disabled).toBe(true);
+    expect(replaceButton().getAttribute('aria-describedby')).toBe('ai-preview-limit');
+    expect(text()).toContain('Tu as atteint la limite de générations d’aujourd’hui. Réessaie demain.');
+  });
+
+  it('the English sent: 60 at most, the most recent', async () => {
+    mount();
+    await generateWith([...Array.from({ length: 20 }, (_, i) => entry(`w${i}`)), done(20)]);
+    for (let round = 0; round < 3; round++) {
+      click($('thead input[type="checkbox"]')); // all unchecked
+      fetchMock.mockImplementation(
+        sse([...Array.from({ length: 20 }, (_, i) => entry(`r${round}-${i}`)), done(20)]).fetch,
+      );
+      click(replaceButton());
+      await flush();
+    }
+    click($('thead input[type="checkbox"]'));
+    fetchMock.mockImplementation(sse([entry('last'), done(1)]).fetch);
+    click(replaceButton());
+    await flush();
+    const exclude = lastBody().exclude as string[];
+    expect(exclude).toHaveLength(60);
+    expect(exclude[0]).toBe('r0-0');
+    expect(exclude.at(-1)).toBe('r2-19');
+  });
+
+  it('fewer new cards than rows to replace: those left are taken away, and why', async () => {
+    mount();
+    await generateWith([entry('a ticket'), entry('a train'), entry('a plane'), done(3)]);
+    uncheck('a ticket');
+    uncheck('a plane');
+    fetchMock.mockImplementation(sse([entry('a car'), done(1, 4)]).fetch);
+    click(replaceButton());
+    await flush();
+    expect(rows().map((r) => r.english)).toEqual(['a car', 'a train']);
+    expect(text()).toContain(
+      '1 carte remplacée. Pas assez de nouvelles propositions. Modifie les réglages pour en obtenir d’autres.',
+    );
+  });
+
+  it('a failure leaves the preview as it was, with « Réessayer »; not counted', async () => {
+    mount({ remaining: 1 });
+    await generateWith([entry('a ticket'), entry('a train'), done(2)]);
+    // The last generation of the day was used: given back below.
+    expect(replaceButton().disabled).toBe(true);
+
+    act(() => root.unmount());
+    container.remove();
+    mount({ remaining: 2 });
+    await generateWith([entry('a ticket'), entry('a train'), entry('a plane'), done(3)]);
+    uncheck('a train');
+    uncheck('a plane');
+    fetchMock.mockResolvedValueOnce(Response.json({ message: 'busy' }, { status: 503 }));
+    click(replaceButton());
+    await flush();
+    expect(rows()).toEqual([
+      { english: 'a ticket', checked: true, disabled: false },
+      { english: 'a train', checked: false, disabled: false },
+      { english: 'a plane', checked: false, disabled: false },
+    ]);
+    expect(text()).toContain('L’IA est occupée pour le moment : réessaie dans un instant.');
+    expect(container.querySelector('tr.is-replacing')).toBeNull();
+
+    // In the middle: the cards received are kept, the others as they were; given back.
+    fetchMock.mockImplementation(
+      sse([entry('a car'), { event: 'error', data: { statusCode: 502, message: 'x' } }]).fetch,
+    );
+    click(button('Réessayer'));
+    await flush();
+    expect(rows().map((r) => [r.english, r.checked])).toEqual([
+      ['a ticket', true],
+      ['a car', true],
+      ['a plane', false],
+    ]);
+    expect(text()).toContain('L’IA s’est interrompue : 1 sur 2 remplacées, les autres sont inchangées.');
+    expect(replaceButton().disabled).toBe(false); // still one generation left
+    fetchMock.mockImplementation(sse([entry('a bus'), done(1)]).fetch);
+    click(button('Réessayer'));
+    await flush();
+    expect(rows().map((r) => r.english)).toEqual(['a ticket', 'a car', 'a bus']);
+    expect(lastBody().count).toBe(1);
+  });
+
+  it('« Annuler » keeps what came, the rest as it was', async () => {
+    mount();
+    await generateWith([entry('a ticket'), entry('a train'), done(2)]);
+    uncheck('a ticket');
+    uncheck('a train');
+    fetchMock.mockImplementation(sse([entry('a car'), entry('a bike'), done(2)], { holdAfter: 0 }).fetch);
+    click(replaceButton());
+    await flush();
+    click(button('Annuler'));
+    await flush();
+    expect(rows().map((r) => [r.english, r.checked])).toEqual([
+      ['a car', true],
+      ['a train', false],
+    ]);
+    expect(text()).toContain('Annulé : 1 carte remplacée, les autres sont inchangées.');
   });
 });

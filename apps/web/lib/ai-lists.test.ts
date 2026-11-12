@@ -1,13 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { fewerText, fieldError, readSettings, refusalText, remainingText, settingsSummary, themeOf } from './ai-lists';
+import {
+  excludeOf,
+  fewerText,
+  fieldError,
+  readSettings,
+  refusalText,
+  replacedText,
+  settingsSummary,
+  themeOf,
+} from './ai-lists';
 
 const nb = (text: string) => text.replace(/ /g, ' ');
 
 describe('« Générer avec l’IA »: the words of the screens (MEM-140/141)', () => {
-  it('the generations left, the summary, the fewer cards', () => {
-    expect(nb(remainingText(7))).toBe('7 générations restantes aujourd’hui');
-    expect(nb(remainingText(1))).toBe('1 génération restante aujourd’hui');
-    expect(nb(remainingText(0))).toBe('0 génération restante aujourd’hui');
+  it('the summary, the fewer cards, the cards replaced', () => {
+    expect(replacedText(3)).toBe('3 cartes remplacées.');
+    expect(replacedText(1)).toBe('1 carte remplacée.');
     const settings = readSettings(null);
     expect(nb(settingsSummary({ ...settings, theme: null, customTheme: '  le football ' }))).toBe(
       'B1 · le football · 10 cartes',
@@ -15,6 +23,12 @@ describe('« Générer avec l’IA »: the words of the screens (MEM-140/141)', 
     expect(nb(fewerText(7, 3))).toBe('7 cartes proposées : 3 étaient déjà dans ta liste.');
     expect(nb(fewerText(1, 1))).toBe('1 carte proposée : 1 était déjà dans ta liste.');
     expect(nb(fewerText(4, 0))).toBe('4 cartes proposées.');
+  });
+
+  it('the English already proposed (MEM-142): without repeats, the 60 most recent', () => {
+    expect(excludeOf(['a bus', ' A Bus ', 'a train', '', 'a bus'])).toEqual(['a train', 'a bus']);
+    const many = Array.from({ length: 70 }, (_, i) => `w${i}`);
+    expect(excludeOf(many)).toEqual(many.slice(10));
   });
 
   it('the theme sent: the predefined one, or the free one trimmed', () => {

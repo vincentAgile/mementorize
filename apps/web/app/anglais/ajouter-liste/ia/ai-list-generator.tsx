@@ -7,6 +7,8 @@ import {
   type AiListSettings,
   DEFAULT_SETTINGS,
   duplicateKey,
+  excludeOf,
+  type GeneratedEntry,
   type GenerationEvent,
   readSettings,
   refusalText,
@@ -34,8 +36,10 @@ const storage = () => {
 /**
  * MEM-140/141: « Générer avec l'IA », the settings then the preview, on one
  * page. « Générer » waits for the first card (the button is off), then shows
- * the preview, where the cards come one by one. Leaving the page with cards
- * not added asks first (a link of the app, or closing the tab).
+ * the preview, where the cards come one by one. « Proposer d'autres »
+ * (MEM-142) puts new cards in the place of the rows unchecked, the others
+ * kept as they are. Leaving the page with cards not added asks first (a link
+ * of the app, or closing the tab).
  */
 export function AiListGenerator({
   remaining: initialRemaining,
@@ -63,6 +67,8 @@ export function AiListGenerator({
   const [adding, startAdding] = useTransition();
   const controller = useRef<AbortController | null>(null);
   const nextId = useRef(1);
+  /** The English proposed since the last full generation, in order: not proposed again (MEM-142). */
+  const proposed = useRef<string[]>([]);
   const regenerate = useRef<HTMLDialogElement>(null);
   const leave = useRef<HTMLDialogElement>(null);
   const [leaveHref, setLeaveHref] = useState<string | null>(null);
@@ -112,6 +118,83 @@ export function AiListGenerator({
     saveSettings(storage(), next);
   }
 
+  /** A row of the preview for a card proposed: checked. */
+  const rowOf = (entry: GeneratedEntry): PreviewRow => {
+    proposed.current.push(entry.english);
+    return {
+      id: nextId.current++,
+      english: entry.english,
+      french: entry.french,
+      example: entry.example ?? '',
+      frenchExample: entry.frenchExample ?? '',
+      checked: true,
+      edited: false,
+    };
+  };
+
+  /**
+   * Calls the route: the response of a stream, or null once the refusal is
+   * said (on the settings, or in the preview while replacing).
+   */
+  async function ask(body: object, abort: AbortController, replacing: boolean): Promise<Response | null> {
+    let response: Response;
+    try {
+      response = await fetch(AI_GENERATE_HREF, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: abort.signal,
+      });
+    } catch {
+      response = new Response(null, { status: 502 });
+    }
+    if (response.ok && response.body) {
+      // Counted, even if cancelled later (only a failure is given back).
+      setRemaining((count) => Math.max(0, count - 1));
+      return response;
+    }
+    const refused = (await response.json().catch(() => null)) as { reason?: unknown } | null;
+    const limit = response.status === 429 && refused?.reason === 'daily-limit';
+    if (limit) setRemaining(0);
+    if (replacing)
+      setPhase(
+        limit ? { kind: 'idle' } : { kind: 'failed', message: refusalText(response.status, refused), retry: true },
+      );
+    if (!replacing || limit) setRefusal(refusalText(response.status, refused));
+    return null;
+  }
+
+  /** Reads the events of a generation; `onEntry` for each card. How it ended: done, failed or cancelled. */
+  async function read(
+    response: Response,
+    abort: AbortController,
+    onEntry: (entry: GeneratedEntry) => void,
+  ): Promise<
+    { kind: 'done'; proposed: number; skipped: number } | { kind: 'failed'; midway: boolean } | { kind: 'cancelled' }
+  > {
+    const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader();
+    const events = sseReader();
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) return { kind: 'failed', midway: false };
+        for (const item of events.push(value) as unknown as GenerationEvent[]) {
+          if (item.event === 'entry') onEntry(item.data);
+          else if (item.event === 'done') {
+            return { kind: 'done', proposed: item.data.proposed, skipped: item.data.skippedDuplicates };
+          } else if (item.event === 'error') {
+            setRemaining((count) => count + 1); // a failure doesn't count
+            return { kind: 'failed', midway: true };
+          }
+        }
+      }
+    } catch {
+      return abort.signal.aborted ? { kind: 'cancelled' } : { kind: 'failed', midway: false };
+    } finally {
+      if (controller.current === abort) controller.current = null;
+    }
+  }
+
   /** Asks for cards with these settings: the preview once the first one comes, else the reason on the screen. */
   async function generate(chosen: AiListSettings) {
     if (waiting || phase.kind === 'running') return;
@@ -120,75 +203,89 @@ export function AiListGenerator({
     setWaiting(true);
     const abort = new AbortController();
     controller.current = abort;
-    let response: Response;
-    try {
-      response = await fetch(AI_GENERATE_HREF, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ level: chosen.level, theme: themeOf(chosen), count: chosen.count, kind: chosen.kind }),
-        signal: abort.signal,
-      });
-    } catch {
-      setWaiting(false);
-      setRefusal(refusalText(0, null));
-      return;
-    }
-    if (!response.ok || !response.body) {
-      const body = (await response.json().catch(() => null)) as { reason?: unknown } | null;
-      setWaiting(false);
-      if (response.status === 429 && body?.reason === 'daily-limit') setRemaining(0);
-      setRefusal(refusalText(response.status, body));
-      return;
-    }
-    // Counted, even if cancelled later (only a failure is given back).
-    setRemaining((count) => Math.max(0, count - 1));
+    const body = { level: chosen.level, theme: themeOf(chosen), count: chosen.count, kind: chosen.kind };
+    const response = await ask(body, abort, false);
     setWaiting(false);
+    if (!response) return;
+    proposed.current = [];
     setGenerated(chosen);
     setRows([]);
     setResult(null);
     setPhase({ kind: 'running' });
     setView('preview');
 
-    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-    const events = sseReader();
-    let ended = false;
-    try {
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        for (const item of events.push(value) as unknown as GenerationEvent[]) {
-          if (item.event === 'entry') {
-            const entry = item.data;
-            setRows((current) => [
-              ...current,
-              {
-                id: nextId.current++,
-                english: entry.english,
-                french: entry.french,
-                example: entry.example ?? '',
-                frenchExample: entry.frenchExample ?? '',
-                checked: true,
-                edited: false,
-              },
-            ]);
-          } else if (item.event === 'done') {
-            ended = true;
-            setPhase({ kind: 'done', proposed: item.data.proposed, skipped: item.data.skippedDuplicates });
-          } else if (item.event === 'error') {
-            ended = true;
-            setRemaining((count) => count + 1); // a failure doesn't count
-            setPhase({
-              kind: 'failed',
-              message: 'L’IA s’est interrompue : les cartes reçues sont gardées. Tu peux regénérer.',
-            });
-          }
-        }
-      }
-      if (!ended) setPhase({ kind: 'failed', message: 'La génération s’est interrompue : réessaie.' });
-    } catch {
-      setPhase(abort.signal.aborted ? { kind: 'cancelled' } : { kind: 'failed', message: refusalText(0, null) });
-    } finally {
-      if (controller.current === abort) controller.current = null;
+    const end = await read(response, abort, (entry) => setRows((current) => [...current, rowOf(entry)]));
+    if (end.kind === 'done') setPhase(end);
+    else if (end.kind === 'cancelled') setPhase(end);
+    else if (end.midway) {
+      setPhase({
+        kind: 'failed',
+        message: 'L’IA s’est interrompue : les cartes reçues sont gardées. Tu peux regénérer.',
+      });
+    } else setPhase({ kind: 'failed', message: 'La génération s’est interrompue : réessaie.' });
+  }
+
+  /**
+   * MEM-142: « Proposer d'autres »: new cards in the place of the rows
+   * unchecked (or already in « Ma liste »), as they come; the rows checked,
+   * corrected or not, stay. The same settings; the English proposed in this
+   * preview is not proposed again. Counts as a generation. A failure leaves
+   * the rows not replaced yet as they were.
+   */
+  async function replace() {
+    if (phase.kind === 'running' || remaining <= 0) return;
+    const targets = rows.filter((row) => !row.checked || owned.has(duplicateKey(row.english))).map((row) => row.id);
+    if (targets.length === 0) return;
+    const abort = new AbortController();
+    controller.current = abort;
+    setRefusal(null);
+    setResult(null);
+    setPhase({ kind: 'running', replace: { received: 0, total: targets.length } });
+    setRows((current) => current.map((row) => (targets.includes(row.id) ? { ...row, replacing: true } : row)));
+    const body = {
+      level: generated.level,
+      theme: themeOf(generated),
+      count: targets.length,
+      kind: generated.kind,
+      exclude: excludeOf([...proposed.current, ...rows.map((row) => row.english)]),
+    };
+    const response = await ask(body, abort, true);
+    const left = [...targets];
+    const settle = () =>
+      setRows((current) => current.map((row) => (row.replacing ? { ...row, replacing: false } : row)));
+    if (!response) {
+      settle();
+      return;
+    }
+    let received = 0;
+    const end = await read(response, abort, (entry) => {
+      const row = rowOf(entry);
+      const target = left.shift();
+      received++;
+      setPhase({ kind: 'running', replace: { received, total: targets.length } });
+      setRows((current) =>
+        current.some((other) => other.id === target)
+          ? current.map((other) => (other.id === target ? row : other))
+          : [...current, row],
+      );
+    });
+    if (end.kind === 'done') {
+      // Fewer new cards than rows to replace: the rows left are taken away.
+      setRows((current) => current.filter((row) => !left.includes(row.id)));
+      setPhase({ kind: 'replaced', replaced: received, missing: left.length });
+      return;
+    }
+    settle();
+    if (end.kind === 'cancelled') setPhase({ kind: 'cancelled', replaced: received });
+    else {
+      setPhase({
+        kind: 'failed',
+        message:
+          received > 0
+            ? `L’IA s’est interrompue : ${received} sur ${targets.length} remplacées, les autres sont inchangées.`
+            : 'L’IA n’a pas répondu : les cartes sont inchangées.',
+        retry: true,
+      });
     }
   }
 
@@ -253,10 +350,11 @@ export function AiListGenerator({
           onRows={setRows}
           onCancel={() => controller.current?.abort()}
           onRegenerate={regenerateAll}
+          onReplace={() => void replace()}
           onEditSettings={toSettings}
           onAdd={add}
           adding={adding}
-          result={result ?? (refusal ? { error: refusal } : null)}
+          result={result ?? (refusal && remaining > 0 ? { error: refusal } : null)}
           learnHref={learnHref}
           onMore={toSettings}
         />

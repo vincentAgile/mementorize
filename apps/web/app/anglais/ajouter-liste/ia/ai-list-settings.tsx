@@ -7,7 +7,6 @@ import {
   DAILY_LIMIT,
   KINDS,
   PRIVACY,
-  remainingText,
   THEME_COUNTER_FROM,
   THEME_MAX,
   THEME_REQUIRED,
@@ -200,13 +199,19 @@ export function AiListSettingsForm({
           <button
             type="submit"
             disabled={missingTheme || exhausted || pending}
-            aria-describedby={missingTheme ? 'ai-custom-theme-help ai-settings-remaining' : 'ai-settings-remaining'}
+            aria-describedby={
+              [missingTheme && 'ai-custom-theme-help', exhausted && 'ai-settings-remaining']
+                .filter(Boolean)
+                .join(' ') || undefined
+            }
           >
             {pending ? 'Génération…' : 'Générer'}
           </button>
-          <p id="ai-settings-remaining" className="ai-settings__remaining">
-            {exhausted ? DAILY_LIMIT : remainingText(remaining)}
-          </p>
+          {exhausted && (
+            <p id="ai-settings-remaining" className="ai-settings__remaining">
+              {DAILY_LIMIT}
+            </p>
+          )}
         </div>
         <p className="ai-settings__privacy">{PRIVACY}</p>
       </form>

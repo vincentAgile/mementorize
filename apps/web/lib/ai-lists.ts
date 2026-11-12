@@ -155,6 +155,28 @@ export type GenerationEvent =
   | { event: 'done'; data: { proposed: number; skippedDuplicates: number } }
   | { event: 'error'; data: { statusCode: number; message: string } };
 
+/** MEM-142: « Proposer d'autres » without a row unchecked. */
+export const REPLACE_HINT = 'Décoche les cartes à remplacer.';
+export const NOT_ENOUGH = 'Pas assez de nouvelles propositions. Modifie les réglages pour en obtenir d’autres.';
+/** The English already proposed sent to the API, at most (the most recent). */
+export const EXCLUDE_MAX = 60;
+
+/** « 3 cartes remplacées », « 1 carte remplacée ». */
+export const replacedText = (count: number) =>
+  count > 1 ? `${count} cartes remplacées.` : `${count} carte remplacée.`;
+
+/** The English proposed in this preview, oldest first, without repeats (the last time counts): the 60 most recent. */
+export function excludeOf(proposed: string[]): string[] {
+  const latest = new Map<string, string>();
+  for (const english of proposed) {
+    const key = duplicateKey(english);
+    if (!key) continue;
+    latest.delete(key);
+    latest.set(key, english.trim());
+  }
+  return [...latest.values()].slice(-EXCLUDE_MAX);
+}
+
 /** What a refusal of the API, before the stream, means for the user. */
 export function refusalText(status: number, body: { reason?: unknown } | null): string {
   if (status === 429 && body?.reason === 'daily-limit') return DAILY_LIMIT;

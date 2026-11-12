@@ -124,7 +124,9 @@ describe('Cards proposed by the AI (e2e, MEM-139)', () => {
     const auth = await register('fields');
     for (const body of [
       { level: 'D1' },
-      { count: 7 },
+      { count: 0 },
+      { count: 21 },
+      { count: 2.5 },
       { count: '10' },
       { kind: 'All' },
       { theme: '   ' },
@@ -137,8 +139,10 @@ describe('Cards proposed by the AI (e2e, MEM-139)', () => {
       await generate(auth, body).expect(400);
     }
     expect(fake.generations).toEqual([]);
-    for (const count of [5, 10, 15, 20]) await generate(auth, { count, theme: ` ${'a'.repeat(80)} ` }).expect(200);
-    expect(fake.generations.map((g) => g.count)).toEqual([10, 15, 20, 25]);
+    // 1 to 20: the settings (5, 10, 15, 20), or the rows to replace (MEM-142).
+    for (const count of [1, 3, 5, 10, 15, 20])
+      await generate(auth, { count, theme: ` ${'a'.repeat(80)} ` }).expect(200);
+    expect(fake.generations.map((g) => g.count)).toEqual([6, 8, 10, 15, 20, 25]);
   });
 
   it('removes the duplicates: in the answer, in « Ma liste », already proposed; never sends « Ma liste »', async () => {
