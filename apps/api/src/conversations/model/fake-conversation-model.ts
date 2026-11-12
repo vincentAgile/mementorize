@@ -16,7 +16,7 @@ import {
 export class FakeConversationModel implements ConversationModel {
   readonly name = 'fake';
   /** Every history received, for the tests. */
-  readonly calls: { kind: 'evaluate' | 'reply'; history: ChatTurn[] }[] = [];
+  readonly calls: { kind: 'evaluate' | 'reply'; history: ChatTurn[]; maxWords?: number }[] = [];
   failure: { kind: 'busy' | 'failed'; during: 'evaluate' | 'reply' | 'stream' | 'generate' } | null = null;
   /** MEM-139: every generation asked, and the entries to give next (else made up from the request). */
   readonly generations: GenerationRequest[] = [];
@@ -48,8 +48,8 @@ export class FakeConversationModel implements ConversationModel {
     return { evaluation, usage: { inputTokens: 10 * history.length, outputTokens: 20 } };
   }
 
-  async *reply(history: ChatTurn[]): AsyncGenerator<string, ModelUsage, void> {
-    this.calls.push({ kind: 'reply', history });
+  async *reply(history: ChatTurn[], options: { maxWords?: number } = {}): AsyncGenerator<string, ModelUsage, void> {
+    this.calls.push({ kind: 'reply', history, ...(options.maxWords !== undefined && { maxWords: options.maxWords }) });
     if (this.failure?.during === 'reply') throw new ConversationModelError(this.failure.kind, 'Fake failure');
     const words = `You said: « ${history.at(-1)?.text ?? ''} ». Tell me more?`.split(' ');
     for (const [index, word] of words.entries()) {

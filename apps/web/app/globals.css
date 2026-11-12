@@ -3899,7 +3899,8 @@ div.review-card__reveal-row {
 }
 
 .admin-settings {
-  max-width: 40rem;
+  /* MEM-135: the width of the users' Réglages (the column of a page, 960px, without its margins) */
+  max-width: calc(960px - 4rem);
 }
 
 .admin-settings h2 {
@@ -3986,7 +3987,45 @@ div.review-card__reveal-row {
   width: 7rem;
 }
 
+/* MEM-135: as the users' Réglages, on a computer, each field opposite its
+   label; the labels of a block line up (a column of at least 10rem), the
+   help and the error under the field. */
+@media (min-width: 640px) {
+  .admin-settings__form {
+    display: grid;
+    grid-template-columns: minmax(10rem, max-content) minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem 1rem;
+  }
+
+  .admin-settings__form > label:not(.admin-settings__check) {
+    display: contents;
+  }
+
+  .admin-settings__form > label > input {
+    justify-self: start;
+  }
+
+  .admin-settings__form > label > .settings__hint,
+  .admin-settings__form > label > .field-error {
+    grid-column: 2;
+    margin-top: -0.5rem;
+  }
+
+  .admin-settings__form > :not(label),
+  .admin-settings__form > .admin-settings__check {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
 /* MEM-143: Console › Consommation IA */
+.admin-usage + .admin-usage {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
 .admin-usage__scroll {
   overflow-x: auto;
   margin: 1rem 0 1.5rem;

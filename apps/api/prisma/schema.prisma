@@ -31,6 +31,8 @@ model User {
   conversationUsage ConversationUsage[]
   /// What the user's generations of cards by the AI cost, per day (MEM-143).
   aiListUsage       AiListUsage[]
+  /// What the user's Chat IA costs, per day (MEM-135).
+  chatUsage         ChatUsage[]
 
   /// E-mail reminder of the due reviews (phase 11), once a day at most.
   /// Off until the user turns it on in the settings.
@@ -529,4 +531,25 @@ model AiListUsage {
   @@id([userId, day])
   @@index([day])
   @@map("ai_list_usage")
+}
+
+/// MEM-135: the counters of the Chat IA, per user and per day, for the
+/// console: numbers only, never the text of a conversation. Kept 13 months.
+/// Apart from conversation_usage, the daily cap of each user (in their time
+/// zone, kept a week).
+model ChatUsage {
+  userId        String
+  user          User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// YYYY-MM-DD, in Europe/Paris (the console's days).
+  day           String
+  conversations Int    @default(0)
+  /// Messages of the user that got their reply (a failure gives one back).
+  messages      Int    @default(0)
+  /// Of the evaluations and the replies.
+  inputTokens   Int    @default(0)
+  outputTokens  Int    @default(0)
+
+  @@id([userId, day])
+  @@index([day])
+  @@map("chat_usage")
 }

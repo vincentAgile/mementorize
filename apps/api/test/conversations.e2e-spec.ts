@@ -14,6 +14,8 @@ import { ConversationsService } from '../src/conversations/conversations.service
 import { CONVERSATION_MODEL, type ConversationModel } from '../src/conversations/model/conversation-model.js';
 import { FakeConversationModel } from '../src/conversations/model/fake-conversation-model.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
+import { run } from '../src/admin/admin-cli.js';
+import { ChatUsageService } from '../src/conversations/chat-usage.service.js';
 
 /** The accounts the conversations are open to, as CONVERSATION_ALLOWED_EMAILS would say. */
 const accessFor = (value: string) => new ConversationAccess({ get: () => value } as unknown as ConfigService);
@@ -122,6 +124,8 @@ describe('Conversations with the AI (e2e, MEM-130)', () => {
   beforeAll(async () => {
     app = await start(fake);
     prisma = app.get(PrismaService);
+    // The parameters of the console (MEM-135): the defaults, whatever an earlier run left.
+    await prisma.appSetting.deleteMany({ where: { key: 'chat' } });
   });
   beforeEach(() => {
     fake.failure = null;
@@ -135,7 +139,7 @@ describe('Conversations with the AI (e2e, MEM-130)', () => {
     const { auth } = await register('create');
     expect((await http().get('/conversations/status').set(auth).expect(200)).body).toEqual({
       enabled: true,
-      limits: { messagesPerDay: 30, messagesPerConversation: 20, maxLength: 1000 },
+      limits: { messagesPerDay: 30, messagesPerConversation: 20, maxLength: 1000, maxReplyWords: 120 },
       usedToday: 0,
       resetAt: expect.stringMatching(/^\d{4}-\d\d-\d\dT/),
       voiceInput: true, // MEM-133: Azure configured
@@ -600,5 +604,197 @@ describe('Conversations without AI model (e2e, MEM-130)', () => {
     await http().get(`/conversations/${id}`).set(auth).expect(503);
     await http().delete(`/conversations/${id}`).set(auth).expect(503);
     await http().post(`/conversations/${id}/messages`).set(auth).send({ text: 'Hi' }).expect(503);
+  });
+});
+
+describe('The Chat IA in the console (e2e, MEM-135)', () => {
+  const fake = new FakeConversationModel();
+  let app: NestExpressApplication;
+  let prisma: PrismaService;
+  let admin: { Authorization: string };
+  const http = () => request(app.getHttpServer());
+  const adminEmail = `chat-admin-${unique}@e2e.test`;
+  const password = 'a long admin password';
+  const defaults = { enabled: true, messagesPerDay: 30, messagesPerConversation: 20, maxReplyWords: 120 };
+
+  async function register(name: string) {
+    const email = `chat-console-${name}-${unique}@e2e.test`;
+    const res = await http().post('/auth/register').send({ email, password: 'password123' }).expect(201);
+    const user = await prisma.user.findUniqueOrThrow({ where: { email }, select: { id: true } });
+    return { auth: { Authorization: `Bearer ${res.body.accessToken as string}` }, userId: user.id, email };
+  }
+  const send = (auth: Record<string, string>, id: string, text: string) =>
+    http()
+      .post(`/conversations/${id}/messages`)
+      .set(auth)
+      .send({ text })
+      .buffer(true)
+      .parse((res, callback) => {
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk: string) => (data += chunk));
+        res.on('end', () => callback(null, data));
+      });
+  const put = (body: Record<string, unknown>) => http().put('/admin/chat/settings').set(admin).send(body);
+  const aiListsSetting = () => prisma.appSetting.findUnique({ where: { key: 'ai-lists' } });
+
+  beforeAll(async () => {
+    process.env.ADMIN_JWT_SECRET = 'e2e-admin-secret';
+    process.env.ADMIN_TOTP_ENCRYPTION_KEY = 'e2e0'.repeat(16);
+    app = await start(fake);
+    prisma = app.get(PrismaService);
+    await prisma.appSetting.deleteMany({ where: { key: 'chat' } });
+    await run(['create', adminEmail], prisma, async () => password);
+    await prisma.adminAccount.update({ where: { email: adminEmail }, data: { totpDisabledAt: new Date() } });
+    const login = await http().post('/admin/auth/login').send({ email: adminEmail, password }).expect(200);
+    admin = { Authorization: `Bearer ${login.body.session.accessToken as string}` };
+  });
+  beforeEach(() => {
+    fake.failure = null;
+    fake.calls.length = 0;
+  });
+  afterAll(async () => {
+    await prisma?.appSetting.deleteMany({ where: { key: 'chat' } });
+    await prisma?.adminAccount.deleteMany({ where: { email: adminEmail } });
+    await app?.close();
+  });
+
+  it('reads and sets the parameters: the defaults, the bounds; nothing with a user token', async () => {
+    expect((await http().get('/admin/chat/settings').set(admin).expect(200)).body).toEqual({
+      ...defaults,
+      state: 'active',
+    });
+    for (const body of [
+      { ...defaults, messagesPerDay: 0 },
+      { ...defaults, messagesPerDay: 501 },
+      { ...defaults, messagesPerConversation: 1 },
+      { ...defaults, messagesPerConversation: 101 },
+      { ...defaults, maxReplyWords: 29 },
+      { ...defaults, maxReplyWords: 301 },
+      { ...defaults, maxReplyWords: 50.5 },
+      { ...defaults, messagesPerDay: '30' },
+      { ...defaults, enabled: 'yes' },
+      { messagesPerDay: 30, messagesPerConversation: 20, maxReplyWords: 120 },
+    ]) {
+      await put(body).expect(400);
+    }
+    const bounds = { enabled: true, messagesPerDay: 500, messagesPerConversation: 2, maxReplyWords: 300 };
+    expect((await put(bounds).expect(200)).body).toEqual({ ...bounds, state: 'active' });
+    await put({ ...bounds, messagesPerDay: 1, messagesPerConversation: 100, maxReplyWords: 30 }).expect(200);
+    await put(defaults).expect(200);
+
+    const { auth } = await register('token');
+    await http().get('/admin/chat/settings').set(auth).expect(401);
+    await http().put('/admin/chat/settings').set(auth).send(defaults).expect(401);
+    await http().get('/admin/chat/usage').set(auth).expect(401);
+    await http().get('/admin/chat/usage').expect(401);
+  });
+
+  it('the limits and the length of the replies apply at once', async () => {
+    await put({ enabled: true, messagesPerDay: 3, messagesPerConversation: 2, maxReplyWords: 45 }).expect(200);
+    const { auth } = await register('limits');
+    expect((await http().get('/conversations/status').set(auth).expect(200)).body.limits).toEqual({
+      messagesPerDay: 3,
+      messagesPerConversation: 2,
+      maxLength: 1000,
+      maxReplyWords: 45,
+    });
+    const { body: first } = await http().post('/conversations').set(auth).expect(201);
+    await send(auth, first.id, 'hello there').expect(200);
+    expect(fake.calls.find((call) => call.kind === 'reply')?.maxWords).toBe(45);
+    await send(auth, first.id, 'how are you').expect(200);
+    expect(JSON.parse((await send(auth, first.id, 'third one').expect(429)).body as string)).toMatchObject({
+      reason: 'conversation-limit',
+    });
+    const { body: second } = await http().post('/conversations').set(auth).expect(201);
+    await send(auth, second.id, 'a new one').expect(200);
+    expect(JSON.parse((await send(auth, second.id, 'one more').expect(429)).body as string)).toMatchObject({
+      reason: 'daily-limit',
+    });
+    await put(defaults).expect(200);
+    await send(auth, second.id, 'one more').expect(200);
+  });
+
+  it('off for everyone: status off, 503; « Générer avec l’IA » is not touched', async () => {
+    const { auth } = await register('off');
+    const { body: conversation } = await http().post('/conversations').set(auth).expect(201);
+    const before = await aiListsSetting();
+    expect((await put({ ...defaults, enabled: false }).expect(200)).body.state).toBe('off');
+    expect((await http().get('/conversations/status').set(auth).expect(200)).body).toEqual({ enabled: false });
+    await http().post('/conversations').set(auth).expect(503);
+    await send(auth, conversation.id, 'hello').expect(503);
+    expect(await aiListsSetting()).toEqual(before); // the parameters of the other feature, as they were
+    await put(defaults).expect(200);
+    await send(auth, conversation.id, 'hello').expect(200);
+  });
+
+  it('counts each day: conversations, messages, active users, tokens; the top users; never a text', async () => {
+    const first = await register('usage-a');
+    const second = await register('usage-b');
+    const before = (await http().get('/admin/chat/usage').set(admin).expect(200)).body;
+    const today = before.days[0];
+
+    const { body: a } = await http().post('/conversations').set(first.auth).expect(201);
+    await send(first.auth, a.id, 'my secret holiday plans').expect(200);
+    await send(first.auth, a.id, 'and more').expect(200);
+    const { body: b } = await http().post('/conversations').set(second.auth).expect(201);
+    fake.failure = { kind: 'failed', during: 'reply' };
+    await send(second.auth, b.id, 'this one fails').expect(502); // given back: not counted
+    fake.failure = null;
+    await send(second.auth, b.id, 'this one works').expect(200);
+    await new Promise((resolve) => setTimeout(resolve, 100)); // the counters are written beside the calls
+
+    const report = (await http().get('/admin/chat/usage').set(admin).expect(200)).body;
+    expect(report.days).toHaveLength(30);
+    expect(report.days[0]).toMatchObject({
+      day: today.day,
+      conversations: today.conversations + 2,
+      messages: today.messages + 3,
+      activeUsers: today.activeUsers + 2,
+    });
+    expect(report.days[0].inputTokens).toBeGreaterThan(today.inputTokens);
+    expect(report.days[0].outputTokens).toBeGreaterThan(today.outputTokens);
+    expect(report.month).toBe(today.day.slice(0, 7));
+    expect(JSON.stringify(report)).not.toContain('secret');
+
+    // The top users of the month: the one with the most messages first (others ran before).
+    await prisma.chatUsage.update({
+      where: { userId_day: { userId: first.userId, day: today.day } },
+      data: { messages: { increment: 100_000 } },
+    });
+    const top = (await http().get('/admin/chat/usage').set(admin).expect(200)).body.top;
+    expect(top[0]).toMatchObject({ id: first.userId, email: first.email, messages: 100_002 });
+    expect(top[0].inputTokens).toBeGreaterThan(0);
+    expect(top.length).toBeLessThanOrEqual(10);
+    await prisma.chatUsage.update({
+      where: { userId_day: { userId: first.userId, day: today.day } },
+      data: { messages: { decrement: 100_000 } },
+    });
+  });
+
+  it('keeps the counters 13 months', async () => {
+    const { auth, userId } = await register('purge');
+    await http().post('/conversations').set(auth).expect(201);
+    await prisma.chatUsage.create({ data: { userId, day: '2020-01-01', messages: 4 } });
+    await app.get(ChatUsageService).purge();
+    expect(await prisma.chatUsage.count({ where: { userId, day: '2020-01-01' } })).toBe(0);
+    expect(await prisma.chatUsage.count({ where: { userId } })).toBe(1);
+  });
+
+  it('says it is not configured without an AI', async () => {
+    const none = await start(null);
+    try {
+      const login = await request(none.getHttpServer())
+        .post('/admin/auth/login')
+        .send({ email: adminEmail, password })
+        .expect(200);
+      const res = await request(none.getHttpServer())
+        .get('/admin/chat/settings')
+        .set({ Authorization: `Bearer ${login.body.session.accessToken as string}` })
+        .expect(200);
+      expect(res.body.state).toBe('unconfigured');
+    } finally {
+      await none.close();
+    }
   });
 });

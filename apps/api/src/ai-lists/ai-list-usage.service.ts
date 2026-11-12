@@ -1,15 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { consoleDay, firstKeptDay, increments, reportDays, TOP_USERS } from '../app-settings/console-usage.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { localDate } from '../reminders/local-time.js';
-
-/** The days of the console. */
-export const CONSOLE_TIME_ZONE = 'Europe/Paris';
-/** The counters are kept 13 months. */
-export const KEPT_MONTHS = 13;
-/** The table of the console: the last 30 days, today included. */
-export const REPORT_DAYS = 30;
-export const TOP_USERS = 10;
 
 export interface UsageCounts {
   generations?: number;
@@ -47,9 +39,6 @@ export interface UsageReport {
   top: UsageTopUser[];
 }
 
-/** The day before a YYYY-MM-DD. */
-const dayBefore = (day: string) => new Date(Date.parse(`${day}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
-
 /**
  * MEM-143: what the generations of cards by the AI cost, for the console:
  * counters per user and per day (generations, cards proposed and added,
@@ -64,18 +53,14 @@ export class AiListUsageService {
 
   /** Adds these counts to the user's day (a negative one takes back: a failed generation). */
   async record(userId: string, counts: UsageCounts, now = new Date()): Promise<void> {
-    const values = Object.fromEntries(Object.entries(counts).filter(([, value]) => value)) as UsageCounts;
-    if (Object.keys(values).length === 0) return;
-    const day = localDate(now, CONSOLE_TIME_ZONE);
+    const { empty, create, update } = increments({ ...counts });
+    if (empty) return;
+    const day = consoleDay(now);
     try {
       await this.prisma.aiListUsage.upsert({
         where: { userId_day: { userId, day } },
-        create: {
-          userId,
-          day,
-          ...Object.fromEntries(Object.entries(values).map(([key, value]) => [key, Math.max(0, value)])),
-        },
-        update: Object.fromEntries(Object.entries(values).map(([key, value]) => [key, { increment: value }])),
+        create: { userId, day, ...create },
+        update,
       });
     } catch (error) {
       // a counter missed must never fail the generation
@@ -85,9 +70,8 @@ export class AiListUsageService {
 
   /** The last 30 days (each one, even without a generation), and the 10 biggest users of the month. */
   async report(now = new Date()): Promise<UsageReport> {
-    const today = localDate(now, CONSOLE_TIME_ZONE);
-    const days = [today];
-    while (days.length < REPORT_DAYS) days.push(dayBefore(days.at(-1)!));
+    const days = reportDays(now);
+    const today = days[0];
     const first = days.at(-1)!;
     const month = today.slice(0, 7);
 
@@ -150,11 +134,7 @@ export class AiListUsageService {
   /** Every night: the counters of more than 13 months. */
   @Cron('47 3 * * *', { name: 'ai-list-usage-purge', waitForCompletion: true })
   async purge(now = new Date()): Promise<number> {
-    const limit = new Date(now);
-    limit.setUTCMonth(limit.getUTCMonth() - KEPT_MONTHS);
-    const { count } = await this.prisma.aiListUsage.deleteMany({
-      where: { day: { lt: localDate(limit, CONSOLE_TIME_ZONE) } },
-    });
+    const { count } = await this.prisma.aiListUsage.deleteMany({ where: { day: { lt: firstKeptDay(now) } } });
     return count;
   }
 }

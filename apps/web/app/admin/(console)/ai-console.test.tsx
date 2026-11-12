@@ -8,7 +8,17 @@ import type { AiListUsageReport } from '../../../lib/admin-ai-lists';
 const saveAiListSettings = vi.fn();
 const getAiListSettings = vi.fn();
 const getAiListUsage = vi.fn();
-vi.mock('../../../lib/admin-api', () => ({ saveAiListSettings, getAiListSettings, getAiListUsage }));
+const saveChatSettings = vi.fn();
+const getChatSettings = vi.fn();
+const getChatUsage = vi.fn();
+vi.mock('../../../lib/admin-api', () => ({
+  saveAiListSettings,
+  getAiListSettings,
+  getAiListUsage,
+  saveChatSettings,
+  getChatSettings,
+  getChatUsage,
+}));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('next/link', () => ({
   default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
@@ -18,8 +28,9 @@ vi.mock('next/link', () => ({
   ),
 }));
 
-const { saveAiListSettingsAction } = await import('./parametres/actions');
+const { saveAiListSettingsAction, saveChatSettingsAction } = await import('./parametres/actions');
 const { AiListSettingsForm } = await import('./parametres/ai-list-settings');
+const { ChatSettingsForm } = await import('./parametres/chat-settings');
 const { default: AiUsagePage } = await import('./consommation/page');
 const { UsersTable } = await import('./users-table');
 
@@ -37,6 +48,70 @@ const form = (values: Record<string, string>) => {
 
 beforeEach(() => {
   saveAiListSettings.mockReset();
+  saveChatSettings.mockReset();
+});
+
+const chat = { enabled: true, messagesPerDay: 30, messagesPerConversation: 20, maxReplyWords: 120 };
+
+describe('Console › Paramètres: « Chat IA » (MEM-135)', () => {
+  it('its state, the switch and the three limits, with their bounds', () => {
+    const html = renderToStaticMarkup(<ChatSettingsForm settings={{ ...chat, state: 'active' }} />);
+    expect(text(html)).toContain('Chat IA');
+    expect(text(html)).toContain('État : Active');
+    expect(html).toMatch(/<input type="checkbox" name="enabled" checked=""/);
+    expect(text(html)).toContain('Activer le Chat IA pour tous les utilisateurs');
+    for (const [name, value, min, max] of [
+      ['messagesPerDay', 30, 1, 500],
+      ['messagesPerConversation', 20, 2, 100],
+      ['maxReplyWords', 120, 30, 300],
+    ]) {
+      expect(html).toMatch(new RegExp(`min="${min}" max="${max}"[^>]*name="${name}" value="${value}"`));
+    }
+    expect(text(html)).toContain('Messages par utilisateur et par jour');
+    expect(text(html)).toContain('Messages par conversation');
+    expect(text(html)).toContain('Longueur maximale d’une réponse (mots)');
+    const off = text(renderToStaticMarkup(<ChatSettingsForm settings={{ ...chat, enabled: false, state: 'off' }} />));
+    expect(off).toContain('État : Coupée par l’administrateur');
+    expect(off).toContain('Le Chat IA est masqué pour tous les utilisateurs.');
+    expect(text(renderToStaticMarkup(<ChatSettingsForm settings={{ ...chat, state: 'unconfigured' }} />))).toContain(
+      'État : Non configurée',
+    );
+  });
+
+  it('checks each number first, then saves', async () => {
+    const values = { messagesPerDay: '0', messagesPerConversation: '101', maxReplyWords: '' };
+    expect(await saveChatSettingsAction({}, form({ enabled: 'on', ...values }))).toEqual({
+      values: { enabled: true, ...values },
+      fieldErrors: {
+        messagesPerDay: 'Saisis un nombre entre 1 et 500.',
+        messagesPerConversation: 'Saisis un nombre entre 2 et 100.',
+        maxReplyWords: 'Saisis un nombre de mots.',
+      },
+    });
+    expect(saveChatSettings).not.toHaveBeenCalled();
+    saveChatSettings.mockResolvedValueOnce({ ok: true, settings: {} });
+    expect(
+      await saveChatSettingsAction(
+        {},
+        form({ messagesPerDay: ' 40 ', messagesPerConversation: '10', maxReplyWords: '80' }),
+      ),
+    ).toEqual({ saved: true });
+    expect(saveChatSettings).toHaveBeenCalledWith({
+      enabled: false,
+      messagesPerDay: 40,
+      messagesPerConversation: 10,
+      maxReplyWords: 80,
+    });
+    saveChatSettings.mockResolvedValueOnce({ ok: false, status: 400 });
+    expect(
+      (
+        await saveChatSettingsAction(
+          {},
+          form({ messagesPerDay: '40', messagesPerConversation: '10', maxReplyWords: '80' }),
+        )
+      ).error,
+    ).toBe('Impossible d’enregistrer les réglages.');
+  });
 });
 
 describe('Console › Paramètres: « Générer avec l’IA » (MEM-143)', () => {
@@ -131,14 +206,38 @@ describe('Console › Consommation IA (MEM-143)', () => {
     ],
   };
 
+  const chatReport = {
+    days: days.map(({ day }, i) => ({
+      day,
+      conversations: i === 0 ? 4 : 0,
+      messages: i === 0 ? 17 : 0,
+      activeUsers: i === 0 ? 3 : 0,
+      inputTokens: i === 0 ? 9000 : 0,
+      outputTokens: i === 0 ? 2500 : 0,
+    })),
+    month: '2026-11',
+    top: [],
+  };
+
   it('the state, a row per day, the totals, the top users with their « fiche »', async () => {
     getAiListSettings.mockResolvedValue({ enabled: true, generationsPerDay: 10, state: 'active' });
     getAiListUsage.mockResolvedValue(report);
+    getChatSettings.mockResolvedValue({ ...chat, state: 'active' });
+    getChatUsage.mockResolvedValue(chatReport);
     const html = renderToStaticMarkup(await AiUsagePage());
-    expect(text(html)).toContain('Consommation de la génération de cartes');
+    // The Chat IA first (MEM-135), then the generations of cards.
+    expect(text(html)).toMatch(/Consommation du Chat IA.*Consommation de la génération de cartes/);
+    expect(text(html)).toContain(
+      'État : Active · 30 messages par utilisateur et par jour, 20 par conversation, réponses de 120 mots au plus · Modifier',
+    );
+    expect(html).toContain('href="/admin/parametres#chat-settings"');
+    expect(text(html)).toContain('Jour Conversations Messages Utilisateurs actifs Jetons d’entrée Jetons de sortie');
+    expect(text(html)).toMatch(/30 jours 4 17 — 9\s?000 2\s?500/);
+    expect(text(html)).toContain('Aucun message ce mois-ci.');
     expect(text(html)).toContain('État : Active · 10 générations par utilisateur et par jour · Modifier');
+    expect(html).toContain('href="/admin/parametres#ai-lists-settings"');
     const bodies = html.match(/<tbody>[\s\S]*?<\/tbody>/g)!;
-    expect(bodies.map((body) => body.match(/<tr/g)!.length)).toEqual([30, 1]); // the days, the top user
+    expect(bodies.map((body) => body.match(/<tr/g)!.length)).toEqual([30, 30, 1]); // the days twice, the top user
     expect(text(html)).toContain(
       'Jour Générations Utilisateurs actifs Cartes proposées Cartes ajoutées Jetons d’entrée Jetons de sortie',
     );
@@ -151,8 +250,12 @@ describe('Console › Consommation IA (MEM-143)', () => {
   it('no generation this month; off', async () => {
     getAiListSettings.mockResolvedValue({ enabled: false, generationsPerDay: 10, state: 'off' });
     getAiListUsage.mockResolvedValue({ ...report, top: [] });
+    getChatSettings.mockResolvedValue({ ...chat, state: 'unconfigured' });
+    getChatUsage.mockResolvedValue(chatReport);
     const html = text(renderToStaticMarkup(await AiUsagePage()));
     expect(html).toContain('État : Coupée par l’administrateur');
+    expect(html).toContain('État : Non configurée');
+    expect(html).toContain('Aucun modèle d’IA n’est configuré sur le serveur : le Chat IA reste indisponible');
     expect(html).toContain('Aucune génération ce mois-ci.');
   });
 });

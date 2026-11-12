@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { getAdministrator, getAiListSettings } from '../../../../lib/admin-api';
+import { getAdministrator, getAiListSettings, getChatSettings } from '../../../../lib/admin-api';
 import { AiListSettingsForm } from './ai-list-settings';
+import { ChatSettingsForm } from './chat-settings';
 import { TwoFactorSettings } from './two-factor-settings';
 
 export const metadata: Metadata = { title: 'Paramètres' };
@@ -10,10 +11,17 @@ const when = (date: string) => new Date(date).toLocaleString('fr-FR', PARIS);
 
 /**
  * MEM-88: the settings of the logged-in administrator: their two-step login.
- * MEM-143: the parameters of the app: « Générer avec l'IA ».
+ * The parameters of the app: the Chat IA (MEM-135) and « Générer avec l'IA »
+ * (MEM-143). The layout of the users' Réglages: the same width, each field
+ * opposite its label on a computer.
  */
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ '2fa'?: string }> }) {
-  const [administrator, params, aiLists] = await Promise.all([getAdministrator(), searchParams, getAiListSettings()]);
+  const [administrator, params, chat, aiLists] = await Promise.all([
+    getAdministrator(),
+    searchParams,
+    getChatSettings(),
+    getAiListSettings(),
+  ]);
   const { enabled, enabledAt, disabledAt } = administrator.twoFactor;
   return (
     <>
@@ -40,6 +48,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
         )}
         <TwoFactorSettings enabled={enabled} />
       </section>
+      <ChatSettingsForm settings={chat} />
       <AiListSettingsForm settings={aiLists} />
     </>
   );

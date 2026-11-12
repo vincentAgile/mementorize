@@ -57,17 +57,19 @@ export const STATE_HINTS: Record<AiListState, string> = {
     'Aucun modèle d’IA n’est configuré sur le serveur : la génération reste indisponible, quel que soit ce réglage.',
 };
 
-/** The error of the field « Générations par utilisateur et par jour », or null. */
-export function generationsError(raw: string): string | null {
+/** The error of a whole number of the console between `min` and `max`, or null (MEM-135/143). */
+export function boundedError(raw: string, min: number, max: number, empty: string): string | null {
   const text = raw.trim();
-  if (!text) return 'Saisis un nombre de générations.';
+  if (!text) return empty;
   if (!/^\d+$/.test(text)) return 'Saisis un nombre entier.';
   const value = Number(text);
-  if (value < GENERATIONS_MIN || value > GENERATIONS_MAX) {
-    return `Saisis un nombre entre ${GENERATIONS_MIN} et ${GENERATIONS_MAX}.`;
-  }
+  if (value < min || value > max) return `Saisis un nombre entre ${min} et ${max}.`;
   return null;
 }
+
+/** The error of the field « Générations par utilisateur et par jour », or null. */
+export const generationsError = (raw: string) =>
+  boundedError(raw, GENERATIONS_MIN, GENERATIONS_MAX, 'Saisis un nombre de générations.');
 
 const NUMBER = new Intl.NumberFormat('fr-FR');
 export const formatCount = (value: number) => NUMBER.format(value);
@@ -89,20 +91,6 @@ export function formatMonth(month: string): string {
     month: 'long',
     year: 'numeric',
   });
-}
-
-/** The totals of the 30 days. */
-export function totalsOf(days: AiListUsageDay[]): Omit<AiListUsageDay, 'day' | 'activeUsers'> {
-  return days.reduce(
-    (sum, day) => ({
-      generations: sum.generations + day.generations,
-      proposed: sum.proposed + day.proposed,
-      added: sum.added + day.added,
-      inputTokens: sum.inputTokens + day.inputTokens,
-      outputTokens: sum.outputTokens + day.outputTokens,
-    }),
-    { generations: 0, proposed: 0, added: 0, inputTokens: 0, outputTokens: 0 },
-  );
 }
 
 /** The page of the users of the console, searched on this e-mail: the user's « fiche ». */

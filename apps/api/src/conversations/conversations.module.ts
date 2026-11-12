@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthModule } from '../auth/auth.module.js';
 import { PronunciationModule } from '../pronunciation/pronunciation.module.js';
 import { PronunciationAssessmentModule } from '../pronunciation-assessment/pronunciation-assessment.module.js';
+import { ChatUsageService } from './chat-usage.service.js';
 import { ConversationAccess, ConversationAccessGuard } from './conversation-access.js';
 import { ConversationLimitsService } from './conversation-limits.js';
 import { ConversationRateGuard, ConversationSpeechRateGuard } from './conversation-rate.guard.js';
@@ -28,6 +29,7 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
   providers: [
     ConversationsService,
     ConversationLimitsService,
+    ChatUsageService,
     ConversationRateGuard,
     ConversationSpeechRateGuard,
     ConversationSpeech,
@@ -57,7 +59,7 @@ export const DEFAULT_TIMEOUT_MS = 30_000;
       },
     },
   ],
-  // MEM-139: the same model for the cards proposed by the AI.
-  exports: [CONVERSATION_MODEL],
+  // MEM-139: the same model for the cards proposed by the AI; MEM-135: the console.
+  exports: [CONVERSATION_MODEL, ConversationsService, ConversationLimitsService, ChatUsageService],
 })
 export class ConversationsModule {}

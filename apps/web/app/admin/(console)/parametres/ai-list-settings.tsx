@@ -30,7 +30,7 @@ export function AiListSettingsForm({ settings }: { settings: AdminAiListSettings
   const on = settings.state === 'active';
 
   return (
-    <section className="admin-settings" aria-labelledby="ai-lists-title">
+    <section className="admin-settings" aria-labelledby="ai-lists-title" id="ai-lists-settings">
       <h2 id="ai-lists-title">Générer avec l’IA</h2>
       <p>
         État :{' '}
