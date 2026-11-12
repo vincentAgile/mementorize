@@ -2,7 +2,15 @@
 
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
-import { DAILY_LIMIT, duplicateKey, fewerText, type RowField } from '../../../../lib/ai-lists';
+import {
+  DAILY_LIMIT,
+  duplicateKey,
+  fewerText,
+  NOT_ENOUGH,
+  REPLACE_HINT,
+  type RowField,
+  replacedText,
+} from '../../../../lib/ai-lists';
 import { agree, countOf, ITEM_NOUN } from '../../../../lib/nouns';
 import { QueueChoice } from '../../../lists/queue-choice';
 import type { AddAiListResult } from './actions';
@@ -18,15 +26,22 @@ export interface PreviewRow {
   checked: boolean;
   /** Corrected by the user: « modifié ». */
   edited: boolean;
+  /** Waiting for its new card (« Proposer d'autres », MEM-142). */
+  replacing?: boolean;
 }
 
 export type Phase =
   /** The cards were added: nothing more to say about the generation. */
   | { kind: 'idle' }
-  | { kind: 'running' }
+  /** `replace`: « Proposer d'autres », the new cards received of those asked (MEM-142). */
+  | { kind: 'running'; replace?: { received: number; total: number } }
   | { kind: 'done'; proposed: number; skipped: number }
-  | { kind: 'cancelled' }
-  | { kind: 'failed'; message: string };
+  /** « Proposer d'autres » ended: the rows replaced, and those left without a new card (taken away). */
+  | { kind: 'replaced'; replaced: number; missing: number }
+  /** `replaced`: the cards replaced before « Annuler », when it was « Proposer d'autres ». */
+  | { kind: 'cancelled'; replaced?: number }
+  /** `retry`: « Proposer d'autres » failed, the rows not replaced yet as they were: « Réessayer ». */
+  | { kind: 'failed'; message: string; retry?: boolean };
 
 /**
  * MEM-141: the cards proposed by the AI, as the content of a predefined list
@@ -35,7 +50,8 @@ export type Phase =
  * learning queue. The rows come one by one (« 6 / 10 », « Annuler »). A
  * click on the English or the French corrects it; the examples are in a
  * fold of each row. A row corrected into a word of « Ma liste » is off,
- * « Déjà dans ta liste ». « Retirer » takes a row away.
+ * « Déjà dans ta liste ». « Retirer » takes a row away. « Proposer d'autres »
+ * (MEM-142) replaces the rows unchecked; off without one, with why.
  */
 export function AiListPreview({
   summary,
@@ -49,6 +65,7 @@ export function AiListPreview({
   onRows,
   onCancel,
   onRegenerate,
+  onReplace,
   onEditSettings,
   onAdd,
   adding,
@@ -68,6 +85,7 @@ export function AiListPreview({
   onRows: (update: (rows: PreviewRow[]) => PreviewRow[]) => void;
   onCancel: () => void;
   onRegenerate: () => void;
+  onReplace: () => void;
   onEditSettings: () => void;
   onAdd: () => void;
   adding: boolean;
@@ -82,6 +100,9 @@ export function AiListPreview({
   const available = rows.filter((row) => !isOwned(row));
   const selected = available.filter((row) => row.checked);
   const allChecked = available.length > 0 && selected.length === available.length;
+  /** The rows « Proposer d'autres » would replace: unchecked, or already in « Ma liste ». */
+  const toReplace = rows.length - selected.length;
+  const exhausted = remaining <= 0;
 
   useEffect(() => {
     if (all.current) all.current.indeterminate = selected.length > 0 && !allChecked;
@@ -114,15 +135,15 @@ export function AiListPreview({
                 type="button"
                 className="link-button"
                 onClick={onRegenerate}
-                disabled={remaining <= 0}
-                aria-describedby={remaining <= 0 ? 'ai-preview-limit' : undefined}
+                disabled={exhausted}
+                aria-describedby={exhausted ? 'ai-preview-limit' : undefined}
               >
                 Regénérer tout
               </button>
             )}
           </p>
         )}
-        {!running && !added && remaining <= 0 && (
+        {!running && !added && exhausted && (
           <p id="ai-preview-limit" className="ai-preview__limit">
             {DAILY_LIMIT}
           </p>
@@ -140,14 +161,25 @@ export function AiListPreview({
         <p className="ai-preview__progress">
           <span className="ai-preview__spinner" aria-hidden="true" />
           <span>
-            Génération en cours… <span className="ai-preview__counter">{`${rows.length} / ${count}`}</span>
+            Génération en cours…{' '}
+            <span className="ai-preview__counter">
+              {phase.kind === 'running' && phase.replace
+                ? `${phase.replace.received} / ${phase.replace.total}`
+                : `${rows.length} / ${count}`}
+            </span>
           </span>
           <button type="button" className="button--secondary" onClick={onCancel}>
             Annuler
           </button>
         </p>
       )}
-      <PhaseMessage phase={phase} count={count} empty={rows.length === 0} onEditSettings={onEditSettings} />
+      <PhaseMessage
+        phase={phase}
+        count={count}
+        empty={rows.length === 0}
+        onEditSettings={onEditSettings}
+        onRetry={exhausted ? null : onReplace}
+      />
 
       {rows.length > 0 && (
         <>
@@ -183,7 +215,13 @@ export function AiListPreview({
                 const owns = isOwned(row);
                 const name = row.english;
                 return (
-                  <tr key={row.id} className={owns ? 'is-owned' : undefined}>
+                  <tr
+                    key={row.id}
+                    className={
+                      [owns && 'is-owned', row.replacing && 'is-replacing'].filter(Boolean).join(' ') || undefined
+                    }
+                    aria-busy={row.replacing || undefined}
+                  >
                     <td className="catalog-content__check">
                       <input
                         type="checkbox"
@@ -263,6 +301,22 @@ export function AiListPreview({
               <button type="button" disabled={selected.length === 0 || adding || running} onClick={onAdd}>
                 {adding ? 'Ajout…' : `Ajouter ${countOf(selected.length, ITEM_NOUN)}`}
               </button>
+              <button
+                type="button"
+                className="button--secondary"
+                disabled={toReplace === 0 || running || adding || exhausted}
+                aria-describedby={
+                  exhausted ? 'ai-preview-limit' : toReplace === 0 ? 'ai-preview-replace-hint' : undefined
+                }
+                onClick={onReplace}
+              >
+                Proposer d’autres
+              </button>
+              {!exhausted && toReplace === 0 && (
+                <span id="ai-preview-replace-hint" className="ai-preview__replace-hint">
+                  {REPLACE_HINT}
+                </span>
+              )}
             </div>
             <div
               onChange={(event) => {
@@ -288,12 +342,24 @@ function PhaseMessage({
   count,
   empty,
   onEditSettings,
+  onRetry,
 }: {
   phase: Phase;
   count: number;
   empty: boolean;
   onEditSettings: () => void;
+  /** « Réessayer » « Proposer d'autres »; null once the quota is reached. */
+  onRetry: (() => void) | null;
 }) {
+  if (phase.kind === 'replaced') {
+    return (
+      <p className="notice" role="status">
+        {phase.replaced > 0 && replacedText(phase.replaced)}
+        {phase.replaced > 0 && phase.missing > 0 && ' '}
+        {phase.missing > 0 && NOT_ENOUGH}
+      </p>
+    );
+  }
   if (phase.kind === 'done' && phase.proposed === 0) {
     return (
       <p className="notice" role="status">
@@ -318,6 +384,15 @@ function PhaseMessage({
       </p>
     );
   }
+  if (phase.kind === 'cancelled' && phase.replaced !== undefined) {
+    return (
+      <p className="notice" role="status">
+        {phase.replaced > 0
+          ? `Annulé : ${replacedText(phase.replaced).replace(/\.$/, '')}, les autres sont inchangées.`
+          : 'Annulé : les cartes sont inchangées.'}
+      </p>
+    );
+  }
   if (phase.kind === 'cancelled') {
     return (
       <p className="notice" role="status">
@@ -329,6 +404,14 @@ function PhaseMessage({
     return (
       <p className="form-error" role="alert">
         {phase.message}
+        {phase.retry && onRetry && (
+          <>
+            {' '}
+            <button type="button" className="link-button" onClick={onRetry}>
+              Réessayer
+            </button>
+          </>
+        )}
       </p>
     );
   }

@@ -5450,6 +5450,44 @@ a.add-list__choice:focus-visible {
   font-size: 0.85rem;
 }
 
+/* MEM-142: « Proposer d'autres », beside « Ajouter N cartes » */
+.ai-preview .catalog-content__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.ai-preview .catalog-content__bar .button--secondary {
+  border: 1px solid #147d80;
+  background: transparent;
+  color: #147d80;
+  font-weight: 500;
+}
+
+.ai-preview__replace-hint {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.ai-preview__table tr.is-replacing td {
+  opacity: 0.45;
+  transition: opacity 0.2s;
+}
+
+@media (max-width: 639px) {
+  /* The two buttons side by side: the rows stay in sight above them */
+  .ai-preview .catalog-content__bar button {
+    flex: 1 1 0;
+    width: auto;
+    padding: 0 0.5rem;
+  }
+
+  .ai-preview__replace-hint {
+    flex-basis: 100%;
+  }
+}
+
 /* MEM-141: the cards proposed, as the content of a predefined list */
 .ai-preview.catalog-content {
   margin-top: 0;
@@ -5664,8 +5702,15 @@ a.add-list__choice:focus-visible {
   .ai-settings__privacy,
   .ai-preview__warning,
   .ai-preview__limit,
+  .ai-preview__replace-hint,
   .ai-settings__counter {
     color: #bbb;
+  }
+
+  .ai-preview .catalog-content__bar .button--secondary {
+    border-color: #7fd3d6;
+    background: transparent;
+    color: #7fd3d6;
   }
 
   .ai-preview__example summary {

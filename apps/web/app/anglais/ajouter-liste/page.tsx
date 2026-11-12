@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { AI_LIST_HREF, UNAVAILABLE } from '../../../lib/ai-lists';
+import { AI_LIST_HREF, DAILY_LIMIT, UNAVAILABLE } from '../../../lib/ai-lists';
 import { getAiListStatus, getCatalogLists } from '../../../lib/api';
 
 export const metadata: Metadata = { title: 'Ajouter une liste · Anglais' };
@@ -9,12 +9,13 @@ export const metadata: Metadata = { title: 'Ajouter une liste · Anglais' };
 /**
  * Tab « Ajouter une liste » of the Anglais space (MEM-123): several cards at
  * once, three ways, as three large links: cards proposed by the AI (MEM-140),
- * off without an AI; a predefined list (MEM-118), off while none is
+ * off without an AI or once the generations of the day are used; a predefined list (MEM-118), off while none is
  * published; or a CSV file (MEM-53). The cards join « Ma liste »: never a
  * list apart.
  */
 export default async function AddListPage() {
   const [lists, ai] = await Promise.all([getCatalogLists(), getAiListStatus()]);
+  const aiOff = !ai.enabled ? UNAVAILABLE : ai.remaining <= 0 ? DAILY_LIMIT : null;
   return (
     <section className="add-list" aria-labelledby="add-list-title">
       <h2 id="add-list-title" className="add-list__title">
@@ -23,9 +24,9 @@ export default async function AddListPage() {
       <p className="add-list__intro">Plusieurs cartes d’un coup, ajoutées à Ma liste. Choisis d’où elles viennent :</p>
       <ul className="add-list__choices">
         <li>
-          <Choice href={ai.enabled ? AI_LIST_HREF : null} title="Générer avec l’IA" icon={<SparkIcon />} id="choice-ai">
+          <Choice href={aiOff ? null : AI_LIST_HREF} title="Générer avec l’IA" icon={<SparkIcon />} id="choice-ai">
             Choisis un niveau et un thème, l’IA te propose des cartes.
-            {!ai.enabled && <strong className="add-list__off"> {UNAVAILABLE}</strong>}
+            {aiOff && <strong className="add-list__off"> {aiOff}</strong>}
           </Choice>
         </li>
         <li>

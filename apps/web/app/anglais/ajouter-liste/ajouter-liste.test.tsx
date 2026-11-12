@@ -63,11 +63,17 @@ describe('« Ajouter une liste »: the three choices (MEM-123, MEM-140)', () => 
     expect(html).not.toContain('href="/anglais/ajouter-liste/ia"');
   });
 
-  it('the quota reached: the choice stays a link (the settings say why « Générer » is off)', async () => {
+  it('the quota reached: the first choice greyed, and why; the count of the day is never shown', async () => {
     getCatalogLists.mockResolvedValue([list]);
     getAiListStatus.mockResolvedValueOnce({ enabled: true, remaining: 0 });
     const html = renderToStaticMarkup(await AddListPage());
-    expect(html).toContain('href="/anglais/ajouter-liste/ia"');
+    expect(html).toMatch(/<div class="add-list__choice is-disabled" aria-disabled="true"[^>]*>.*Générer avec l’IA/);
+    expect(text(html)).toContain('Tu as atteint la limite de générations d’aujourd’hui. Réessaie demain.');
+    expect(html).not.toContain('href="/anglais/ajouter-liste/ia"');
+    getAiListStatus.mockResolvedValueOnce({ enabled: true, remaining: 3 });
+    const open = renderToStaticMarkup(await AddListPage());
+    expect(open).toContain('href="/anglais/ajouter-liste/ia"');
+    expect(text(open)).not.toMatch(/générations? restantes?/);
   });
 });
 
